@@ -1,0 +1,20 @@
+{
+  "controllerPort": 8787,
+  "manifestPath": "/Users/ej/mesh-autoresearch-visualizer/runtime/autoresearch-loop-live/manifest.json",
+  "repoPath": "/Users/ej/autoresearch",
+  "workers": 6,
+  "preflight": {
+    "uv": true,
+    "codex": true,
+    "nvidiaSmi": false,
+    "cacheRoot": false,
+    "tokenizer": false,
+    "ready": false,
+    "blockers": [
+      "nvidia-smi not found",
+      "~/.cache/autoresearch missing",
+      "~/.cache/autoresearch/tokenizer.json missing"
+    ]
+  },
+  "updatedAt": "2026-03-13T05:35:12.195Z"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "mesh-autoresearch-visualizer",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "dev:svelte": "vite",
+    "dev:react": "vite --config vite.react.config.ts",
+    "build": "vite build",
+    "build:svelte": "vite build",
+    "build:react": "vite build --config vite.react.config.ts",
+    "preview": "vite preview",
+    "preview:svelte": "vite preview",
+    "preview:react": "vite preview --config vite.react.config.ts",
+    "migration:svelte:prepare": "node --experimental-strip-types scripts/prepare_svelte_migration.ts",
+    "telemetry:from-autoresearch": "node --experimental-strip-types scripts/autoresearch_to_telemetry.ts",
+    "telemetry:mock": "node --experimental-strip-types scripts/mock_telemetry_server.ts",
+    "controller:loop": "node --experimental-strip-types scripts/autoresearch_loop_controller.ts",
+    "swarm:supervisor": "node --experimental-strip-types scripts/autoresearch_swarm_supervisor.ts",
+    "eval:globe": "node --experimental-strip-types eval/run_eval.ts",
+    "eval:globe:json": "node --experimental-strip-types eval/run_eval.ts --json"
+  },
+  "dependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "svelte": "^5.53.11",
+    "three": "^0.176.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  }
+}

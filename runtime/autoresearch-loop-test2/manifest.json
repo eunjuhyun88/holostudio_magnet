@@ -1,0 +1,55 @@
+{
+  "defaultHub": {
+    "lat": 30.4795,
+    "lng": 81.4009
+  },
+  "defaults": {
+    "cpu": 16,
+    "gpu": 1,
+    "memGb": 32
+  },
+  "workspaces": [
+    {
+      "workspace": "workspaces/seoul-4090",
+      "nodeId": "node-seoul-4090",
+      "workerId": "worker-seoul-4090",
+      "jobId": "job-seoul-4090",
+      "experimentId": "exp-seoul-4090-seed",
+      "region": "Seoul",
+      "lat": 37.5665,
+      "lng": 126.978,
+      "cpu": 24,
+      "gpu": 1,
+      "memGb": 32,
+      "gpuLabel": "RTX 4090"
+    },
+    {
+      "workspace": "workspaces/singapore-4080",
+      "nodeId": "node-singapore-4080",
+      "workerId": "worker-singapore-4080",
+      "jobId": "job-singapore-4080",
+      "experimentId": "exp-singapore-4080-seed",
+      "region": "Singapore",
+      "lat": 1.3521,
+      "lng": 103.8198,
+      "cpu": 24,
+      "gpu": 1,
+      "memGb": 48,
+      "gpuLabel": "RTX 4080"
+    },
+    {
+      "workspace": "workspaces/berlin-a100",
+      "nodeId": "node-berlin-a100",
+      "workerId": "worker-berlin-a100",
+      "jobId": "job-berlin-a100",
+      "experimentId": "exp-berlin-a100-seed",
+      "region": "Berlin",
+      "lat": 52.52,
+      "lng": 13.405,
+      "cpu": 32,
+      "gpu": 1,
+      "memGb": 80,
+      "gpuLabel": "A100 80GB"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "defaultHub": {
+    "lat": 35.6762,
+    "lng": 139.6503
+  },
+  "defaults": {
+    "cpu": 16,
+    "gpu": 1,
+    "memGb": 32
+  },
+  "workspaces": [
+    {
+      "workspace": "workspaces/seoul-4090",
+      "region": "Seoul",
+      "lat": 37.5665,
+      "lng": 126.978,
+      "gpuLabel": "RTX 4090",
+      "cpu": 16,
+      "gpu": 1,
+      "memGb": 32
+    },
+    {
+      "workspace": "workspaces/singapore-4080",
+      "region": "Singapore",
+      "lat": 1.3521,
+      "lng": 103.8198,
+      "gpuLabel": "RTX 4080",
+      "cpu": 24,
+      "gpu": 1,
+      "memGb": 48
+    },
+    {
+      "workspace": "workspaces/berlin-a100",
+      "region": "Berlin",
+      "lat": 52.52,
+      "lng": 13.405,
+      "gpuLabel": "A100 80GB",
+      "cpu": 32,
+      "gpu": 1,
+      "memGb": 80
+    }
+  ]
+}

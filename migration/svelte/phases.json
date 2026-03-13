@@ -1,0 +1,118 @@
+[
+  {
+    "id": "phase-1-core-extraction",
+    "title": "Extract shared TypeScript core",
+    "goal": "Split simulation, scene lifecycle, and renderer updates out of the React shell while keeping the current app live.",
+    "editableScope": [
+      "src/Visualizer.tsx",
+      "src/core/*",
+      "src/lib/*"
+    ],
+    "deliverables": [
+      "shared simulation module",
+      "shared globe scene module",
+      "React shell still working"
+    ],
+    "nonGoals": [
+      "adding Svelte dependencies",
+      "switching the app entry"
+    ],
+    "gates": [
+      "npm run build",
+      "npm run eval:globe"
+    ]
+  },
+  {
+    "id": "phase-2-svelte-shell",
+    "title": "Add a parallel Svelte shell",
+    "goal": "Introduce Svelte entry files and mount a parallel shell that reuses the shared core.",
+    "editableScope": [
+      "src-svelte/*",
+      "package.json",
+      "vite.config.ts",
+      "src/core/*"
+    ],
+    "deliverables": [
+      "Svelte entry scaffold",
+      "shared store contract",
+      "no duplicated core logic"
+    ],
+    "nonGoals": [
+      "deleting React",
+      "changing evaluator files"
+    ],
+    "gates": [
+      "npm run build",
+      "npm run eval:globe"
+    ]
+  },
+  {
+    "id": "phase-3-panel-port",
+    "title": "Port panels and layout to Svelte",
+    "goal": "Move summaries, swarm board, tape, and layout hierarchy into Svelte components while keeping the globe renderer shared.",
+    "editableScope": [
+      "src-svelte/*",
+      "src/core/*",
+      "src/lib/*"
+    ],
+    "deliverables": [
+      "Svelte panel components",
+      "responsive layout parity",
+      "shared selection state"
+    ],
+    "nonGoals": [
+      "entry cutover",
+      "heavy shader rewrite"
+    ],
+    "gates": [
+      "npm run build",
+      "npm run eval:globe"
+    ]
+  },
+  {
+    "id": "phase-4-entry-cutover",
+    "title": "Switch default entry to Svelte",
+    "goal": "Make Svelte the default runtime only after parity and evaluator gates pass.",
+    "editableScope": [
+      "src/main.*",
+      "src/App.*",
+      "src-svelte/*",
+      "package.json",
+      "vite.config.ts"
+    ],
+    "deliverables": [
+      "Svelte default boot entry",
+      "React shell retained only as fallback if necessary"
+    ],
+    "nonGoals": [
+      "aggressive cleanup before parity"
+    ],
+    "gates": [
+      "npm run build",
+      "npm run eval:globe"
+    ]
+  },
+  {
+    "id": "phase-5-cleanup",
+    "title": "Remove legacy React shell",
+    "goal": "Delete now-unused React shell code after the Svelte default runtime is stable.",
+    "editableScope": [
+      "src/*",
+      "src-svelte/*",
+      "package.json",
+      "README.md"
+    ],
+    "deliverables": [
+      "React shell removed",
+      "migration docs updated",
+      "final structure simplified"
+    ],
+    "nonGoals": [
+      "changing the product truth model"
+    ],
+    "gates": [
+      "npm run build",
+      "npm run eval:globe"
+    ]
+  }
+]
