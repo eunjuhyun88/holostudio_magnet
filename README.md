@@ -6,6 +6,34 @@ Dual-panel visualization for:
 - globe-based browser compute mesh
 - keep and discard experiment tape
 
+## 1.1) Context Routing
+
+Use this read order for fast resume and low token cost:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/README.md`
+4. `ARCHITECTURE.md`
+5. `memory/MEMORY.md`
+6. `memory/session-log.md`
+7. `memory/architecture.md`
+
+If the task touches retrieval, compaction, agent manifests, or tool contracts, also read:
+
+- `docs/CONTEXT_ENGINEERING.md`
+- `docs/AGENT_FACTORY.md`
+- `docs/TOOL_DESIGN.md`
+
+### Context Artifact Model
+
+- Canonical truth: `README.md`, `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `docs/`, `memory/`
+- Runtime working memory: `.agent-context/`
+- Semantic checkpoint: `npm run ctx:checkpoint -- --work-id "W-..." --surface "web" --objective "..."`
+- Runtime snapshot: `npm run ctx:save -- --title "..."`
+- Compacted resume state: `npm run ctx:compact`
+- Resume command: `npm run ctx:restore -- --mode brief`
+- Generated context views: `npm run docs:refresh`
+
 ## Run
 
 Install dependencies:
@@ -22,28 +50,23 @@ npm run dev
 
 This now boots the Svelte shell by default. The globe and telemetry behavior stay the same, but the primary layout and panel hierarchy are now driven by Svelte.
 
-If you need the legacy React shell during migration or evaluator maintenance:
-
-```bash
-npm run dev:react
-```
-
 Build the default Svelte runtime:
 
 ```bash
 npm run build
 ```
 
-Build the legacy React runtime:
-
-```bash
-npm run build:react
-```
-
 Evaluate the current state:
 
 ```bash
 npm run eval:globe
+```
+
+Context maintenance:
+
+```bash
+npm run docs:refresh
+npm run docs:check
 ```
 
 ## Live Telemetry Mock

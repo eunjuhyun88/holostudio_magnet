@@ -7,3 +7,6 @@ results.tsv
 .env
 .env.*
 runtime/*/workspaces/
+.agent-context/
+context-kit.local.json
+.codex/
