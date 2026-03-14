@@ -47,6 +47,84 @@ export const HUMAN_READABLE: Record<string, string> = {
   'baseline model (initial run)': 'Starting with baseline configuration',
 };
 
+/* ─── Visualization Category Mapping ─── */
+
+/** Modification category types for charts */
+export type ModCategory =
+  | 'learning_rate'
+  | 'batch_size'
+  | 'architecture'
+  | 'regularization'
+  | 'optimizer'
+  | 'context'
+  | 'activation'
+  | 'embedding'
+  | 'baseline';
+
+/** Map each modification string to a category */
+export const MOD_CATEGORY: Record<string, ModCategory> = {
+  'lr: 3e-4 → 1e-4': 'learning_rate',
+  'lr: 1e-4 → 5e-5, warmup 100': 'learning_rate',
+  'reduced lr to 3e-5': 'learning_rate',
+  'added cosine lr schedule': 'learning_rate',
+  'batch_size: 64 → 128': 'batch_size',
+  'added layer norm': 'architecture',
+  'widened hidden dim 256 → 512': 'architecture',
+  'added residual connection': 'architecture',
+  'added skip connection': 'architecture',
+  'increased depth 4 → 6 layers': 'architecture',
+  'added attention head': 'architecture',
+  'doubled context window': 'context',
+  'sequence length 256 → 512': 'context',
+  'added dropout 0.1': 'regularization',
+  'added weight decay 0.01': 'regularization',
+  'added gradient clipping 1.0': 'regularization',
+  'removed dropout, added mixup': 'regularization',
+  'replaced ReLU with GELU': 'activation',
+  'switched to AdamW': 'optimizer',
+  'embedding dim 128 → 256': 'embedding',
+  'baseline model (initial run)': 'baseline',
+};
+
+/** Human-readable category labels */
+export const CATEGORY_LABELS: Record<ModCategory, string> = {
+  learning_rate: 'Learning Rate',
+  batch_size: 'Batch Size',
+  architecture: 'Architecture',
+  regularization: 'Regularization',
+  optimizer: 'Optimizer',
+  context: 'Context/Seq',
+  activation: 'Activation',
+  embedding: 'Embedding',
+  baseline: 'Baseline',
+};
+
+/** Category colors for charts */
+export const CATEGORY_COLORS: Record<ModCategory, string> = {
+  learning_rate: '#D97757',
+  batch_size: '#2d6ca2',
+  architecture: '#27864a',
+  regularization: '#b7860e',
+  optimizer: '#8b5cf6',
+  context: '#0891b2',
+  activation: '#e11d48',
+  embedding: '#059669',
+  baseline: '#9a9590',
+};
+
+/** Branch strategy descriptions — shown in "AI doing what?" panel */
+export const BRANCH_STRATEGIES: Record<ModCategory, string> = {
+  learning_rate: 'Sweep cosine-annealing, warm-restart and 1-cycle schedules; probe 3e-4 → 3e-5 log-range with warmup ablations',
+  batch_size: 'Test micro-batch 32–256 with gradient accumulation; compare throughput vs. convergence trade-off',
+  architecture: 'Mutate transformer blocks — attention heads, FFN width, residual paths, skip connections, layer depth ±2',
+  regularization: 'Compare dropout, weight decay, gradient clipping, label smoothing and mixup; ablate pairs',
+  optimizer: 'Benchmark AdamW vs Lion vs Sophia; tune β1/β2, momentum and decoupled weight decay',
+  context: 'Extend context window 256 → 512 → 1024; test RoPE vs ALiBi positional encodings',
+  activation: 'Swap GELU / SiLU / Mish activations; measure gradient flow and downstream metric impact',
+  embedding: 'Scale embedding dim 128 → 256 → 512; evaluate learned vs. fixed positional embeddings',
+  baseline: 'Establish baseline with default config; measure cold-start val_bpb for reference',
+};
+
 /** AI agent reasoning thoughts shown during research */
 export const AI_THOUGHTS = [
   'Analyzing loss convergence patterns across branches...',

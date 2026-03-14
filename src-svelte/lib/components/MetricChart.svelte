@@ -5,6 +5,8 @@
   export let bestIndex: number = -1;
   export let width: number = 320;
   export let height: number = 120;
+  export let showMovingAvg: boolean = true;
+  export let movingAvgWindow: number = 5;
 
   const PAD = { top: 12, right: 12, bottom: 24, left: 44 };
 
@@ -68,6 +70,19 @@
     });
   })();
 
+  // Moving average path
+  $: movingAvgPath = (() => {
+    if (!showMovingAvg || data.length < movingAvgWindow) return '';
+    const pts: string[] = [];
+    for (let i = movingAvgWindow - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = i - movingAvgWindow + 1; j <= i; j++) sum += data[j].y;
+      const avg = sum / movingAvgWindow;
+      pts.push(`${pts.length === 0 ? 'M' : 'L'}${sx(data[i].x).toFixed(1)},${sy(avg).toFixed(1)}`);
+    }
+    return pts.join(' ');
+  })();
+
   // Best point
   $: bestPoint = bestIndex >= 0 && bestIndex < data.length ? data[bestIndex] : null;
 
@@ -119,6 +134,11 @@
       <!-- Brighter glow for best-point -->
       <filter id="best-glow" x="-50%" y="-50%" width="200%" height="200%">
         <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgba(39,134,74,0.55)" />
+      </filter>
+
+      <!-- Moving average glow -->
+      <filter id="mavg-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(183,134,14,0.3)" />
       </filter>
     </defs>
 
@@ -190,6 +210,22 @@
         stroke-linejoin="round"
         filter="url(#frontier-glow)"
         style="stroke-dasharray:{frontierLength};stroke-dashoffset:{mounted ? 0 : frontierLength}"
+      />
+    {/if}
+
+    <!-- Moving average line (gold dashed) -->
+    {#if movingAvgPath}
+      <path
+        class="mavg-path"
+        d={movingAvgPath}
+        fill="none"
+        stroke="var(--gold, #b7860e)"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-dasharray="4,3"
+        filter="url(#mavg-glow)"
+        opacity="0.7"
       />
     {/if}
 
@@ -376,5 +412,14 @@
   }
   .mounted .best-label {
     opacity: 1;
+  }
+
+  /* ─── Moving average ─── */
+  .mavg-path {
+    opacity: 0;
+    transition: opacity 0.8s ease 0.6s;
+  }
+  .mounted .mavg-path {
+    opacity: 0.7;
   }
 </style>

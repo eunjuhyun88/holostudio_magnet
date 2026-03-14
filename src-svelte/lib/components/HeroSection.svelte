@@ -1,14 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import MeshCanvas from "./MeshCanvas.svelte";
   import PixelOwl from "./PixelOwl.svelte";
-  import type { Job, Node, Worker } from "../utils/types.ts";
 
   export let searchQuery = "";
   export let topicSuggestions: string[] = [];
-  export let renderNodes: Node[] = [];
-  export let jobs: Job[] = [];
-  export let workers: Worker[] = [];
   const dispatch = createEventDispatcher<{ search: string; topic: string }>();
 
   function handleSearch() {
@@ -22,27 +17,14 @@
   }
 </script>
 
-<section class="hero">
-  <div class="hero-bg">
-    <MeshCanvas nodes={renderNodes} {jobs} {workers} viewerLocation={{ lat: 37.57, lng: 126.98 }} />
-  </div>
-
-  <div class="hero-content">
-    <h1 class="hero-h1">
-      Turn any idea into<br/>a specialized AI model.
-    </h1>
-    <p class="hero-sub">
-      HOOT turns user intent into working AI through automated research
-      and distributed compute. Large models are generalists — HOOT creates specialists.
-    </p>
-
-    <div class="pe-editor-wrap">
-      <div class="pe-owl-track">
-        <div class="pe-walking-owl">
-          <PixelOwl size={0.22} mood="idle" />
-        </div>
+<div class="ws-editor">
+  <div class="pe-editor-wrap">
+    <div class="pe-owl-track">
+      <div class="pe-walking-owl">
+        <PixelOwl size={0.22} mood="idle" />
       </div>
-      <div class="program-editor">
+    </div>
+    <div class="program-editor">
       <div class="pe-chrome">
         <div class="pe-dots">
           <span class="pe-dot red"></span>
@@ -129,78 +111,37 @@
         {/each}
       </div>
     </div>
-    </div>
-
-    <div class="hero-actions">
-      <button class="dl-primary">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="px-icon" shape-rendering="crispEdges">
-          <rect x="7" y="1" width="2" height="2" fill="currentColor"/>
-          <rect x="7" y="3" width="2" height="2" fill="currentColor"/>
-          <rect x="7" y="5" width="2" height="2" fill="currentColor"/>
-          <rect x="7" y="7" width="2" height="2" fill="currentColor"/>
-          <rect x="5" y="7" width="2" height="2" fill="currentColor" opacity="0.5"/>
-          <rect x="9" y="7" width="2" height="2" fill="currentColor" opacity="0.5"/>
-          <rect x="3" y="9" width="2" height="2" fill="currentColor" opacity="0.4"/>
-          <rect x="11" y="9" width="2" height="2" fill="currentColor" opacity="0.4"/>
-          <rect x="1" y="11" width="14" height="2" fill="currentColor" opacity="0.3"/>
-          <rect x="1" y="13" width="14" height="2" fill="currentColor"/>
-        </svg>
-        Download for macOS
-      </button>
-      <span class="dl-alt">
-        Also available for
-        <button class="dl-link">Windows</button> and
-        <button class="dl-link">Linux</button>
-      </span>
-    </div>
   </div>
-</section>
+
+</div>
 
 <style>
-  .hero {
-    position: relative;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 100px 40px 60px;
-    text-align: center;
-  }
-  .hero-bg {
-    position: absolute;
-    top: -60px; left: -200px; right: -200px; bottom: -100px;
-    opacity: 0.18;
-    pointer-events: none;
-    filter: saturate(0.5) sepia(0.15);
-  }
-  .hero-content {
-    position: relative; z-index: 1;
-    animation: fadeUp 800ms cubic-bezier(0.16,1,0.3,1) both;
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  .ws-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .hero-h1 {
+  .ws-headline {
     font-family: var(--font-display, 'Playfair Display', serif);
-    font-size: 3.4rem;
+    font-size: 2.4rem;
     font-weight: 700;
-    line-height: 1.12;
-    letter-spacing: -0.03em;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     color: var(--text-primary, #2D2D2D);
+    margin: 0 0 12px;
+  }
+
+  .ws-sub {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-secondary, #6b6560);
     margin: 0 0 24px;
   }
-  .hero-sub {
-    font-size: 1.05rem;
-    line-height: 1.65;
-    color: var(--text-secondary, #6b6560);
-    max-width: 560px;
-    margin: 0 auto 40px;
-  }
 
+  /* ── Program Editor ── */
   .pe-editor-wrap {
     position: relative;
-    max-width: 640px;
-    margin: 0 auto 32px;
   }
   .program-editor {
     border: 1px solid var(--border, #E5E0DA);
@@ -208,7 +149,6 @@
     background: var(--surface, #fff);
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
     overflow: hidden;
-    animation: fadeUp 600ms cubic-bezier(0.16,1,0.3,1) 200ms both;
     transition: box-shadow 300ms ease, border-color 300ms ease;
   }
   .program-editor:focus-within {
@@ -305,7 +245,7 @@
   .pe-submit:hover { background: var(--accent-hover, #C4644A); }
   .pe-submit:active { transform: scale(0.97); }
   .pe-examples {
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center;
     gap: 6px; padding: 10px 14px; flex-wrap: wrap;
   }
   .pe-examples-label {
@@ -325,40 +265,8 @@
   }
   .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-  .hero-actions {
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-    animation: fadeUp 600ms cubic-bezier(0.16,1,0.3,1) 400ms both;
-  }
-  .dl-primary {
-    appearance: none; border: none;
-    background: var(--accent, #D97757); color: #fff;
-    font-size: 0.78rem; font-weight: 600;
-    padding: 10px 22px; border-radius: 100px;
-    cursor: pointer;
-    display: inline-flex; align-items: center; gap: 8px;
-    transition: background 150ms, transform 100ms;
-  }
-  .dl-primary:hover { background: var(--accent-hover, #C4644A); }
-  .dl-primary:active { transform: scale(0.97); }
-  .dl-alt { font-size: 0.72rem; color: var(--text-muted, #9a9590); }
-  .dl-link {
-    appearance: none; border: none; background: none; padding: 0;
-    font-size: 0.72rem; font-weight: 600;
-    color: var(--text-secondary, #6b6560); cursor: pointer;
-    text-decoration: underline; text-underline-offset: 2px;
-    transition: color 150ms;
-  }
-  .dl-link:hover { color: var(--accent); }
-
-  @media (max-width: 860px) {
-    .hero { padding: 80px 24px 48px; }
-    .hero-h1 { font-size: 2.6rem; }
-    .hero-actions { flex-direction: column; gap: 10px; }
-  }
+  /* ── Responsive ── */
   @media (max-width: 600px) {
-    .hero { padding: 64px 16px 40px; }
-    .hero-h1 { font-size: 2rem; }
-    .hero-sub { font-size: 0.9rem; margin-bottom: 28px; }
     .pe-footer { flex-direction: column; gap: 8px; }
     .pe-submit { width: 100%; justify-content: center; }
     .pe-meta { justify-content: center; }
@@ -366,10 +274,5 @@
     .pe-line-numbers { display: none; }
     .pe-textarea { padding: 12px; }
     .pe-examples { gap: 4px; }
-    .dl-primary { font-size: 0.74rem; padding: 10px 18px; }
-  }
-  @media (max-width: 400px) {
-    .hero-h1 { font-size: 1.65rem; }
-    .hero-sub { font-size: 0.82rem; }
   }
 </style>
