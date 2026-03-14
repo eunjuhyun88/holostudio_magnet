@@ -14,6 +14,11 @@ For context routing and compaction behavior:
 - `docs/CONTEXT_ENGINEERING.md`
 - `docs/CLAUDE_COMPATIBILITY.md`
 
+For parallel agent work or handoffs:
+- `docs/AGENT_BRANCHING.md`
+- `docs/MULTI_AGENT_COORDINATION.md`
+- `docs/GIT_WORKFLOW.md`
+
 ## Runtime Context Model
 
 | Layer | Path |
@@ -55,3 +60,4 @@ npm run ctx:restore -- --mode brief
 - Keep `.agent-context/` local-only.
 - Continuous autoresearch must be orchestrated outside the browser.
 - Frontend / backend separation and API-first boundaries are mandatory.
+- Branch/worktree split is mandatory when multiple agents are active.

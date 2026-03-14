@@ -67,6 +67,8 @@ Review this snapshot, then replace the placeholder language in `State Authority`
 3. `memory/` stores stable project truth; `.agent-context/` stores resumable working memory.
 4. If a type or event shape is used by both frontend and runtime, it must move to shared contracts.
 5. During migration, adapters are acceptable; duplicated core logic is not.
+6. When multiple agents are active, each implementation lane must run on its own branch/worktree/claim boundary.
+7. Integration happens from validated commits only; another agent's dirty WIP is not an authoritative source.
 
 ## Boundary Rules
 

@@ -9,3 +9,4 @@
 | `stageStore` | discovered | `src-svelte/lib/stores/stageStore.ts` | none |
 | `wallet` | configured-only | `configured-only` | web |
 | `walletStore` | discovered | `src-svelte/lib/stores/walletStore.ts` | none |
+| `widgetStore` | discovered | `src-svelte/lib/stores/widgetStore.ts` | none |

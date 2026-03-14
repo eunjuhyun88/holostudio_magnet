@@ -34,6 +34,12 @@ If the task touches retrieval, compaction, agent manifests, or tool contracts, a
 - Resume command: `npm run ctx:restore -- --mode brief`
 - Generated context views: `npm run docs:refresh`
 
+If multiple agents are working in parallel, also read:
+
+- `docs/AGENT_BRANCHING.md`
+- `docs/MULTI_AGENT_COORDINATION.md`
+- `docs/GIT_WORKFLOW.md`
+
 ## Run
 
 Install dependencies:
@@ -58,6 +64,12 @@ Inspect a specific runtime root while developing:
 
 ```text
 http://localhost:8790/api/runtime/mesh?runtimeRoot=runtime/autoresearch-loop-pin-test
+```
+
+Issue runtime control commands through the API boundary:
+
+```text
+POST http://localhost:8790/api/runtime/control?runtimeRoot=runtime/autoresearch-loop-pin-test
 ```
 
 Bootstrap the pinned Karpathy upstream stack used by the controller and supervisor:
@@ -85,6 +97,23 @@ Context maintenance:
 ```bash
 npm run docs:refresh
 npm run docs:check
+```
+
+## Multi-Agent Branch Discipline
+
+When more than one agent is active:
+
+- split work by branch, worktree, claim, and path boundary
+- do not share dirty work-in-progress across agents
+- do not let two agents edit the same path family concurrently
+- merge validated commits, not half-finished worktrees
+
+Use:
+
+```bash
+npm run safe:worktree -- <task-slug> main
+npm run ctx:checkpoint -- --work-id "W-..." --surface "<surface>" --objective "<objective>"
+npm run coord:claim -- --work-id "W-..." --agent "<agent>" --surface "<surface>" --summary "<summary>" --path "<prefix>"
 ```
 
 ## Live Telemetry Mock

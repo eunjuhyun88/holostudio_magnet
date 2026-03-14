@@ -71,14 +71,31 @@ Turn the current repo into a continuously running autoresearch product surface w
 - `jobStore` now supports `runtime` source mode in addition to the local simulator
 - `AutoresearchPage` now attempts runtime autodiscovery first and falls back to local simulation only if no runtime is available
 - `DashboardPage` and `NetworkView` also opportunistically mirror runtime state when the store is idle
-- `RunningDashboard` shows runtime read-only mode and disables pause/boost controls until the control plane is unified
+- `RunningDashboard` now re-enables simulate-mode runtime controls through the API boundary
+
+### Runtime control cutover
+- controller now exposes simulate-mode command handling and control state through `/commands`, `/healthz`, and `/state`
+- runtime-api now proxies `POST /api/runtime/control` to the controller and returns refreshed controller state
+- runtime mesh summaries now include controller control fields:
+  - `supportsCommands`
+  - `paused`
+  - `boostedCategories`
+  - `pausedCategories`
+  - `lastCommandAt`
+- runtime-mode `jobStore` now uses controller-backed pause/boost/pause-category/stop instead of hard read-only blocking
+
+### Multi-agent branch discipline
+- canonical branch/worktree isolation guide added at `docs/AGENT_BRANCHING.md`
+- root router docs now require the branch guide for parallel agent work and handoffs
+- engineering rules now explicitly reject shared dirty WIP as an authoritative source
 
 ## Current Problems
 
 1. `src-svelte/lib/stores/jobStore.ts` still owns state, timers, and simulation.
 2. `AutoresearchPage`, `DashboardPage`, and `NetworkView` still use different runtime models.
-3. controller/supervisor exist, but are not yet a real app/service boundary.
+3. controller/supervisor exist, but are not yet a fully persisted app/service boundary.
 4. shared telemetry/types are still duplicated across `src/fixed/*` and `src-svelte/lib/utils/*`.
+5. multi-agent branching discipline now exists, but enforcement still depends on agents actually using `safe:worktree` + `coord:claim`.
 
 ## Execution Sequence
 
@@ -117,7 +134,8 @@ Turn the current repo into a continuously running autoresearch product surface w
 1. Scaffold `apps/web`, `apps/runtime-api`, and `packages/*`.
 2. Replace the in-memory runtime-api store with shared persisted state.
 3. Move `jobStore` simulation responsibility behind runtime contracts.
-4. Point `AutoresearchPage` at runtime state instead of local timers.
+4. Replace controller-local control state with persisted runtime command ownership.
+5. Make every parallel agent lane start from `docs/AGENT_BRANCHING.md` and a dedicated worktree.
 
 ## Exit Criteria
 

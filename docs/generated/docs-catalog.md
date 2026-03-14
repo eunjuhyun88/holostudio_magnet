@@ -8,6 +8,7 @@
 | `CLAUDE.md` | `unclassified` | `unknown` | Needs promotion or archive placement. |
 | `README.md` | `unclassified` | `unknown` | Needs promotion or archive placement. |
 | `agents/README.md` | `agent-router` | `canonical` | Agent manifest authoring router. |
+| `docs/AGENT_BRANCHING.md` | `unclassified` | `unknown` | Needs promotion or archive placement. |
 | `docs/AGENT_CONTEXT_PROTOCOL.md` | `runtime-protocol` | `canonical` | Context memory and handoff contract. |
 | `docs/AGENT_FACTORY.md` | `canonical-entry` | `canonical` | Canonical agent blueprint and scaffolding doc. |
 | `docs/AGENT_OBSERVABILITY.md` | `canonical-entry` | `canonical` | Canonical runtime telemetry and value-evidence doc. |

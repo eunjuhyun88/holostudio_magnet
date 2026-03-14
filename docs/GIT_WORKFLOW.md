@@ -20,6 +20,7 @@ The goal is:
 3. Prefer one worktree per meaningful task.
 4. Create a coordination claim before meaningful edits on a feature branch.
 5. Keep branches short-lived and scoped to one coherent change.
+6. Another agent's dirty branch is not a valid continuation point. Hand off by checkpoint + claim release, not by shared WIP.
 
 ## Worktree Rules
 

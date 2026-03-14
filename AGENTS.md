@@ -14,6 +14,11 @@ If the task changes retrieval, compaction, checkpoints, or prompt routing, also 
 - `docs/AGENT_FACTORY.md`
 - `docs/TOOL_DESIGN.md`
 
+If more than one agent is active or a handoff is involved, also read:
+- `docs/AGENT_BRANCHING.md`
+- `docs/MULTI_AGENT_COORDINATION.md`
+- `docs/GIT_WORKFLOW.md`
+
 ## Session End
 
 Before ending a meaningful session:
@@ -28,6 +33,8 @@ Before ending a meaningful session:
 - Do not replace the existing memory system; Memento runtime memory complements it.
 - Canonical project truth lives in committed docs and `memory/`.
 - Runtime working memory lives in `.agent-context/` and should not be committed.
+- When parallel agents are active, branch/worktree split is mandatory.
+- Never continue another agent's dirty WIP on the same branch.
 
 ## Project Map
 
@@ -78,6 +85,7 @@ npm run ctx:compact
 - `ARCHITECTURE.md`
 - `docs/SYSTEM_INTENT.md`
 - `docs/CONTEXT_ENGINEERING.md`
+- `docs/AGENT_BRANCHING.md`
 - `docs/MULTI_AGENT_COORDINATION.md`
 - `docs/GIT_WORKFLOW.md`
 

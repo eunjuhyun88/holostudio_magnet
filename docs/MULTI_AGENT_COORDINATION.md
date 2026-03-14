@@ -18,6 +18,7 @@ The unit of parallel work is:
 5. one explicit path boundary
 
 If any of those are missing, the task is not safely partitioned.
+If another agent already has dirty work on the path, do not continue in place. Split into a new branch or wait for a handoff.
 
 ## Required Workflow
 
