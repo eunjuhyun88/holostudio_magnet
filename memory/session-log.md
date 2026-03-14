@@ -290,6 +290,59 @@ runtime-api가 실제 runtime summary를 읽게 된 뒤, 다음 단계로 `Autor
 
 ---
 
+## 2026-03-15 (cont): Branch-by-branch audit + immediate merge/push policy
+
+### Context
+사용자 요청:
+- 각 브랜치를 따로따로 정리
+- 작업이 끝나는 즉시 머지하고 푸시하는 규칙을 명확히 강제
+
+### Completed
+- **Canonical docs tightened**:
+  - `docs/AGENT_BRANCHING.md`
+  - `docs/GIT_WORKFLOW.md`
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - all now state that completed scoped work must be validated, merged to the approved integration branch, and pushed immediately
+- **Global agent entrypoints now repeat the rule**:
+  - `scripts/dev/agent-guard.mjs` now prints the immediate merge/push reminder on both failure and success paths
+  - `.claude/hooks/session-start.sh` now prints the global lane rule and the immediate merge/push rule at session start
+  - `scripts/dev/start-agent-run.mjs` now prints the same reminder when a run starts
+
+- **Branch audit snapshot captured**:
+  - `main` = `origin/main` = `26982c1`
+  - local `feat/next-iteration` = `898fd1d`
+  - `origin/feat/next-iteration` = `d7b73a6`
+  - current lane `codex/dashboard-widget-lane` = `cd40130`
+  - `codex/multi-agent-enforcement` = `898fd1d`
+  - `claude/crazy-lumiere` = `28ee86c`
+  - `claude/kind-leavitt` = `d0d1338`
+
+- **Per-worktree state confirmed**:
+  - root worktree on `codex/dashboard-widget-lane` is still dirty with large dashboard/widget/runtime WIP
+  - `.claude/worktrees/crazy-lumiere` is dirty and unclaimed on non-canonical branch `claude/crazy-lumiere`
+  - `.claude/worktrees/kind-leavitt` is clean but intentionally blocked because it is not on `codex/*`
+
+### Key Findings
+- `main` is not receiving continuous merges or pushes right now
+- the approved integration branch `feat/next-iteration` is ahead locally but still not fully pushed
+- the current dashboard/widget refactor lane is still implementation WIP, not merge-ready
+- `claude/crazy-lumiere` is the main branch hygiene violation because it has dirty work outside the claim + codex lane system
+
+### Pending
+- decide whether `claude/crazy-lumiere` should be migrated into a claimed `codex/*` lane or quarantined
+- finish and validate the current dashboard/widget lane, then merge to `feat/next-iteration` and push immediately
+
+### Verification
+- `npm run agent:guard` ✓
+  - now prints: validate completed scoped work, then merge and push it immediately
+- `npm run docs:refresh` ✓
+- `npm run docs:check` ✓
+- `npm run build` ✓
+  - remaining warnings are current Svelte a11y/unused-selector warnings in existing WIP components such as `AppDock.svelte`, `ConvergenceChart.svelte`, `ContextPanel.svelte`, and `AutoresearchPage.svelte`
+
+---
+
 ## 2026-03-15 (cont): split remaining dirty UI/widget work into a dedicated lane
 
 ### Context

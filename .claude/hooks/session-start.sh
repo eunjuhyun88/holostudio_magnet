@@ -9,6 +9,8 @@ if [ -f "scripts/dev/agent-guard.mjs" ]; then
 fi
 
 echo "[memento] Start order: README.md -> AGENTS.md -> docs/README.md -> ARCHITECTURE.md -> relevant canonical docs."
+echo "[agent] Global rule: one agent = one codex branch = one claim = one scoped path set."
+echo "[agent] Global rule: completed scoped work must be validated, merged to the approved integration branch, and pushed immediately."
 
 if [ -f "scripts/dev/context-restore.sh" ]; then
 	if OUTPUT="$(bash scripts/dev/context-restore.sh --mode brief 2>/dev/null)"; then

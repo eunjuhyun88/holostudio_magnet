@@ -10,7 +10,10 @@
 ## User Preferences
 - Language: Korean (한국어) for conversation, English for code/docs
 - Commit style: conventional commits (`feat:`, `fix:`, `chore:`)
-- Branch strategy: `feat/xxx` off `main`, push to origin
+- Branch strategy:
+  - product integration branches can still use `feat/xxx`
+  - active agent execution branches must use `codex/*`
+  - completed scoped work should be merged and pushed immediately after validation
 - Prefers concise Korean responses, no over-explaining
 - Dislikes dashboard clutter — keep pages focused on their purpose
 - Uses Chrome MCP for visual QA
@@ -113,6 +116,16 @@
   - integrated runtime-control lane remains on `codex/multi-agent-enforcement`
   - current dirty UI/widget lane was split to `codex/dashboard-widget-lane`
   - active claim: `W-20260315-dashboard-widget-lane`
+- **Immediate merge/push rule is now canonical**:
+  - completed scoped work must not remain parked on a local-only agent branch
+  - after validation, merge to the approved integration branch immediately and push immediately
+  - this rule is documented in `docs/AGENT_BRANCHING.md`, `docs/GIT_WORKFLOW.md`, `AGENTS.md`, and `CLAUDE.md`
+  - this rule is also surfaced by `scripts/dev/agent-guard.mjs`, `.claude/hooks/session-start.sh`, and `scripts/dev/start-agent-run.mjs`
+- **Current branch audit snapshot (2026-03-15)**:
+  - `main` still matches `origin/main` at `26982c1`
+  - local `feat/next-iteration` is `898fd1d`, ahead of `origin/feat/next-iteration` (`d7b73a6`) by 10 commits
+  - current implementation lane is `codex/dashboard-widget-lane` at `cd40130` with active web WIP
+  - `.claude/worktrees/crazy-lumiere` remains a dirty non-canonical lane on `claude/crazy-lumiere`
 - **Stale Claude worktree was synced to latest enforcement commit**:
   - `.claude/worktrees/kind-leavitt` fast-forwarded from `546a59f` to `d0d1338`
   - worktree is now clean, but still intentionally blocked by `agent:guard` because branch is `claude/kind-leavitt`

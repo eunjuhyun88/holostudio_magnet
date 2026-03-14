@@ -108,3 +108,4 @@ withTelemetryLock(rootDir, () => {
   setActiveRun(rootDir, runId, run.branch);
 });
 console.log(`[agent:start] run ${runId} active on ${run.branch}`);
+console.log('[agent:start] reminder: when this scoped task is validated, merge it to the approved integration branch immediately and push immediately');

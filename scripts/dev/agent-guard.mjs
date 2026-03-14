@@ -45,6 +45,7 @@ if (failures.length > 0) {
     console.error(`- ${failure}`);
   }
   console.error('[agent:guard] required pattern: one agent = one codex branch = one claim = one scoped path set');
+  console.error('[agent:guard] completion rule: once scoped work is validated, merge it to the approved integration branch immediately and push immediately');
   console.error(`[agent:guard] next: npm run safe:worktree -- <task-slug> ${mainBranch}`);
   console.error('[agent:guard] next: npm run ctx:checkpoint -- --work-id "W-..." --surface "<surface>" --objective "<objective>"');
   console.error('[agent:guard] next: npm run coord:claim -- --work-id "W-..." --agent "<agent>" --surface "<surface>" --summary "<summary>" --path "<prefix>"');
@@ -52,3 +53,4 @@ if (failures.length > 0) {
 }
 
 console.log(`[agent:guard] ok: ${branch}`);
+console.log('[agent:guard] reminder: validate completed scoped work, then merge and push it immediately');
