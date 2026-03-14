@@ -21,6 +21,9 @@
 
   let visible = false;
 
+  // ── Mobile tab switching ──
+  let mobileTab: 'operations' | 'analytics' | 'events' = 'operations';
+
   // ── Wallet (from shared store) ──
   $: walletConnected = $wallet.connected;
   $: walletAddress = $wallet.address;
@@ -183,40 +186,67 @@
     </div>
   </div>
 
-  <!-- 2. MAIN DASHBOARD GRID -->
+  <!-- 2. MOBILE SEGMENT CONTROL -->
+  <div class="mobile-tabs">
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'operations'} on:click={() => mobileTab = 'operations'}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Operations
+    </button>
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'analytics'} on:click={() => mobileTab = 'analytics'}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M23 6l-9.5 9.5-5-5L1 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Analytics
+    </button>
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'events'} on:click={() => mobileTab = 'events'}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Events
+    </button>
+  </div>
+
+  <!-- 3. MAIN DASHBOARD GRID -->
   <div class="dash-content">
     <div class="dash-grid">
 
-      <!-- LEFT COLUMN -->
-      <div class="left-col">
+      <!-- LEFT COLUMN: Operations -->
+      <div class="left-col" class:mtab-hidden={mobileTab !== 'operations'}>
+        <div class="section-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          On-chain Operations
+        </div>
         <BondPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
         <BurnPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
         <JobCreatorPanel on:openModal={e => openContractModal(e.detail)} />
       </div>
 
-      <!-- RIGHT COLUMN -->
+      <!-- RIGHT COLUMN: Analytics + Events -->
       <div class="right-col">
-        <TokenFlowPanel />
-
-        <!-- Panel E: Recent Protocol Events (kept inline — small) -->
-        <div class="panel feed-panel" style="--panel-delay: 1">
-          <div class="panel-header">
-            <h2>Protocol Events</h2>
-            <span class="live-dot-wrapper"><span class="live-dot"></span> Live</span>
+        <div class:mtab-hidden={mobileTab !== 'analytics'} class="mobile-group">
+          <div class="section-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 6l-9.5 9.5-5-5L1 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Analytics & Flow
           </div>
-          <div class="feed-list">
-            {#each eventFeed as evt, i}
-              <button class="feed-item" style="--feed-delay: {i}" on:click={() => openEventModal(evt)}>
-                <span class="feed-dot" style="background: {evt.color}"></span>
-                <span class="feed-text">{evt.text}</span>
-                <span class="feed-time">{evt.time}</span>
-              </button>
-            {/each}
-          </div>
+          <TokenFlowPanel />
+          <PPAPPipeline />
+          <TrustGaugePanel {trustScore} {mau} {mauTarget} />
         </div>
 
-        <PPAPPipeline />
-        <TrustGaugePanel {trustScore} {mau} {mauTarget} />
+        <div class:mtab-hidden={mobileTab !== 'events'} class="mobile-group">
+          <!-- Panel E: Recent Protocol Events -->
+          <div class="panel feed-panel" style="--panel-delay: 1">
+            <div class="panel-header">
+              <h2>Protocol Events</h2>
+              <span class="live-dot-wrapper"><span class="live-dot"></span> Live</span>
+            </div>
+            <div class="feed-list">
+              {#each eventFeed as evt, i}
+                <button class="feed-item" style="--feed-delay: {i}" on:click={() => openEventModal(evt)}>
+                  <span class="feed-dot" style="background: {evt.color}"></span>
+                  <span class="feed-text">{evt.text}</span>
+                  <span class="feed-time">{evt.time}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -260,7 +290,7 @@
 
   /* ====== PAGE HEADER ====== */
   .page-header {
-    padding: 32px 24px 20px;
+    padding: 36px 24px 24px;
     border-bottom: 1px solid var(--border-subtle, #EDEAE5);
   }
 
@@ -320,10 +350,11 @@
     position: sticky;
     top: var(--header-height, 52px);
     z-index: 20;
-    background: var(--glass-bg, rgba(255,255,255,0.72));
-    backdrop-filter: blur(var(--glass-blur, 24px));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
-    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: var(--group-radius, 16px);
+    box-shadow: var(--shadow-sm, 0 1px 4px rgba(0,0,0,0.04));
+    margin: 0 24px;
     padding: 0 24px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -404,14 +435,14 @@
   .dash-grid {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
-    gap: 24px;
+    gap: 28px;
     align-items: start;
   }
 
   .left-col, .right-col {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
   }
 
   /* ====== EVENT FEED (kept inline) ====== */
@@ -505,6 +536,57 @@
     animation: breathe 2s infinite;
   }
 
+  /* ====== SECTION LABELS ====== */
+  .section-label {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #9a9590);
+    padding: 0 4px;
+  }
+
+  /* ====== MOBILE TABS ====== */
+  .mobile-tabs {
+    display: none;
+  }
+
+  .mtab-btn {
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 7px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted, #9a9590);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 150ms ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .mtab-btn:hover {
+    color: var(--text-secondary, #6b6560);
+  }
+
+  .mtab-active {
+    color: var(--text-primary, #2D2D2D);
+    background: var(--surface, #fff);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .mobile-group {
+    display: contents;
+  }
+
   /* ====== RESPONSIVE ====== */
   @media (max-width: 860px) {
     .dash-grid { grid-template-columns: 1fr; }
@@ -514,14 +596,61 @@
   }
 
   @media (max-width: 600px) {
-    .dash-content { padding: 12px; }
-    .panel { padding: 16px; }
-    h2 { font-size: 1.1rem; }
+    .dash-content { padding: 8px; }
+    .dash-grid { gap: 12px; }
+    .left-col, .right-col { gap: 12px; }
+    .panel { padding: 16px; border-radius: var(--radius-md, 10px); }
+    h2 { font-size: 1.05rem; }
     .metric-item { padding: 0 10px; }
-    .metric-value { font-size: 1rem; }
-    .page-header { padding: 20px 12px 16px; }
-    .page-title { font-size: 1.4rem; }
-    .page-title .title-icon { width: 22px; height: 22px; }
+    .metric-value { font-size: 0.95rem; }
+    .metrics-strip {
+      margin: 0 8px;
+      border-radius: var(--radius-md, 10px);
+      padding: 0 8px;
+    }
+    .page-header { padding: 16px 12px 12px; }
+    .page-title { font-size: 1.3rem; }
+    .page-title .title-icon { width: 20px; height: 20px; }
+    .page-subtitle { font-size: 0.78rem; }
     .page-header-meta { flex-wrap: wrap; }
+
+    /* Mobile tabs visible */
+    .mobile-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      margin: 8px 8px 0;
+      background: var(--border-subtle, #EDEAE5);
+      border-radius: 10px;
+      position: sticky;
+      top: calc(var(--header-height, 52px) + 0px);
+      z-index: 19;
+    }
+
+    /* Section labels visible */
+    .section-label { display: flex; }
+
+    /* Mobile group becomes flex column */
+    .mobile-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Hide inactive tab content */
+    .mtab-hidden { display: none !important; }
+
+    /* Feed improvements */
+    .feed-list { max-height: 60vh; }
+    .feed-item { padding: 10px 8px; }
+    .feed-text { font-size: 0.7rem; }
+  }
+
+  @media (max-width: 380px) {
+    .mtab-btn { padding: 6px 8px; font-size: 0.68rem; }
+    .mtab-btn svg { display: none; }
+    .metric-label { font-size: 0.58rem; }
+    .metric-value { font-size: 0.85rem; }
+    .metric-divider { height: 24px; }
   }
 </style>

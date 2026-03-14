@@ -1,59 +1,127 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { router } from '../stores/router.ts';
-  import { jobStore, keepCount, statusMessage } from '../stores/jobStore.ts';
-  import ModelSummaryCard from '../components/ModelSummaryCard.svelte';
-  import IdleEditor from '../components/IdleEditor.svelte';
-  import SetupTerminal from '../components/SetupTerminal.svelte';
-  import RunningDashboard from '../components/RunningDashboard.svelte';
+  import {
+    jobStore, keepCount, crashCount, completedCount, activeNodeCount,
+    metricHistory, experimentTree,
+    branchSummary, improvementDelta, bestBranch, isPaused,
+    type BranchInfo,
+  } from '../stores/jobStore.ts';
+  import { selectedExperimentId } from '../stores/selectionStore.ts';
+  import { CATEGORY_COLORS } from '../data/modifications.ts';
+  import { readRuntimeConfig } from '../api/client.ts';
 
+  // Components
+  import PromptBar from '../components/PromptBar.svelte';
+  import ConvergenceChart from '../components/ConvergenceChart.svelte';
+  import ActivityStream from '../components/ActivityStream.svelte';
+  import ResearchStats from '../components/ResearchStats.svelte';
+  import ContextPanel from '../components/ContextPanel.svelte';
+
+  import ExperimentTreemap from '../components/ExperimentTreemap.svelte';
+  import ExperimentTree from '../components/ExperimentTree.svelte';
+  import DistributedView from '../components/DistributedView.svelte';
+  import PixelOwl from '../components/PixelOwl.svelte';
+
+  // Reactive state
   $: job = $jobStore;
   $: phase = job.phase;
-  $: status = $statusMessage;
+  $: branches = $branchSummary;
+  $: delta = $improvementDelta;
+  $: bestBr = $bestBranch;
+  $: paused = $isPaused;
+  $: runtimeReadonly = job.sourceMode === 'runtime' && !job.controlsAvailable;
 
-  // Owl mood — reacts to research phase
-  let owlMood: 'idle' | 'research' | 'build' | 'celebrate' | 'sleep' = 'sleep';
-  let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
-  let prevKeepCount = 0;
+  // Mobile tab switching (only applies ≤600px)
+  let mobileTab: 'charts' | 'activity' | 'network' = 'activity';
 
-  $: {
-    if (phase === 'idle') owlMood = 'sleep';
-    else if (phase === 'setup') owlMood = 'research';
-    else if (phase === 'running') {
-      if ($keepCount > prevKeepCount && prevKeepCount > 0) {
-        owlMood = 'celebrate';
-        if (celebrateTimer) clearTimeout(celebrateTimer);
-        celebrateTimer = setTimeout(() => { owlMood = 'research'; }, 3000);
-      } else if (owlMood !== 'celebrate') {
-        owlMood = 'research';
-      }
-      prevKeepCount = $keepCount;
+  // Owl mood for hero
+  $: heroOwlMood = (() => {
+    if (phase === 'running') return 'research' as const;
+    if (phase === 'setup') return 'build' as const;
+    if (phase === 'complete') return 'celebrate' as const;
+    return 'idle' as const;
+  })();
+
+  // Progress + ETA
+  $: totalExp = job.totalExperiments || 60;
+  $: completed = $completedCount;
+  $: progress = totalExp > 0 ? Math.round((completed / totalExp) * 100) : 0;
+  $: eta = (() => {
+    if (completed === 0 || job.elapsedSeconds === 0) return '—';
+    const rate = completed / job.elapsedSeconds;
+    const remaining = Math.max(0, totalExp - completed);
+    const secs = Math.round(remaining / rate);
+    if (secs >= 3600) return `${Math.floor(secs / 3600)}h${Math.floor((secs % 3600) / 60)}m`;
+    if (secs >= 60) return `${Math.floor(secs / 60)}m`;
+    return `${secs}s`;
+  })();
+
+  // Footer: distributed processing stats
+  $: avgDuration = (() => {
+    const durations = job.experiments.filter(e => e.status !== 'training' && e.duration > 0).map(e => e.duration);
+    if (durations.length === 0) return 0;
+    return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+  })();
+
+  $: totalGpuTime = (() => {
+    const secs = job.experiments.reduce((sum, e) => sum + (e.duration * e.tier), 0);
+    if (secs >= 3600) return `${(secs / 3600).toFixed(1)}h`;
+    if (secs >= 60) return `${Math.round(secs / 60)}m`;
+    return `${secs}s`;
+  })();
+
+  // Best-so-far frontier for sparkline
+  $: bestFrontier = (() => {
+    const exps = [...job.experiments].filter(e => e.status === 'keep').reverse();
+    const frontier: number[] = [];
+    let best = Infinity;
+    for (const e of exps) {
+      if (e.metric < best) { best = e.metric; frontier.push(best); }
     }
-    else if (phase === 'complete') owlMood = 'celebrate';
-  }
+    return frontier;
+  })();
 
+  $: sparkPoints = (() => {
+    if (bestFrontier.length < 2) return '';
+    const min = Math.min(...bestFrontier);
+    const max = Math.max(...bestFrontier);
+    const range = max - min || 0.001;
+    return bestFrontier.map((v, i) => {
+      const x = (i / (bestFrontier.length - 1)) * 120;
+      const y = 18 - ((v - min) / range) * 16;
+      return `${x},${y}`;
+    }).join(' ');
+  })();
+
+  // Handlers
   function handleLaunch(e: CustomEvent<string>) {
-    const runtimeConfig = readRuntimeConfig();
-    if (runtimeConfig.runtimeRoot || runtimeConfig.apiBase) {
-      void jobStore.connectRuntime(runtimeConfig);
+    const rc = readRuntimeConfig();
+    if (rc.runtimeRoot || rc.apiBase) {
+      void jobStore.connectRuntime(rc);
       return;
     }
     jobStore.startJob(e.detail);
   }
-
-  function handleStop() {
-    jobStore.stopJob();
+  function handleStop() { jobStore.stopJob(); }
+  function handleNewResearch() { jobStore.reset(); }
+  function handlePause() { jobStore.togglePause(); }
+  function handleDeploy(e: CustomEvent<{ target: string }>) {
+    console.log('Deploy requested:', e.detail.target);
+    alert(`Deploy to ${e.detail.target} — coming soon!`);
   }
-
-  function handleNewResearch() {
+  function handleRetrain(e: CustomEvent<{ code: string; parentId: number | null }>) {
+    console.log('Retrain requested with edited code:', e.detail);
     jobStore.reset();
+    jobStore.startJob(job.topic || 'Custom retrain');
   }
 
+  // Auto-connect on mount
   onMount(() => {
-    const runtimeConfig = readRuntimeConfig();
+    const rc = readRuntimeConfig();
     void (async () => {
-      const connected = await jobStore.connectRuntime(runtimeConfig);
+      const connected = await jobStore.connectRuntime(rc);
       if (!connected) {
         const params = getCurrentRouteParams();
         if (params.topic && get(jobStore).phase === 'idle') {
@@ -64,69 +132,540 @@
 
     const unsub = router.params.subscribe(p => {
       const current = get(jobStore);
-      if (current.sourceMode === 'runtime') {
-        return;
-      }
+      if (current.sourceMode === 'runtime') return;
       if (p.topic && current.phase === 'idle') {
         jobStore.startJob(p.topic);
       }
     });
-    return () => {
-      if (celebrateTimer) clearTimeout(celebrateTimer);
-      unsub();
-    };
+    return () => { unsub(); };
   });
-
-  function readRuntimeConfig(): { runtimeRoot?: string | null; apiBase?: string | null } {
-    if (typeof window === 'undefined') {
-      return {};
-    }
-
-    const fromSearch = new URLSearchParams(window.location.search);
-    const hash = window.location.hash.slice(1) || '/';
-    const hashQueryIndex = hash.indexOf('?');
-    const fromHash = new URLSearchParams(hashQueryIndex >= 0 ? hash.slice(hashQueryIndex + 1) : '');
-
-    const runtimeRoot = fromHash.get('runtimeRoot') || fromSearch.get('runtimeRoot');
-    const apiBase = fromHash.get('runtimeApi') || fromSearch.get('runtimeApi');
-
-    return {
-      runtimeRoot: runtimeRoot?.trim() || null,
-      apiBase: apiBase?.trim() || null,
-    };
-  }
 
   function getCurrentRouteParams() {
     const hash = window.location.hash.slice(1) || '/';
     const queryIndex = hash.indexOf('?');
     const query = new URLSearchParams(queryIndex >= 0 ? hash.slice(queryIndex + 1) : '');
-    return {
-      topic: query.get('topic') || undefined,
-    };
+    return { topic: query.get('topic') || undefined };
   }
 </script>
 
-<div class="autoresearch">
-  {#if phase === 'idle'}
-    <IdleEditor on:launch={handleLaunch} />
-  {:else if phase === 'setup'}
-    <SetupTerminal topic={job.topic} statusMessage={status} />
-  {:else if phase === 'running'}
-    <RunningDashboard {owlMood} on:stop={handleStop} />
-  {:else if phase === 'complete'}
-    <ModelSummaryCard
-      onViewDetails={() => router.navigate('model-detail', { modelId: 'model-um69vho1' })}
-      onNewResearch={handleNewResearch}
+<div class="research-page" class:idle={phase === 'idle'} class:running={phase === 'running' || phase === 'setup'}>
+
+  <!-- ═══ PROMPT BAR ═══ -->
+  <div class="tile prompt-tile" style="grid-area: prompt">
+    <PromptBar
+      {phase}
+      topic={job.topic}
+      {progress} {eta} {paused}
+      setupMessage={job.setupMessage}
+      {runtimeReadonly}
+      on:stop={handleStop}
+      on:pause={handlePause}
+      on:newresearch={handleNewResearch}
     />
-  {/if}
+  </div>
+
+  <!-- ═══ HERO BAND ═══ -->
+  <div class="tile hero-tile" style="grid-area: hero">
+    <div class="hero-owl">
+      <PixelOwl size={0.35} mood={heroOwlMood} />
+    </div>
+    <div class="hero-data">
+      {#if job.bestMetric < Infinity}
+        <div class="hero-top">
+          <div class="hero-metric">{job.bestMetric.toFixed(2)}</div>
+          <div class="hero-sublabel">val_bpb</div>
+        </div>
+        <div class="hero-compare">
+          {#if delta}
+            <div class="hero-delta">▼ {delta.percent}%</div>
+          {/if}
+          {#if job.baselineMetric < Infinity}
+            <div class="hero-from">from {job.baselineMetric.toFixed(2)}</div>
+          {/if}
+        </div>
+        {#if bestBr}
+          <div class="hero-branch" style="color: {bestBr.color}">{bestBr.label}</div>
+        {/if}
+        {#if bestFrontier.length > 1}
+          <svg class="hero-spark" viewBox="0 0 120 20" preserveAspectRatio="none">
+            <polyline points={sparkPoints} fill="none" stroke="#D97757" stroke-width="1.5" stroke-linejoin="round" />
+          </svg>
+        {/if}
+      {:else}
+        <div class="hero-metric dim">—</div>
+        <div class="hero-sublabel">val_bpb</div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- ═══ CONVERGENCE CHART ═══ -->
+  <div class="tile titled-tile" style="grid-area: converge">
+    <div class="tile-header">
+      <span class="tile-title">Convergence</span>
+      <span class="tile-hint">val_bpb over experiments</span>
+    </div>
+    {#if job.experiments.length > 0}
+      <ConvergenceChart experiments={job.experiments} bestMetric={job.bestMetric} baselineMetric={job.baselineMetric} width={500} height={72} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="tile" style="grid-area: stats">
+    <ResearchStats
+      nodes={$activeNodeCount}
+      keeps={$keepCount}
+      crashes={$crashCount}
+      completed={$completedCount}
+      total={totalExp}
+      hitRate={completed > 0 ? Math.round(($keepCount / completed) * 100) : 0}
+    />
+  </div>
+
+  <!-- ═══ MOBILE TAB CONTROL ═══ -->
+  <div class="mobile-tabs">
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'activity'} on:click={() => mobileTab = 'activity'}>Activity</button>
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'charts'} on:click={() => mobileTab = 'charts'}>Charts</button>
+    <button class="mtab-btn" class:mtab-active={mobileTab === 'network'} on:click={() => mobileTab = 'network'}>Network</button>
+  </div>
+
+  <!-- ═══ BRANCHES ═══ -->
+  <div class="tile branches-tile mtab-activity" class:mtab-hidden={mobileTab !== 'activity'} style="grid-area: branches">
+    <div class="section-head">Branches</div>
+    {#if branches.length > 0}
+      <div class="branch-list">
+        {#each branches as branch, i}
+          <div
+            class="branch-row"
+            class:active-training={branch.active}
+            class:boosted={branch.boosted}
+            role="button"
+            tabindex="0"
+            on:click={() => {
+              const bestExp = job.experiments.find(e => e.status === 'keep' && e.metric === branch.bestMetric);
+              if (bestExp) selectedExperimentId.set(bestExp.id);
+            }}
+            on:keydown={(ev) => {
+              if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault();
+                const bestExp = job.experiments.find(e => e.status === 'keep' && e.metric === branch.bestMetric);
+                if (bestExp) selectedExperimentId.set(bestExp.id);
+              }
+            }}
+          >
+            <span class="br-rank" style="background: {CATEGORY_COLORS[branch.category]}15; color: {CATEGORY_COLORS[branch.category]}">{i + 1}</span>
+            <div class="br-info">
+              <span class="br-name">{branch.label}</span>
+              {#if branch.active}<span class="br-live">⚡</span>{/if}
+              <span class="br-metric">{branch.bestMetric < Infinity ? branch.bestMetric.toFixed(3) : '—'}</span>
+            </div>
+            <span class="br-hit">{branch.hitRate}%</span>
+            <div class="br-actions">
+              <button
+                type="button"
+                class="br-btn"
+                class:br-btn-active={branch.boosted}
+                disabled={runtimeReadonly}
+                aria-label={`Boost ${branch.label}`}
+                title="Boost"
+                on:click|stopPropagation={() => jobStore.toggleCategoryBoost(branch.category)}
+              >★</button>
+              <button
+                type="button"
+                class="br-btn"
+                class:br-btn-paused={branch.paused}
+                disabled={runtimeReadonly}
+                aria-label={branch.paused ? `Resume ${branch.label}` : `Pause ${branch.label}`}
+                title={branch.paused ? 'Resume' : 'Pause'}
+                on:click|stopPropagation={() => jobStore.toggleCategoryPause(branch.category)}
+              >{branch.paused ? '▶' : '⏸'}</button>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="empty-tile"><span class="empty-hint">No branches yet</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ ACTIVITY STREAM ═══ -->
+  <div class="tile mtab-activity" class:mtab-hidden={mobileTab !== 'activity'} style="grid-area: stream">
+    <ActivityStream experiments={job.experiments} bestMetric={job.bestMetric} />
+  </div>
+
+  <!-- ═══ TREEMAP (drill-down experiment explorer) ═══ -->
+  <div class="tile titled-tile mtab-charts" class:mtab-hidden={mobileTab !== 'charts'} style="grid-area: treemap">
+    <div class="tile-header">
+      <span class="tile-title">Experiment Map</span>
+      <span class="tile-hint">drill down by category</span>
+    </div>
+    {#if job.experiments.length > 0}
+      <ExperimentTreemap experiments={job.experiments} bestMetric={job.bestMetric} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ CONTEXT PANEL (terminal) ═══ -->
+  <div class="tile context-tile mtab-network" class:mtab-hidden={mobileTab !== 'network'} style="grid-area: context">
+    <ContextPanel
+      bestMetric={job.bestMetric}
+      {phase}
+      topic={job.topic}
+      {progress}
+      sessionId={job.experiments.length > 0 ? job.experiments[0].nodeId.slice(-6) : ''}
+      {branches}
+      experiments={job.experiments}
+      totalExperiments={totalExp}
+      on:launch={handleLaunch}
+      on:newresearch={handleNewResearch}
+      on:deploy={handleDeploy}
+      on:retrain={handleRetrain}
+    />
+  </div>
+
+  <!-- ═══ LINEAGE TREE ═══ -->
+  <div class="tile titled-tile mtab-charts" class:mtab-hidden={mobileTab !== 'charts'} style="grid-area: lineage">
+    <div class="tile-header">
+      <span class="tile-title">Lineage</span>
+      <span class="tile-hint">experiment tree &amp; ancestry</span>
+    </div>
+    {#if $experimentTree.length > 0}
+      <ExperimentTree data={$experimentTree} bestMetric={job.bestMetric} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ MESH VIEW ═══ -->
+  <div class="tile titled-tile mtab-network" class:mtab-hidden={mobileTab !== 'network'} style="grid-area: mesh">
+    <div class="tile-header">
+      <span class="tile-title">Mesh Network</span>
+      <span class="tile-hint">distributed GPU nodes</span>
+    </div>
+    {#if job.experiments.length > 0}
+      <DistributedView experiments={job.experiments} bestMetric={job.bestMetric} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ FOOTER: DISTRIBUTED STATUS ═══ -->
+  <div class="tile footer-tile" style="grid-area: footer">
+    <div class="footer-dist">
+      <div class="fd-item">
+        <span class="fd-val">{$activeNodeCount}</span>
+        <span class="fd-lbl">Active Nodes</span>
+      </div>
+      <div class="fd-sep"></div>
+      <div class="fd-item">
+        <span class="fd-val">{$completedCount}<span class="fd-dim">/{totalExp}</span></span>
+        <span class="fd-lbl">Experiments</span>
+      </div>
+      <div class="fd-sep"></div>
+      <div class="fd-item">
+        <span class="fd-val">{avgDuration}s</span>
+        <span class="fd-lbl">Avg Duration</span>
+      </div>
+      <div class="fd-sep"></div>
+      <div class="fd-item">
+        <span class="fd-val">{totalGpuTime}</span>
+        <span class="fd-lbl">GPU Time</span>
+      </div>
+    </div>
+    <div class="fd-progress">
+      <div class="fd-bar" style="width: {progress}%"></div>
+    </div>
+  </div>
 </div>
 
 <style>
-  .autoresearch {
-    max-width: 100%;
-    margin: 0;
+  /* ═══ GRID LAYOUT ═══ */
+  .research-page {
+    height: calc(100vh - 48px);
+    display: grid;
+    grid-template-columns: 150px minmax(120px, 1fr) 1fr 260px;
+    grid-template-rows: auto 68px minmax(120px, 1fr) 1fr 64px;
+    grid-template-areas:
+      "prompt    prompt    prompt    prompt"
+      "hero      converge  converge  stats"
+      "branches  stream    treemap   context"
+      "branches  lineage   mesh      context"
+      "footer    footer    footer    footer";
+    gap: 4px;
+    overflow: hidden;
+    background: var(--page-bg, #FAF9F7);
+  }
+
+  .tile {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm, 0 1px 4px rgba(0,0,0,0.04));
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .prompt-tile {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    box-shadow: none;
+  }
+  .context-tile {
+    background: var(--surface, #fff);
     padding: 0;
-    min-height: calc(100vh - 52px);
-    overflow-x: hidden;
+  }
+
+  /* ═══ HERO ═══ */
+  .hero-tile {
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center;
+    padding: 8px 12px; gap: 8px;
+  }
+  .hero-owl {
+    flex-shrink: 0;
+    display: flex; align-items: center;
+  }
+  .hero-data {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+  }
+  .hero-top {
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .hero-metric {
+    font: 900 2rem/1 'Inter', -apple-system, sans-serif;
+    color: #1a1a1a;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-metric.dim { color: #ddd; font-size: 2rem; }
+  .hero-compare {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .hero-delta {
+    font: 700 10px/1 'Inter', -apple-system, sans-serif;
+    color: #27864a;
+    background: rgba(39, 134, 74, 0.06);
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .hero-from {
+    font: 400 9px/1 'Inter', -apple-system, sans-serif;
+    color: #bbb;
+  }
+  .hero-branch {
+    font: 600 8px/1 'Inter', -apple-system, sans-serif;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .hero-sublabel {
+    font: 500 8px/1 'Inter', -apple-system, sans-serif;
+    color: #ccc; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .hero-spark {
+    width: 80px; height: 16px; margin-top: 2px;
+  }
+
+  /* ═══ BRANCHES ═══ */
+  .branches-tile {
+    display: flex; flex-direction: column;
+    padding: 8px 0;
+  }
+  .section-head {
+    font: 600 10px/1 'Inter', -apple-system, sans-serif;
+    letter-spacing: 0.06em; color: #bbb;
+    text-transform: uppercase;
+    padding: 4px 12px 8px; flex-shrink: 0;
+  }
+  .branch-list {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 0 4px;
+  }
+  .branch-list::-webkit-scrollbar { width: 3px; }
+  .branch-list::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 2px; }
+
+  .branch-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; cursor: pointer;
+    border-radius: 10px;
+    transition: background 150ms;
+  }
+  .branch-row:hover { background: rgba(0,0,0,0.02); }
+  .branch-row.active-training { animation: branchPulse 2s ease-in-out infinite; }
+  @keyframes branchPulse {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(217, 119, 87, 0.03); }
+  }
+  .branch-row.boosted { box-shadow: inset 2px 0 0 #d4a017; }
+
+  .br-rank {
+    font: 700 9px/1 'Inter', -apple-system, sans-serif;
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px; flex-shrink: 0;
+  }
+  .br-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
+  .br-name {
+    font: 600 11px/1 'Inter', -apple-system, sans-serif;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #444;
+  }
+  .br-live { font-size: 10px; }
+  .br-metric {
+    font: 700 11px/1 'Inter', -apple-system, sans-serif;
+    color: #999;
+    margin-left: auto; flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .br-hit {
+    font: 500 10px/1 'Inter', -apple-system, sans-serif;
+    color: #ccc;
+    flex-shrink: 0; width: 24px; text-align: right;
+  }
+  .br-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .br-btn {
+    width: 20px; height: 20px; border: none; border-radius: 5px;
+    background: transparent; color: #ccc;
+    font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 150ms;
+  }
+  .br-btn:hover:not(:disabled) { background: #f5f5f5; color: #666; }
+  .br-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .br-btn-active { color: #d4a017; }
+  .br-btn-paused { color: #D97757; }
+
+  /* ═══ TILE HEADERS ═══ */
+  .titled-tile {
+    display: flex; flex-direction: column;
+  }
+  .tile-header {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 8px 12px 4px; flex-shrink: 0;
+  }
+  .tile-title {
+    font: 600 9px/1 'Inter', -apple-system, sans-serif;
+    letter-spacing: 0.06em; color: #999;
+    text-transform: uppercase;
+  }
+  .tile-hint {
+    font: 400 8px/1 'Inter', -apple-system, sans-serif;
+    color: #ccc;
+  }
+
+  /* ═══ EMPTY TILES ═══ */
+  .empty-tile {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; padding: 16px;
+  }
+  .empty-inner {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .empty-hint {
+    font: 400 10px/1 'Inter', -apple-system, sans-serif;
+    color: #ddd;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer-tile {
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 8px 16px; gap: 6px;
+  }
+  .footer-dist {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .fd-item {
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .fd-val {
+    font: 700 12px/1 'Inter', -apple-system, sans-serif;
+    color: #444;
+    font-variant-numeric: tabular-nums;
+  }
+  .fd-dim { color: #bbb; font-weight: 400; }
+  .fd-lbl {
+    font: 400 8px/1 'Inter', -apple-system, sans-serif;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .fd-sep {
+    width: 1px; height: 14px; background: #eee;
+  }
+  .fd-progress {
+    width: 100%; height: 3px;
+    background: #f0f0f0; border-radius: 2px;
+    overflow: hidden;
+  }
+  .fd-bar {
+    height: 100%; background: #D97757;
+    border-radius: 2px;
+    transition: width 300ms ease;
+  }
+
+  /* ═══ MOBILE TABS ═══ */
+  .mobile-tabs {
+    display: none;
+    grid-area: mtabs;
+  }
+  .mtab-btn {
+    font: 500 10px/1 'Inter', -apple-system, sans-serif;
+    padding: 6px 12px;
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 8px;
+    background: var(--surface, #fff);
+    color: #999;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .mtab-btn.mtab-active {
+    background: #D97757;
+    color: #fff;
+    border-color: #D97757;
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 1024px) {
+    .research-page {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto auto auto auto auto;
+      grid-template-areas:
+        "prompt    prompt"
+        "hero      stats"
+        "converge  converge"
+        "branches  stream"
+        "treemap   lineage"
+        "mesh      context"
+        "footer    footer";
+      height: auto; overflow-y: auto;
+      gap: 6px;
+      padding: 0 4px 4px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .research-page {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto auto auto auto auto auto auto auto auto;
+      grid-template-areas:
+        "prompt" "hero" "stats" "mtabs" "converge"
+        "branches" "stream"
+        "treemap" "lineage" "mesh"
+        "context" "footer";
+      gap: 8px;
+      padding: 0 6px 6px;
+    }
+    .mobile-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 4px;
+      justify-content: center;
+    }
+    .mtab-hidden { display: none !important; }
   }
 </style>

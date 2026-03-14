@@ -19,7 +19,13 @@
   $: currentView = $router;
   $: visibleNavItems = navItems.filter(item => $unlockedPages.includes(item.view));
   $: isAIActive = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
-  $: owlMood = $jobStore.phase === 'running' ? 'research' : $jobStore.phase === 'setup' ? 'research' : 'idle';
+  $: owlMood = (() => {
+    const p = $jobStore.phase;
+    if (p === 'running') return 'research';
+    if (p === 'setup') return 'build';
+    if (p === 'complete') return 'celebrate';
+    return 'idle';
+  })();
   $: researchProgress = $jobStore.totalExperiments > 0
     ? Math.round(($completedCount / $jobStore.totalExperiments) * 100)
     : 0;
@@ -57,7 +63,7 @@
   <div class="navbar-inner">
     <button class="logo" on:click={() => navTo('dashboard')}>
       <span class="logo-icon" class:ai-active={isAIActive}>
-        <PixelOwl size={0.35} mood={owlMood} />
+        <PixelOwl size={0.28} mood={owlMood} />
         {#if isAIActive}
           <span class="ai-pulse-ring"></span>
           <span class="ai-pulse-ring r2"></span>
@@ -216,11 +222,11 @@
   .navbar-inner {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 var(--space-6, 24px);
-    height: 52px;
+    padding: 0 var(--space-4, 16px);
+    height: 44px;
     display: flex;
     align-items: center;
-    gap: var(--space-8, 32px);
+    gap: var(--space-6, 24px);
   }
 
   .logo {
@@ -237,14 +243,18 @@
 
   .logo-icon {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
     overflow: hidden;
-    border-radius: 4px;
+    border-radius: 6px;
     animation: magnet-pulse 3s ease-in-out infinite;
+  }
+  .logo-icon :global(.pixel-owl) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .logo-icon :global(.magnet-icon) { overflow: visible; }
@@ -338,7 +348,7 @@
   .logo-text {
     font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-weight: 700;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--text-primary, #2D2D2D);
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -360,7 +370,7 @@
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-pill, 100px);
     position: relative;
     transition: all var(--dur-fast, 150ms) var(--ease-smooth);
   }
@@ -372,30 +382,15 @@
     transition: color var(--dur-fast, 150ms) var(--ease-smooth);
   }
   .nav-item .nav-label {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--text-secondary, #6b6560);
     transition: color var(--dur-fast, 150ms) var(--ease-smooth);
   }
   .nav-item:hover .nav-label { color: var(--text-primary, #2D2D2D); }
   .nav-item:hover .nav-icon { color: var(--text-secondary, #6b6560); }
-  .nav-item.active { background: rgba(217, 119, 87, 0.06); }
-  .nav-item.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 14px;
-    right: 14px;
-    height: 2px;
-    background: var(--accent, #D97757);
-    border-radius: 2px 2px 0 0;
-    box-shadow: var(--glow-accent-sm, 0 0 6px rgba(217, 119, 87, 0.25));
-    animation: slideIndicator var(--dur-normal, 300ms) var(--ease-out-expo);
-  }
-  @keyframes slideIndicator {
-    from { opacity: 0; transform: scaleX(0); }
-    to { opacity: 1; transform: scaleX(1); }
-  }
+  .nav-item:hover { background: rgba(0, 0, 0, 0.03); }
+  .nav-item.active { background: rgba(217, 119, 87, 0.10); }
   .nav-item.active .nav-label { color: var(--text-primary, #2D2D2D); font-weight: 600; }
   .nav-item.active .nav-icon { color: var(--accent, #D97757); }
 
@@ -413,6 +408,7 @@
     letter-spacing: 0.04em;
   }
   .powered strong { color: var(--text-secondary, #6b6560); font-weight: 600; }
+  @media (max-width: 1100px) { .powered { display: none; } }
 
   /* ── Wallet Connect ── */
   .wallet-wrap {
@@ -428,7 +424,7 @@
     font-size: 0.72rem;
     font-weight: 600;
     padding: 5px 14px;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-pill, 100px);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -796,23 +792,22 @@
     .powered { display: none; }
     .hamburger { display: flex; }
     .mobile-overlay { display: block; }
-    .mobile-menu { display: flex; }
+    .mobile-menu { display: flex; width: 100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-left: none; }
     .navbar-right {
       margin-left: auto;
       gap: var(--space-2, 8px);
     }
     .wallet-btn {
-      padding: 4px 10px;
-      font-size: 0.66rem;
+      padding: 5px 12px;
+      font-size: 0.68rem;
     }
   }
 
   @media (max-width: 600px) {
-    .navbar-inner { padding: 0 var(--space-3, 12px); height: 48px; }
+    .navbar-inner { padding: 0 var(--space-3, 12px); height: 44px; }
     .wallet-btn {
-      padding: 4px 8px;
-      font-size: 0.62rem;
-      border-radius: var(--radius-pill, 100px);
+      padding: 4px 10px;
+      font-size: 0.64rem;
     }
     .wallet-dropdown {
       width: 180px;
@@ -825,6 +820,6 @@
     }
     .hline { height: 1.5px; }
     .navbar-right { gap: 6px; }
-    .mobile-menu { width: 100%; border-radius: 0; border-left: none; }
+    .mobile-menu { border-radius: 0; }
   }
 </style>

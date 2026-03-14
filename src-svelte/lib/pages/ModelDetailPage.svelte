@@ -196,7 +196,7 @@
   }
   .header-icon {
     width: 44px; height: 44px;
-    border-radius: var(--radius-md, 10px);
+    border-radius: var(--radius-lg, 16px);
     background: rgba(217, 119, 87, 0.08);
     color: var(--accent, #D97757);
     display: flex; align-items: center; justify-content: center;
@@ -275,31 +275,30 @@
 
   /* Tabs */
   .tabs {
-    display: flex; gap: 2px;
-    border-bottom: 1px solid var(--border, #E5E0DA);
+    display: flex; gap: 4px;
     margin-bottom: var(--space-5, 20px);
     overflow-x: auto;
+    padding: 4px;
+    background: var(--border-subtle, #EDEAE5);
+    border-radius: var(--radius-md, 10px);
   }
   .tab {
     appearance: none; border: none; background: none;
-    padding: 10px 16px;
+    padding: 8px 16px;
     font-size: 0.8rem; font-weight: 500;
     color: var(--text-secondary, #6b6560);
     cursor: pointer;
     display: flex; align-items: center; gap: 6px;
     position: relative;
-    transition: color 150ms;
+    transition: all 150ms;
     white-space: nowrap;
+    border-radius: 8px;
   }
-  .tab:hover { color: var(--text-primary, #2D2D2D); }
-  .tab.active { color: var(--text-primary, #2D2D2D); font-weight: 600; }
-  .tab.active::after {
-    content: ''; position: absolute;
-    bottom: -1px; left: 16px; right: 16px;
-    height: 2px;
-    background: var(--accent, #D97757);
-    border-radius: 2px 2px 0 0;
-    box-shadow: var(--glow-accent-sm, 0 0 6px rgba(217, 119, 87, 0.25));
+  .tab:hover { color: var(--text-primary, #2D2D2D); background: rgba(255,255,255,0.5); }
+  .tab.active {
+    color: var(--text-primary, #2D2D2D); font-weight: 600;
+    background: var(--surface, #fff);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
   .tab-count {
     font-size: 0.62rem; font-weight: 600;
@@ -313,7 +312,7 @@
   .content-layout {
     display: grid;
     grid-template-columns: 1fr 300px;
-    gap: var(--space-6, 24px);
+    gap: var(--space-8, 32px);
     align-items: start;
     animation: fade-up 500ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
   }

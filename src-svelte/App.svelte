@@ -1,7 +1,7 @@
 <script lang="ts">
   import { router, type AppView } from "./lib/stores/router.ts";
   import { unlockedPages } from "./lib/stores/stageStore.ts";
-  import { fade } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import NavBar from "./lib/layout/NavBar.svelte";
   import DashboardPage from "./lib/pages/DashboardPage.svelte";
   import SiteFooter from "./lib/layout/SiteFooter.svelte";
@@ -47,7 +47,7 @@
   <NavBar />
   <main class="app-main">
     {#key routeKey}
-      <div class="page-transition" in:fade={{ duration: 200, delay: 80 }}>
+      <div class="page-transition" in:fly={{ y: 12, duration: 280, delay: 60 }}>
         {#if isDashboard}
           <DashboardPage />
         {:else if pagePromise}
@@ -60,7 +60,9 @@
       </div>
     {/key}
   </main>
-  <SiteFooter />
+  {#if !isDashboard}
+    <SiteFooter />
+  {/if}
 </div>
 
 <style>

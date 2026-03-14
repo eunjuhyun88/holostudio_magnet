@@ -121,24 +121,24 @@
         <stop offset="100%" stop-color="#27864a" stop-opacity="0.01"/>
       </linearGradient>
 
-      <!-- Drop-shadow glow on line -->
-      <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(217,119,87,0.2)" />
+      <!-- Drop-shadow glow on line — enterprise neon -->
+      <filter id="line-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgba(217,119,87,0.35)" />
       </filter>
 
-      <!-- Frontier line glow -->
-      <filter id="frontier-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(39,134,74,0.35)" />
+      <!-- Frontier line glow — intense green -->
+      <filter id="frontier-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="rgba(39,134,74,0.5)" />
       </filter>
 
-      <!-- Brighter glow for best-point -->
-      <filter id="best-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgba(39,134,74,0.55)" />
+      <!-- Brighter glow for best-point — pulsing neon -->
+      <filter id="best-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(39,134,74,0.65)" />
       </filter>
 
-      <!-- Moving average glow -->
-      <filter id="mavg-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(183,134,14,0.3)" />
+      <!-- Moving average glow — warm gold -->
+      <filter id="mavg-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(183,134,14,0.45)" />
       </filter>
     </defs>
 

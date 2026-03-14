@@ -73,6 +73,15 @@
   --glow-gold: 0 0 8px rgba(183, 134, 14, 0.3);
   --glow-red: 0 0 8px rgba(192, 57, 43, 0.3);
 
+  /* ── Apple-style layout tokens ── */
+  --section-gap: 48px;
+  --section-gap-mobile: 32px;
+  --card-gap: 16px;
+  --card-gap-mobile: 12px;
+  --group-radius: 16px;
+  --page-title-size: 2rem;
+  --page-title-size-mobile: 1.5rem;
+
   /* ── Header ── */
   --header-height: 52px;
 

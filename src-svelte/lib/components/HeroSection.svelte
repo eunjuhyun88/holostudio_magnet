@@ -1,10 +1,21 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
   import PixelOwl from "./PixelOwl.svelte";
 
   export let searchQuery = "";
   export let topicSuggestions: string[] = [];
+  /** Live stats for social proof */
+  export let onlineResearchers = 12;
+  export let modelsTrained = 847;
   const dispatch = createEventDispatcher<{ search: string; topic: string }>();
+
+  let textareaEl: HTMLTextAreaElement;
+  /** Phase: 'typing' → 'holding' → 'clearing' → 'ready' */
+  let phase: 'typing' | 'holding' | 'clearing' | 'ready' = 'typing';
+  let typewriterText = "";
+
+  // Short — just the heading to hint at the format, not a full example
+  const TYPEWRITER_FULL = "# Research Goal\n";
 
   function handleSearch() {
     if (!searchQuery.trim()) return;
@@ -15,13 +26,69 @@
     searchQuery = topic;
     dispatch("topic", topic);
   }
+
+  function handleFocus() {
+    if (phase !== 'ready') {
+      // User clicked during typewriter — adopt text and go ready
+      searchQuery = typewriterText;
+      typewriterText = "";
+      phase = 'ready';
+    }
+  }
+
+  onMount(() => {
+    let charIdx = 0;
+    let destroyed = false;
+
+    // Phase 1: Type out example (45ms per char)
+    const typeInterval = setInterval(() => {
+      if (destroyed || phase !== 'typing') { clearInterval(typeInterval); return; }
+      if (charIdx >= TYPEWRITER_FULL.length) {
+        clearInterval(typeInterval);
+        phase = 'holding';
+        // Phase 2: Hold for 800ms, then fade away
+        setTimeout(() => {
+          if (destroyed || phase !== 'holding') return;
+          phase = 'clearing';
+          // Phase 3: After fade animation (400ms), go ready
+          setTimeout(() => {
+            if (destroyed) return;
+            typewriterText = "";
+            phase = 'ready';
+            // Auto-focus after clearing
+            tick().then(() => {
+              if (textareaEl && !destroyed) textareaEl.focus();
+            });
+          }, 400);
+        }, 800);
+        return;
+      }
+      typewriterText = TYPEWRITER_FULL.slice(0, charIdx + 1);
+      charIdx++;
+    }, 45);
+
+    return () => {
+      destroyed = true;
+      clearInterval(typeInterval);
+    };
+  });
 </script>
 
 <div class="ws-editor">
+  <h1 class="ws-headline">Turn any idea into<br/>a specialized AI model.</h1>
+  <p class="ws-sub">Write a goal. We handle the rest — from hyperparameter search to distributed training across a global GPU mesh.</p>
+  <div class="ws-proof">
+    <span class="ws-proof-item">
+      <span class="ws-proof-dot live"></span>
+      {onlineResearchers} researchers online
+    </span>
+    <span class="ws-proof-sep">·</span>
+    <span class="ws-proof-item">{modelsTrained.toLocaleString()} models trained</span>
+  </div>
   <div class="pe-editor-wrap">
     <div class="pe-owl-track">
       <div class="pe-walking-owl">
-        <PixelOwl size={0.22} mood="idle" />
+        <PixelOwl size={0.32} mood="idle" />
       </div>
     </div>
     <div class="program-editor">
@@ -39,11 +106,22 @@
         </div>
         <textarea
           class="pe-textarea"
+          class:pe-hidden={phase === 'typing' || phase === 'holding'}
           rows="6"
-          placeholder={"# Research Goal\nPredict Ethereum price movements using on-chain data\n\n# Approach\nTrain a time-series model on DEX volume, gas fees,\nand whale wallet activity from the last 90 days"}
+          placeholder={"# Research Goal\nDescribe what you want to predict, classify, or generate.\n\n# Approach\nWe'll automatically search architectures, hyperparameters,\nand training strategies across a distributed GPU mesh."}
+          bind:this={textareaEl}
           bind:value={searchQuery}
+          on:focus={handleFocus}
           on:keydown={(e) => { if (e.key === 'Enter' && e.metaKey) handleSearch(); }}
         ></textarea>
+        {#if (phase === 'typing' || phase === 'holding') && typewriterText}
+          <div class="pe-typewriter-overlay" class:pe-fading={phase === 'holding'}>
+            {typewriterText}{#if phase === 'typing'}<span class="pe-cursor">|</span>{/if}
+          </div>
+        {/if}
+        {#if phase === 'clearing'}
+          <div class="pe-typewriter-overlay pe-fade-out">{typewriterText}</div>
+        {/if}
       </div>
       <div class="pe-footer">
         <div class="pe-meta">
@@ -105,7 +183,7 @@
         </button>
       </div>
       <div class="pe-examples">
-        <span class="pe-examples-label">Examples:</span>
+        <span class="pe-examples-label">Try it:</span>
         {#each topicSuggestions.slice(0, 4) as t}
           <button class="chip" on:click={() => selectTopic(t)}>{t}</button>
         {/each}
@@ -120,6 +198,7 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    align-items: center;
   }
 
   .ws-headline {
@@ -130,30 +209,90 @@
     letter-spacing: -0.02em;
     color: var(--text-primary, #2D2D2D);
     margin: 0 0 12px;
+    text-align: center;
   }
 
   .ws-sub {
-    font-size: 0.88rem;
-    line-height: 1.5;
+    font-size: 0.82rem;
+    line-height: 1.6;
     color: var(--text-secondary, #6b6560);
     margin: 0 0 24px;
+    text-align: center;
+    max-width: 540px;
+  }
+
+  /* ── Social Proof ── */
+  .ws-proof {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--text-muted, #9a9590);
+  }
+  .ws-proof-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .ws-proof-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ws-proof-dot.live {
+    background: var(--green, #27864a);
+    box-shadow: 0 0 6px rgba(39, 134, 74, 0.5);
+    animation: proofPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes proofPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .ws-proof-sep {
+    color: var(--border, #E5E0DA);
+    font-weight: 300;
   }
 
   /* ── Program Editor ── */
   .pe-editor-wrap {
     position: relative;
+    width: 100%;
+    max-width: 640px;
   }
   .program-editor {
-    border: 1px solid var(--border, #E5E0DA);
+    border: 1.5px solid var(--accent, #D97757);
     border-radius: var(--radius-md, 10px);
     background: var(--surface, #fff);
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.06),
+                0 4px 20px rgba(217, 119, 87, 0.12),
+                0 8px 32px rgba(0, 0, 0, 0.06);
     overflow: hidden;
     transition: box-shadow 300ms ease, border-color 300ms ease;
+    animation: editorGlow 3s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes editorGlow {
+    0%, 100% {
+      box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.06),
+                  0 4px 20px rgba(217, 119, 87, 0.12),
+                  0 8px 32px rgba(0, 0, 0, 0.06);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.1),
+                  0 4px 28px rgba(217, 119, 87, 0.2),
+                  0 8px 40px rgba(0, 0, 0, 0.08);
+    }
   }
   .program-editor:focus-within {
     border-color: var(--accent, #D97757);
-    box-shadow: 0 0 0 3px rgba(217,119,87,0.08), var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.12));
+    box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.12),
+                0 8px 32px rgba(217, 119, 87, 0.15);
+    animation: none;
   }
   .pe-chrome {
     display: flex; align-items: center; gap: 8px;
@@ -172,8 +311,8 @@
     color: var(--text-secondary, #6b6560); margin-left: 4px;
   }
   .pe-owl-track {
-    position: absolute; top: -22px; left: 0; right: 0;
-    height: 24px; z-index: 3; pointer-events: none;
+    position: absolute; top: -32px; left: 0; right: 0;
+    height: 34px; z-index: 3; pointer-events: none;
   }
   .pe-walking-owl {
     position: absolute; bottom: 0; left: 20px;
@@ -191,7 +330,7 @@
     0%, 100% { margin-bottom: 0; }
     50%      { margin-bottom: 2px; }
   }
-  .pe-body { display: flex; min-height: 120px; }
+  .pe-body { display: flex; min-height: 120px; position: relative; }
   .pe-line-numbers {
     display: flex; flex-direction: column;
     padding: 12px 0 12px 14px;
@@ -208,6 +347,33 @@
     color: var(--text-primary, #2D2D2D); min-width: 0;
   }
   .pe-textarea::placeholder { color: var(--text-muted, #9a9590); opacity: 0.7; }
+  .pe-textarea.pe-hidden { color: transparent; caret-color: transparent; }
+
+  /* ── Typewriter overlay ── */
+  .pe-typewriter-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding: 12px 14px 12px 42px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.75rem; line-height: 1.7;
+    color: var(--text-primary, #2D2D2D);
+    pointer-events: none;
+    white-space: pre-wrap;
+    z-index: 2;
+    transition: opacity 500ms ease;
+  }
+  .pe-typewriter-overlay.pe-fade-out {
+    opacity: 0;
+  }
+  .pe-cursor {
+    animation: cursorBlink 0.8s ease-in-out infinite;
+    color: var(--accent, #D97757);
+    font-weight: 300;
+  }
+  @keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
   .pe-footer {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 14px;
@@ -235,15 +401,25 @@
   .pe-submit {
     appearance: none; border: none;
     background: var(--accent, #D97757); color: #fff;
-    font-size: 0.72rem; font-weight: 600;
-    padding: 10px 20px; border-radius: var(--radius-sm, 6px);
+    font-size: 0.78rem; font-weight: 700;
+    padding: 12px 24px; border-radius: var(--radius-sm, 6px);
     cursor: pointer;
     display: flex; align-items: center; gap: 6px;
     white-space: nowrap; flex-shrink: 0;
-    transition: background 150ms, transform 100ms;
+    transition: background 150ms, transform 100ms, box-shadow 150ms;
+    box-shadow: 0 4px 14px rgba(217, 119, 87, 0.3);
+    animation: launchPulse 3s ease-in-out infinite;
   }
-  .pe-submit:hover { background: var(--accent-hover, #C4644A); }
-  .pe-submit:active { transform: scale(0.97); }
+  .pe-submit:hover {
+    background: var(--accent-hover, #C4644A);
+    box-shadow: 0 6px 20px rgba(217, 119, 87, 0.4);
+    transform: translateY(-1px);
+  }
+  .pe-submit:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(217, 119, 87, 0.3); }
+  @keyframes launchPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(217, 119, 87, 0.3); }
+    50% { box-shadow: 0 4px 20px rgba(217, 119, 87, 0.45); }
+  }
   .pe-examples {
     display: flex; align-items: center;
     gap: 6px; padding: 10px 14px; flex-wrap: wrap;

@@ -371,19 +371,19 @@
     color: #fff;
     font-size: 0.82rem;
     font-weight: 600;
-    padding: 10px 18px;
-    border-radius: var(--radius-sm, 6px);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill, 100px);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
-    transition: background 150ms;
+    transition: background 150ms, transform 100ms;
     white-space: nowrap;
     position: relative;
     overflow: hidden;
   }
-  .header-cta:hover { background: var(--accent-hover, #C4644A); box-shadow: 0 0 16px rgba(217, 119, 87, 0.25); }
+  .header-cta:hover { background: var(--accent-hover, #C4644A); box-shadow: 0 0 16px rgba(217, 119, 87, 0.25); transform: translateY(-1px); }
 
   .header-cta::after {
     content: '';
@@ -416,7 +416,7 @@
     padding: 10px 14px;
     background: var(--surface, #fff);
     border: 1px solid var(--border, #E5E0DA);
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-md, 10px);
     transition: border-color 150ms;
   }
 
@@ -491,7 +491,7 @@
     appearance: none;
     border: 1px solid var(--border, #E5E0DA);
     background: var(--surface, #fff);
-    border-radius: var(--radius-md, 10px);
+    border-radius: var(--radius-lg, 16px);
     padding: var(--space-5, 20px);
     cursor: pointer;
     text-align: left;
@@ -518,7 +518,7 @@
   .model-card:hover {
     border-color: var(--accent, #D97757);
     box-shadow: var(--card-glow, 0 0 0 1px rgba(217, 119, 87, 0.2), 0 4px 16px rgba(217, 119, 87, 0.06));
-    transform: translateY(-2px);
+    transform: translateY(-3px);
   }
 
   /* Card Top */

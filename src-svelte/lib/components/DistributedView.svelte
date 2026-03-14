@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import type { Experiment } from '../stores/jobStore.ts';
+  import { resolveExperimentCategory, CATEGORY_COLORS, CATEGORY_LABELS } from '../data/modifications.ts';
+  import type { Experiment, VerificationState } from '../stores/jobStore.ts';
 
   export let experiments: Experiment[] = [];
   export let bestMetric: number = Infinity;
@@ -10,14 +11,15 @@
   const MESH_H = 170;
   const MESH_CX = width / 2;
   const MESH_CY = MESH_H / 2 + 8;
-  const MESH_R = 62;
-  const NODE_R = 16;
+  const MESH_R = 68;
+  const BASE_NODE_R = 14;
 
   // Collect unique nodes (max 8 for layout)
   $: allNodes = (() => {
-    const map = new Map<string, { id: string; active: boolean; expId: number | null; tier: number; progress: number }>();
+    const map = new Map<string, { id: string; active: boolean; expId: number | null; tier: number; progress: number; verification: VerificationState; modification: string; totalExps: number }>();
     for (const e of experiments) {
       const existing = map.get(e.nodeId);
+      const totalExps = (existing?.totalExps ?? 0) + 1;
       if (!existing || e.status === 'training') {
         map.set(e.nodeId, {
           id: e.nodeId,
@@ -25,11 +27,39 @@
           expId: e.status === 'training' ? e.id : (existing?.expId ?? null),
           tier: e.tier,
           progress: e.status === 'training' ? e.progress : (existing?.progress ?? 100),
+          verification: e.verification,
+          modification: e.modification,
+          totalExps,
         });
+      } else {
+        map.set(e.nodeId, { ...existing, totalExps });
       }
     }
     return [...map.values()].slice(0, 8);
   })();
+
+  // Node radius based on tier
+  function nodeRadius(tier: number): number {
+    if (tier >= 8) return BASE_NODE_R + 6;
+    if (tier >= 4) return BASE_NODE_R + 4;
+    if (tier >= 2) return BASE_NODE_R + 2;
+    return BASE_NODE_R;
+  }
+
+  const VERIFY_COLORS: Record<VerificationState, string> = {
+    'pending': '#9a9590',
+    'committed': '#e67e22',
+    'revealed': '#2980b9',
+    'verified': '#27864a',
+    'spot-checked': '#8b5cf6',
+  };
+  const VERIFY_SHORT: Record<VerificationState, string> = {
+    'pending': 'PND',
+    'committed': 'CMT',
+    'revealed': 'REV',
+    'verified': 'VRF',
+    'spot-checked': 'SPT',
+  };
 
   $: activeCount = allNodes.filter(n => n.active).length;
 
@@ -140,33 +170,33 @@
 <div class="distributed-container" class:mounted>
   <svg {width} height={totalH} viewBox="0 0 {width} {totalH}" class="distributed-svg">
     <defs>
-      <filter id="dv-active-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(39,134,74,0.5)" />
+      <filter id="dv-active-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(217,119,87,0.5)" />
       </filter>
-      <filter id="dv-training-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgba(183,134,14,0.6)" />
+      <filter id="dv-training-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(183,134,14,0.7)" />
       </filter>
-      <filter id="dv-best-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="rgba(39,134,74,0.55)" />
+      <filter id="dv-best-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="rgba(39,134,74,0.65)" />
       </filter>
-      <filter id="dv-edge-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(39,134,74,0.3)" />
+      <filter id="dv-edge-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(217,119,87,0.3)" />
       </filter>
 
       <!-- Particle gradient -->
       <radialGradient id="dv-particle-grad">
-        <stop offset="0%" stop-color="#4ade80" stop-opacity="0.9"/>
-        <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+        <stop offset="0%" stop-color="#D97757" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#D97757" stop-opacity="0"/>
       </radialGradient>
     </defs>
 
     <!-- ═══ Section Label: Mesh ═══ -->
-    <text x={12} y={12} fill="var(--text-muted, #9a9590)" font-size="7"
+    <text x={12} y={14} fill="var(--text-secondary, #6b6560)" font-size="10"
       font-weight="700" font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       letter-spacing="0.1em">GPU MESH</text>
-    <text x={width - 12} y={12} text-anchor="end"
+    <text x={width - 12} y={14} text-anchor="end"
       fill={activeCount > 0 ? '#27864a' : 'var(--text-muted, #9a9590)'}
-      font-size="7" font-weight="700"
+      font-size="10" font-weight="700"
       font-family="var(--font-mono, 'JetBrains Mono', monospace)">
       {activeCount}/{allNodes.length} ACTIVE
     </text>
@@ -176,7 +206,7 @@
       <line
         x1={edge.x1} y1={edge.y1}
         x2={edge.x2} y2={edge.y2}
-        stroke={edge.active ? 'rgba(39,134,74,0.3)' : 'rgba(154,149,144,0.12)'}
+        stroke={edge.active ? 'rgba(217,119,87,0.3)' : 'rgba(154,149,144,0.12)'}
         stroke-width={edge.active ? 1.2 : 0.5}
         filter={edge.active ? 'url(#dv-edge-glow)' : undefined}
         class="mesh-edge"
@@ -203,6 +233,8 @@
 
     <!-- ═══ MESH NODES ═══ -->
     {#each nodePositions as node, i}
+      {@const nr = nodeRadius(node.tier)}
+      {@const catColor = node.active ? (CATEGORY_COLORS[resolveExperimentCategory(node.modification)] ?? '#27864a') : '#9a9590'}
       <!-- svelte-ignore a11y-no-static-element-interactions -->
       <g
         class="mesh-node"
@@ -213,41 +245,49 @@
       >
         <!-- Pulse ring for active -->
         {#if node.active}
-          <circle cx={node.x} cy={node.y} r={NODE_R + 4}
-            fill="none" stroke="#27864a" stroke-width="1" class="node-pulse" />
+          <circle cx={node.x} cy={node.y} r={nr + 4}
+            fill="none" stroke={catColor} stroke-width="1" class="node-pulse" />
         {/if}
 
-        <!-- Node circle -->
+        <!-- Node circle (tier-scaled) -->
         <circle
-          cx={node.x} cy={node.y} r={NODE_R}
-          fill={node.active ? 'rgba(39,134,74,0.12)' : 'rgba(154,149,144,0.04)'}
-          stroke={node.active ? '#27864a' : 'rgba(154,149,144,0.2)'}
+          cx={node.x} cy={node.y} r={nr}
+          fill={node.active ? catColor + '18' : 'rgba(154,149,144,0.04)'}
+          stroke={node.active ? catColor : 'rgba(154,149,144,0.2)'}
           stroke-width={node.active ? 1.5 : 0.8}
           filter={node.active ? 'url(#dv-active-glow)' : undefined}
         />
 
+        <!-- Tier badge -->
+        {#if node.tier > 1}
+          <text x={node.x + nr - 1} y={node.y - nr + 8} text-anchor="end"
+            fill={catColor} font-size="8" font-weight="800"
+            font-family="var(--font-mono, 'JetBrains Mono', monospace)"
+            opacity="0.85">{node.tier}x</text>
+        {/if}
+
         <!-- Node ID -->
-        <text x={node.x} y={node.y - 2} text-anchor="middle"
-          fill={node.active ? '#27864a' : 'var(--text-muted, #9a9590)'}
-          font-size="6" font-weight="700"
+        <text x={node.x} y={node.y - 1} text-anchor="middle"
+          fill={node.active ? catColor : 'var(--text-secondary, #6b6560)'}
+          font-size="9" font-weight="700"
           font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         >{node.id.slice(5, 9)}</text>
 
-        <!-- Status / Exp ID -->
-        <text x={node.x} y={node.y + 8} text-anchor="middle"
-          fill={node.active ? '#fbbf24' : 'rgba(154,149,144,0.4)'}
-          font-size="5.5" font-weight="600"
+        <!-- Status / Category + Progress -->
+        <text x={node.x} y={node.y + 9} text-anchor="middle"
+          fill={node.active ? catColor : 'var(--text-muted, #9a9590)'}
+          font-size="7" font-weight="600"
           font-family="var(--font-mono, 'JetBrains Mono', monospace)"
-        >{node.active ? `#${node.expId} ${Math.round(node.progress)}%` : 'idle'}</text>
+        >{node.active ? `${Math.round(node.progress)}%` : `${node.totalExps} exp`}</text>
 
-        <!-- Progress arc for active nodes -->
+        <!-- Progress arc for active nodes (category colored) -->
         {#if node.active && node.progress > 0}
-          {@const radius = NODE_R - 2}
+          {@const radius = nr - 2}
           {@const circumference = 2 * Math.PI * radius}
           {@const dashOffset = circumference * (1 - node.progress / 100)}
           <circle
             cx={node.x} cy={node.y} r={radius}
-            fill="none" stroke="#27864a" stroke-width="2"
+            fill="none" stroke={catColor} stroke-width="2"
             stroke-dasharray={circumference}
             stroke-dashoffset={dashOffset}
             stroke-linecap="round"
@@ -255,19 +295,35 @@
             opacity="0.5"
           />
         {/if}
+
+        <!-- Verification state badge -->
+        {#if !node.active && node.verification !== 'pending'}
+          <rect
+            x={node.x - 11} y={node.y + nr + 3}
+            width="22" height="11" rx="3"
+            fill={VERIFY_COLORS[node.verification]}
+            opacity="0.9"
+          />
+          <text
+            x={node.x} y={node.y + nr + 11}
+            text-anchor="middle"
+            fill="#fff" font-size="7" font-weight="700"
+            font-family="var(--font-mono, 'JetBrains Mono', monospace)"
+          >{VERIFY_SHORT[node.verification]}</text>
+        {/if}
       </g>
     {/each}
 
     <!-- Center hub label -->
     {#if allNodes.length > 0}
-      <text x={MESH_CX} y={MESH_CY - 4} text-anchor="middle"
-        fill="var(--text-muted, #9a9590)" font-size="7" font-weight="700"
+      <text x={MESH_CX} y={MESH_CY - 3} text-anchor="middle"
+        fill="var(--text-muted, #9a9590)" font-size="10" font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
-        letter-spacing="0.06em" opacity="0.4">MESH</text>
-      <text x={MESH_CX} y={MESH_CY + 6} text-anchor="middle"
-        fill="var(--text-muted, #9a9590)" font-size="6"
+        letter-spacing="0.06em" opacity="0.5">MESH</text>
+      <text x={MESH_CX} y={MESH_CY + 8} text-anchor="middle"
+        fill="var(--text-muted, #9a9590)" font-size="8"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
-        opacity="0.3">HUB</text>
+        opacity="0.4">HUB</text>
     {/if}
 
     <!-- ═══ Divider ═══ -->
@@ -276,7 +332,7 @@
       stroke="var(--border-subtle, #EDEAE5)" stroke-width="0.5" stroke-dasharray="4,4" />
 
     <!-- ═══ Section Label: Swarm ═══ -->
-    <text x={12} y={SWARM_TOP + 6} fill="var(--text-muted, #9a9590)" font-size="7"
+    <text x={12} y={SWARM_TOP + 8} fill="var(--text-secondary, #6b6560)" font-size="10"
       font-weight="700" font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       letter-spacing="0.1em">CONVERGENCE</text>
 
@@ -286,7 +342,7 @@
         x2={width - SWARM_PAD.right} y2={t.y}
         stroke="var(--border-subtle, #EDEAE5)" stroke-width="0.3" stroke-dasharray="2,3" />
       <text x={SWARM_PAD.left - 5} y={t.y + 3} text-anchor="end"
-        fill="var(--text-muted, #9a9590)" font-size="7"
+        fill="var(--text-muted, #9a9590)" font-size="9"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       >{t.val.toFixed(3)}</text>
     {/each}
@@ -299,7 +355,7 @@
         stroke="#27864a" stroke-width="0.8" stroke-dasharray="6,3" opacity="0.4"
       />
       <text x={width - SWARM_PAD.right + 2} y={swarmSy(bestMetric) + 3}
-        fill="#27864a" font-size="6" font-weight="700"
+        fill="#27864a" font-size="9" font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       >{bestMetric.toFixed(3)}</text>
     {/if}
@@ -370,13 +426,13 @@
 
     <!-- X-axis label -->
     <text x={width / 2} y={SWARM_TOP + SWARM_H - 4} text-anchor="middle"
-      fill="var(--text-muted, #9a9590)" font-size="7"
+      fill="var(--text-muted, #9a9590)" font-size="9"
       font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       letter-spacing="0.06em">EXPERIMENT #</text>
 
     <!-- Y-axis label -->
     <text x={4} y={SWARM_TOP + SWARM_PAD.top - 2} text-anchor="start"
-      fill="var(--text-muted, #9a9590)" font-size="7"
+      fill="var(--text-muted, #9a9590)" font-size="9"
       font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       letter-spacing="0.06em">VAL_BPB</text>
   </svg>

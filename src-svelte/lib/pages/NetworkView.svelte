@@ -401,8 +401,10 @@
   }
   .panel-tabs {
     display: flex;
-    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+    gap: 4px;
+    padding: 6px;
     flex-shrink: 0;
+    background: var(--border-subtle, #EDEAE5);
   }
   .ptab {
     appearance: none;
@@ -413,16 +415,16 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    padding: 10px 6px;
+    padding: 8px 6px;
     font-size: 0.74rem;
     font-weight: 500;
     color: var(--text-muted, #9a9590);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    border-radius: 8px;
     transition: all 150ms ease;
   }
-  .ptab:hover { color: var(--text-secondary, #6b6560); }
-  .ptab.active { color: var(--text-primary, #2D2D2D); border-bottom-color: var(--accent, #D97757); }
+  .ptab:hover { color: var(--text-secondary, #6b6560); background: rgba(255,255,255,0.5); }
+  .ptab.active { color: var(--text-primary, #2D2D2D); background: var(--surface, #fff); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .tbadge {
     padding: 1px 5px;
     border-radius: 100px;
@@ -469,7 +471,7 @@
   /* Job Cards (Swarms tab) */
   .job-card {
     padding: 10px 12px;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-md, 10px);
     border: 1px solid var(--border, #E5E0DA);
     margin-bottom: 6px;
     transition: all 150ms ease;

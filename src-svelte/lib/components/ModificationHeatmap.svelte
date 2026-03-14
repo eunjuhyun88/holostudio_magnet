@@ -40,6 +40,11 @@
 
 <div class="heatmap-container" class:mounted>
   <svg {width} height={actualH} viewBox="0 0 {width} {actualH}" class="heatmap-svg">
+    <defs>
+      <filter id="hm-bar-glow" x="-10%" y="-30%" width="120%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(39,134,74,0.3)" />
+      </filter>
+    </defs>
     {#each sorted as cat, i}
       {@const d = data[cat] || { total: 0, keeps: 0, avgMetric: 0, metrics: [] }}
       {@const rate = keepRate(cat)}
@@ -52,8 +57,8 @@
         y={y + rowH / 2 + 3}
         text-anchor="end"
         fill={CATEGORY_COLORS[cat]}
-        font-size="9"
-        font-weight="600"
+        font-size="10"
+        font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         letter-spacing="0.02em"
       >{CATEGORY_LABELS[cat]}</text>
@@ -77,6 +82,7 @@
         height={rowH - 4}
         fill={barColor(cat, rate)}
         rx="3"
+        filter={rate > 0.3 ? 'url(#hm-bar-glow)' : undefined}
         style="transition-delay:{i * 60}ms"
       />
 
@@ -88,7 +94,7 @@
           y={y + rowH / 2 + 3}
           text-anchor="end"
           fill="rgba(255,255,255,0.9)"
-          font-size="8"
+          font-size="9"
           font-weight="700"
           font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         >{Math.round(rate * 100)}%</text>
@@ -101,7 +107,7 @@
         y={y + rowH / 2 + 3}
         text-anchor="start"
         fill="var(--text-muted, #9a9590)"
-        font-size="8"
+        font-size="9"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       >{d.keeps}/{d.total}</text>
 
@@ -112,9 +118,9 @@
           y={y + rowH / 2 + 3}
           text-anchor="end"
           fill="var(--text-muted, #9a9590)"
-          font-size="7"
+          font-size="9"
           font-family="var(--font-mono, 'JetBrains Mono', monospace)"
-          opacity="0.6"
+          opacity="0.7"
         >avg {d.avgMetric.toFixed(3)}</text>
       {/if}
     {/each}

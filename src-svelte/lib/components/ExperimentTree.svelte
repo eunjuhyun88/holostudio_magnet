@@ -94,10 +94,12 @@
   })();
 
   function nodeColor(n: TreeNode): string {
-    if (n.metric > 0 && n.metric <= bestMetric) return '#27864a';
-    if (n.status === 'keep') return '#27864a';
+    const cat = resolveExperimentCategory(n.modification);
+    const catColor = CATEGORY_COLORS[cat] ?? '#9a9590';
     if (n.status === 'crash') return '#c0392b';
-    return 'rgba(154,149,144,0.45)';
+    if (n.metric > 0 && n.metric <= bestMetric) return catColor;
+    if (n.status === 'keep') return catColor;
+    return catColor + '55'; // faded
   }
 
   function nodeRadius(n: TreeNode): number {
@@ -128,10 +130,10 @@
   <svg {width} height={plotH} viewBox="0 0 {width} {plotH}" class="tree-svg">
     <defs>
       <filter id="tree-best-glow" x="-60%" y="-60%" width="220%" height="220%">
-        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(39,134,74,0.65)" />
+        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="rgba(217,119,87,0.55)" />
       </filter>
       <filter id="tree-keep-glow" x="-40%" y="-40%" width="180%" height="180%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(39,134,74,0.25)" />
+        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(217,119,87,0.2)" />
       </filter>
     </defs>
 
@@ -142,7 +144,7 @@
         y={PAD.top + i * ROW_GAP + ROW_GAP / 2 + 3}
         text-anchor="end"
         fill={branchLabel.get(branchId)?.color ?? 'var(--text-muted, #9a9590)'}
-        font-size="7"
+        font-size="9"
         font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         letter-spacing="0.04em"
@@ -198,7 +200,7 @@
             y={pos.y - nodeRadius(n) - 3}
             text-anchor="middle"
             fill={TIER_COLORS[n.tier] ?? 'var(--text-muted, #9a9590)'}
-            font-size="6"
+            font-size="8"
             font-weight="700"
             font-family="var(--font-mono, 'JetBrains Mono', monospace)"
             class="tree-badge"
@@ -213,7 +215,7 @@
             y={pos.y + nodeRadius(n) + 10}
             text-anchor="middle"
             fill="#27864a"
-            font-size="7"
+            font-size="9"
             font-weight="700"
             font-family="var(--font-mono, 'JetBrains Mono', monospace)"
           >{n.metric.toFixed(3)}</text>

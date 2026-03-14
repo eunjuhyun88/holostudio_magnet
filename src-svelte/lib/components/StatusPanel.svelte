@@ -1,9 +1,14 @@
 <script lang="ts">
   import type { ResearchMetrics } from "../data/dashboardFixture.ts";
+  import { router } from "../stores/router.ts";
 
   export let research: ResearchMetrics;
   export let runningCount = 0;
   export let doneCount = 0;
+
+  function goToOntology() {
+    router.navigate("ontology");
+  }
 </script>
 
 <div class="sp">
@@ -17,6 +22,12 @@
     <span class="sp-stat">{doneCount} done</span>
     <span class="sp-sep">·</span>
     <span class="sp-stat">{research.findings} findings</span>
+    <button class="sp-gear" on:click={goToOntology} title="Research settings">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+        <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M6.7 1.5l-.4 1.3a5 5 0 00-1.5.9L3.5 3.2l-1.3 2.3 1 1a5 5 0 000 1.7l-1 1 1.3 2.3 1.3-.5a5 5 0 001.5.9l.4 1.3h2.6l.4-1.3a5 5 0 001.5-.9l1.3.5 1.3-2.3-1-1a5 5 0 000-1.7l1-1-1.3-2.3-1.3.5a5 5 0 00-1.5-.9L9.3 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 
   <!-- 5 Research metric cells — single row -->
@@ -46,10 +57,6 @@
 
 <style>
   .sp {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #E5E0DA);
-    border-radius: var(--radius-md, 10px);
-    box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.06));
     overflow: hidden;
   }
 
@@ -81,6 +88,14 @@
     font-size: 0.58rem; font-weight: 600;
     color: var(--text-muted, #9a9590);
   }
+  .sp-gear {
+    appearance: none; border: none; background: transparent;
+    color: var(--text-muted, #9a9590); cursor: pointer;
+    padding: 2px; border-radius: 4px; margin-left: auto;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 120ms;
+  }
+  .sp-gear:hover { background: rgba(0,0,0,0.05); color: var(--accent, #D97757); }
 
   /* ── 5-cell research metrics — single row ── */
   .sp-grid {

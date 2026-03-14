@@ -223,67 +223,52 @@
     }
   }
 
-  /* ── Mobile ── */
+  /* ── Mobile — compact footer ── */
   @media (max-width: 600px) {
     .site-footer-inner {
-      padding: 20px 16px 16px;
-      gap: 20px;
+      padding: 16px 16px 8px;
+      gap: 12px;
     }
 
-    .footer-brand {
+    .footer-brand { gap: 6px; }
+    .footer-brand-mark { font-size: 1rem; }
+    .footer-brand-name { font-size: 0.6rem; }
+
+    /* 설명문 숨김 — 모바일에서 불필요 */
+    .footer-copy { display: none; }
+
+    /* 링크: 컬럼 → 가로 인라인 */
+    .footer-links-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+    }
+    .footer-group {
+      flex-direction: row;
+      align-items: center;
       gap: 6px;
     }
-    .footer-brand-mark {
-      font-size: 1.1rem;
+    .footer-group-title { display: none; }
+    .footer-link-list {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 4px 12px;
     }
-    .footer-brand-name {
-      font-size: 0.65rem;
-    }
-
-    .footer-copy {
-      font-size: 0.72rem;
-      line-height: 1.5;
-    }
-
-    .footer-links-grid {
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .footer-group-title {
-      font-size: 0.52rem;
-    }
-
     .footer-link {
-      font-size: 0.74rem;
-      padding: 2px 0;
+      font-size: 0.68rem;
+      padding: 0;
     }
 
     .site-footer-meta {
-      padding: 10px 16px 14px;
-      padding-top: 10px;
-      flex-direction: row;
-      justify-content: space-between;
-      font-size: 0.52rem;
+      padding: 8px 16px 10px;
+      font-size: 0.5rem;
     }
   }
 
   /* ── Very small screens ── */
   @media (max-width: 380px) {
-    .site-footer-inner {
-      padding: 16px 12px 12px;
-    }
-    .footer-links-grid {
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    .footer-link-list {
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 6px 14px;
-    }
-    .site-footer-meta {
-      padding: 8px 12px 12px;
-    }
+    .site-footer-inner { padding: 12px 12px 6px; }
+    .footer-link { font-size: 0.62rem; }
+    .site-footer-meta { padding: 6px 12px 8px; }
   }
 </style>

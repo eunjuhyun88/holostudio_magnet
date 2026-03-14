@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { CATEGORY_LABELS, CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
+  import { CATEGORY_LABELS, CATEGORY_SHORT, CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
 
   export let data: { id: number; category: ModCategory; metric: number; status: string; branchId: number }[] = [];
   export let width: number = 560;
@@ -44,8 +44,11 @@
 <div class="scatter-container" class:mounted>
   <svg {width} {height} viewBox="0 0 {width} {height}" class="scatter-svg">
     <defs>
-      <filter id="scatter-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(39,134,74,0.4)" />
+      <filter id="scatter-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="rgba(217,119,87,0.55)" />
+      </filter>
+      <filter id="scatter-keep-glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="rgba(217,119,87,0.3)" />
       </filter>
     </defs>
 
@@ -65,7 +68,7 @@
       <line x1={PAD.left} y1={tick.y} x2={width - PAD.right} y2={tick.y}
         stroke="var(--border-subtle, #EDEAE5)" stroke-width="0.5" stroke-dasharray="3,3" />
       <text x={PAD.left - 6} y={tick.y + 3} text-anchor="end"
-        fill="var(--text-muted, #9a9590)" font-size="8"
+        fill="var(--text-muted, #9a9590)" font-size="9"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
       >{tick.val.toFixed(3)}</text>
     {/each}
@@ -82,6 +85,7 @@
           fill={d.status === 'keep' ? CATEGORY_COLORS[d.category] : 'rgba(154,149,144,0.35)'}
           stroke={d.status === 'keep' ? 'rgba(255,255,255,0.6)' : 'none'}
           stroke-width={d.status === 'keep' ? 0.8 : 0}
+          filter={d.status === 'keep' ? 'url(#scatter-keep-glow)' : undefined}
           style="transition-delay:{mounted ? (40 + idx * 25) : 0}ms"
         >
           <title>#{d.id} {d.category} → {d.metric.toFixed(3)} ({d.status})</title>
@@ -96,17 +100,16 @@
         y={height - 6}
         text-anchor="middle"
         fill={CATEGORY_COLORS[cat]}
-        font-size="7"
-        font-weight="600"
+        font-size="9"
+        font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         letter-spacing="0.02em"
-        transform="rotate(-25, {PAD.left + colW * i + colW / 2}, {height - 6})"
-      >{CATEGORY_LABELS[cat]}</text>
+      >{CATEGORY_SHORT[cat]}</text>
     {/each}
 
     <!-- Y-axis label -->
     <text x={4} y={PAD.top - 4} text-anchor="start"
-      fill="var(--text-muted, #9a9590)" font-size="8"
+      fill="var(--text-muted, #9a9590)" font-size="9"
       font-family="var(--font-mono, 'JetBrains Mono', monospace)" letter-spacing="0.06em"
     >VAL_BPB</text>
   </svg>
