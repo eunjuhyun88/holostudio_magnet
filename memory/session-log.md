@@ -26,6 +26,53 @@
 
 ### Verification
 - `npm run build` — 0 에러 ✓
+
+---
+
+## 2026-03-15 (cont): Exact Karpathy upstream integration
+
+### Context
+사용자 요청: `karpathy/autoresearch`, `karpathy/nanochat`, 그리고 `nanochat` round-1 commit `6ed7d1d`를 실제로 현재 runtime 구조에 적용했는지 확인하고, 맞게 붙이기
+
+### Completed
+- **Pinned upstream spec committed**:
+  - `config/autoresearch-upstreams.json`
+  - `karpathy/autoresearch@c2450add72cc80317be1fe8111974b892da10944`
+  - `karpathy/nanochat@6ed7d1d82cee16c2e26f45d559ad3338447a6c1b`
+
+- **Bootstrap command added**:
+  - `npm run autoresearch:bootstrap`
+  - clones/fetches both repos into `runtime/upstreams/`
+  - writes generated lock file at `runtime/upstreams/stack.lock.json`
+
+- **Runtime wiring updated**:
+  - `scripts/autoresearch_loop_controller.ts` now defaults to the pinned autoresearch repo
+  - `scripts/autoresearch_swarm_supervisor.ts` now defaults to the pinned repos and injects nanochat round-1 reference paths into worker prompts
+  - `apps/runtime-api/src/server.ts` now exposes `/api/runtime/upstream`
+  - `.gitignore` now ignores `runtime/upstreams/`
+
+### Verification
+- `npm run autoresearch:bootstrap` ✓
+- `npm run build` ✓
+- `npm run controller:loop -- --runtime-root=runtime/autoresearch-loop-pin-test --workers=1 --mode=simulate --port=8788` ✓
+  - `--repo` 없이도 pinned `karpathy/autoresearch` checkout 사용 확인
+  - generated worktree HEAD = `c2450add72cc80317be1fe8111974b892da10944`
+- `curl http://localhost:8790/api/runtime/upstream` ✓
+  - `ready: true`
+  - nanochat baseline commit = `6ed7d1d82cee16c2e26f45d559ad3338447a6c1b`
+- `npm run swarm:supervisor -- --runtime-root=runtime/autoresearch-loop-pin-test --workers=1 --controller-port=8788 --launch-controller=false --preflight-only=true` ✓
+  - pinned repo paths reflected in `supervisor-state.json`
+  - expected blockers only: `nvidia-smi`, cache root, tokenizer
+
+### Key Findings
+- 이전에는 `/Users/ej/autoresearch` 같은 로컬 관습 경로에 의존했기 때문에 “정확히 어떤 upstream 조합인지”가 코드에 남지 않았음
+- 이제는 committed spec + generated lock으로 exact upstream 조합을 재현 가능
+- real worker launch는 아직 GPU/data cache가 필요하지만, bootstrap/controller/supervisor/runtime-api 경계까지는 현재 머신에서도 검증 완료
+
+### Pending
+- runtime-api가 controller/supervisor 상태를 직접 흡수하도록 합치기
+- `jobStore`를 runtime snapshot/SSE client로 축소
+- 실제 evaluator(build/perf/API gates)와 autoresearch keep/discard 판정 연결
 - 4 phase 전환 (idle → setup → running → complete) ✓
 - Pause/Resume 토글 → 실험 생성 중지/재개 ✓
 - Branch Boost → 골드 보더 + "Boosted" 텍스트 ✓

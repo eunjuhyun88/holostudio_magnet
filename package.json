@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "preview:svelte": "vite preview",
     "telemetry:from-autoresearch": "node --experimental-strip-types scripts/autoresearch_to_telemetry.ts",
+    "autoresearch:bootstrap": "node --experimental-strip-types scripts/bootstrap_karpathy_stack.ts",
     "telemetry:mock": "node --experimental-strip-types scripts/mock_telemetry_server.ts",
     "controller:loop": "node --experimental-strip-types scripts/autoresearch_loop_controller.ts",
     "swarm:supervisor": "node --experimental-strip-types scripts/autoresearch_swarm_supervisor.ts",

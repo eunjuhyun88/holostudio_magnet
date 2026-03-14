@@ -114,6 +114,10 @@ Reference repo reviewed: [karpathy/autoresearch](https://github.com/karpathy/aut
 - `packages/domain/src/runtime-state.ts` added
 - `packages/autoresearch-adapter/src/index.ts` added
 - Existing live implementation still remains in `src-svelte/` and `scripts/`
+- exact Karpathy upstream stack is now pinned via `config/autoresearch-upstreams.json`
+- `npm run autoresearch:bootstrap` clones the pinned repos into `runtime/upstreams/`
+- controller worktrees now default to the pinned `karpathy/autoresearch` checkout
+- supervisor prompts now reference `karpathy/nanochat@6ed7d1d` round-1 files for concrete baseline ideas
 
 ### Runtime persistence
 - Start with SQLite for local durability and restart recovery.
@@ -169,6 +173,8 @@ Reference repo reviewed: [karpathy/autoresearch](https://github.com/karpathy/aut
   - service/runtime health
 - `GET /api/runtime/workspaces`
   - workspace and worker status
+- `GET /api/runtime/upstream`
+  - pinned upstream stack status and resolved commits
 
 ### Event model rule
 - Backend is the single writer of domain events.

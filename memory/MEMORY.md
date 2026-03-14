@@ -29,6 +29,11 @@
   - `packages/contracts`
   - `packages/domain`
   - `packages/autoresearch-adapter`
+- exact Karpathy upstream stack is now pinned and bootstrappable:
+  - `config/autoresearch-upstreams.json`
+  - `runtime/upstreams/stack.lock.json` (generated, ignored)
+  - `karpathy/autoresearch@c2450add72cc80317be1fe8111974b892da10944`
+  - `karpathy/nanochat@6ed7d1d82cee16c2e26f45d559ad3338447a6c1b`
 
 ## Key Decisions (confirmed by user)
 - Economics tab → renamed **Protocol**
@@ -69,6 +74,11 @@
 - **Canonical rollout summary added** in `docs/exec-plans/active/continuous-autoresearch-refactor.md`
 - **Engineering authority doc populated** in `docs/ENGINEERING.md`
 - **Runtime API scaffold added** and smoke-tested (`health`, `job create`, `pause command`)
+- **Exact upstream integration added**:
+  - `npm run autoresearch:bootstrap`
+  - controller/supervisor default to pinned upstream repos
+  - runtime-api exposes `/api/runtime/upstream`
+  - supervisor prompt references nanochat round-1 files (`nanochat/gpt.py`, `nanochat/optim.py`, `scripts/base_train.py`)
 
 ## Topic Files
 - [session-log.md](session-log.md) — what was done, pending tasks

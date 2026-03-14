@@ -20,6 +20,12 @@
 | --- | --- | --- | --- |
 | `/api/autoresearch_to_telemetry` | discovered | `scripts/autoresearch_to_telemetry.ts` | none |
 
+### bootstrap_karpathy_stack
+
+| API | Source | File | Surfaces |
+| --- | --- | --- | --- |
+| `/api/bootstrap_karpathy_stack` | discovered | `scripts/bootstrap_karpathy_stack.ts` | none |
+
 ### mock_telemetry_server
 
 | API | Source | File | Surfaces |

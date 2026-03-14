@@ -2,13 +2,13 @@
   "version": 1,
   "smallMap": {
     "files": 10,
-    "lines": 1019,
-    "approxTokens": 4222
+    "lines": 1025,
+    "approxTokens": 4259
   },
   "allDocs": {
     "files": 98,
-    "lines": 5489,
-    "approxTokens": 23911
+    "lines": 5508,
+    "approxTokens": 24009
   },
   "smallMapReductionVsAllDocsPct": 82.3,
   "registry": {
@@ -22,7 +22,7 @@
     "count": 3
   },
   "retrieval": {
-    "chunkCount": 253,
+    "chunkCount": 259,
     "sourceCount": 34
   },
   "telemetry": {
@@ -39,7 +39,7 @@
     {
       "label": "Small start bundle",
       "pass": true,
-      "evidence": "4222 tokens vs 23911 tokens across all docs (82.3% smaller)"
+      "evidence": "4259 tokens vs 24009 tokens across all docs (82.3% smaller)"
     },
     {
       "label": "Discovery works without chat memory",
@@ -49,7 +49,7 @@
     {
       "label": "Ambiguity has a retrieval escape hatch",
       "pass": true,
-      "evidence": "253 retrieval chunks across 34 sources"
+      "evidence": "259 retrieval chunks across 34 sources"
     },
     {
       "label": "Time-saved evidence exists",

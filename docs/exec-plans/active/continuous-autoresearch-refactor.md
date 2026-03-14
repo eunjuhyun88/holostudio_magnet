@@ -51,6 +51,15 @@ Turn the current repo into a continuously running autoresearch product surface w
   - job creation
   - pause command
 
+### Exact upstream pinning
+- committed upstream spec added at `config/autoresearch-upstreams.json`
+- pinned refs:
+  - `karpathy/autoresearch@c2450add72cc80317be1fe8111974b892da10944`
+  - `karpathy/nanochat@6ed7d1d82cee16c2e26f45d559ad3338447a6c1b`
+- `npm run autoresearch:bootstrap` now materializes both repos under `runtime/upstreams/`
+- controller and supervisor now default to the pinned stack without requiring `--repo`
+- runtime-api now exposes `GET /api/runtime/upstream` for stack visibility
+
 ## Current Problems
 
 1. `src-svelte/lib/stores/jobStore.ts` still owns state, timers, and simulation.

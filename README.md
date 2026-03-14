@@ -54,6 +54,12 @@ Start the parallel runtime-api scaffold:
 npm run dev:runtime-api
 ```
 
+Bootstrap the pinned Karpathy upstream stack used by the controller and supervisor:
+
+```bash
+npm run autoresearch:bootstrap
+```
+
 This now boots the Svelte shell by default. The globe and telemetry behavior stay the same, but the primary layout and panel hierarchy are now driven by Svelte.
 
 Build the default Svelte runtime:
@@ -139,7 +145,6 @@ For a long-running swarm that keeps emitting telemetry without the short fixture
 
 ```bash
 npm run controller:loop -- \
-  --repo=/Users/ej/autoresearch \
   --runtime-root=runtime/autoresearch-loop \
   --workers=6 \
   --mode=simulate \
@@ -181,6 +186,7 @@ Useful flags:
 Notes:
 
 - `simulate` is the safe path on this machine if CUDA/data prep are not available.
+- run `npm run autoresearch:bootstrap` first to materialize the pinned upstream repos under `runtime/upstreams/`.
 - real `autoresearch` execution still requires an NVIDIA GPU, `uv sync`, and `uv run prepare.py` inside each workspace lineage.
 - the controller intentionally separates `bootstrap + telemetry + stop conditions` from the actual code-editing agent. In production, you point your agent at the generated workspaces and keep the controller in `watch` mode.
 
@@ -190,7 +196,6 @@ To attach real `codex exec` workers to the generated worktrees, use the supervis
 
 ```bash
 npm run swarm:supervisor -- \
-  --repo=/Users/ej/autoresearch \
   --runtime-root=runtime/autoresearch-loop-live \
   --workers=6 \
   --controller-port=8787
@@ -199,6 +204,7 @@ npm run swarm:supervisor -- \
 What it does:
 
 - reuses or launches a `watch` controller
+- resolves the pinned `karpathy/autoresearch` repo and `karpathy/nanochat@6ed7d1d` reference set
 - checks `uv`, `codex`, `nvidia-smi`, and `~/.cache/autoresearch`
 - writes per-worker status files under `runtime/.../agent-logs/*`
 - if preflight passes, launches `codex exec` once per workspace

@@ -11,7 +11,7 @@ This generated artifact summarizes the query-time retrieval index for canonical 
 ## Index Stats
 
 - Source docs indexed: `34`
-- Chunks indexed: `253`
+- Chunks indexed: `259`
 - Chunk size (words): `120`
 - Overlap size (words): `30`
 - Default top-k: `5`
@@ -21,10 +21,10 @@ This generated artifact summarizes the query-time retrieval index for canonical 
 | Path | Chunk Count |
 | --- | --- |
 | `memory/architecture.md` | 33 |
-| `memory/session-log.md` | 25 |
+| `memory/session-log.md` | 30 |
 | `docs/CONTEXT_EVALUATION.md` | 22 |
 | `docs/CONTEXT_ENGINEERING.md` | 18 |
-| `README.md` | 15 |
+| `README.md` | 16 |
 | `AGENTS.md` | 9 |
 | `docs/CONTEXT_PLATFORM.md` | 9 |
 | `docs/MULTI_AGENT_COORDINATION.md` | 9 |
