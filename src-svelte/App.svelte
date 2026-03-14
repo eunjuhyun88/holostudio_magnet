@@ -1,5 +1,6 @@
 <script lang="ts">
   import { router } from "./lib/router.ts";
+  import { fade, fly } from "svelte/transition";
   import NavBar from "./lib/NavBar.svelte";
   import DashboardPage from "./lib/DashboardPage.svelte";
   import ModelsPage from "./lib/ModelsPage.svelte";
@@ -11,6 +12,9 @@
   import "./lib/tokens.css";
 
   let showSplash = true;
+
+  // Page transition key — increments on route change
+  $: routeKey = $router;
 </script>
 
 <svelte:head>
@@ -27,17 +31,21 @@
 <div class="app-shell" data-theme="light">
   <NavBar />
   <main class="app-main">
-    {#if $router === 'dashboard'}
-      <DashboardPage />
-    {:else if $router === 'models'}
-      <ModelsPage />
-    {:else if $router === 'research'}
-      <AutoresearchPage />
-    {:else if $router === 'network'}
-      <NetworkView />
-    {:else if $router === 'model-detail'}
-      <ModelDetailPage />
-    {/if}
+    {#key routeKey}
+      <div class="page-transition" in:fade={{ duration: 200, delay: 80 }}>
+        {#if $router === 'dashboard'}
+          <DashboardPage />
+        {:else if $router === 'models'}
+          <ModelsPage />
+        {:else if $router === 'research'}
+          <AutoresearchPage />
+        {:else if $router === 'network'}
+          <NetworkView />
+        {:else if $router === 'model-detail'}
+          <ModelDetailPage />
+        {/if}
+      </div>
+    {/key}
   </main>
   <SiteFooter />
 </div>
@@ -69,6 +77,13 @@
   }
 
   .app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .page-transition {
     flex: 1;
     display: flex;
     flex-direction: column;
