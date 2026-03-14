@@ -114,6 +114,44 @@
 
 ---
 
+## 2026-03-15 (cont): Parallel refactor scaffold
+
+### Context
+사용자 요청: 다른 개발과 병행 가능한 방식으로 전체 리팩토링을 계속 진행할 수 있는가
+
+### Completed
+- **Parallel-safe scaffold added**:
+  - `apps/web/README.md`
+  - `apps/runtime-api/src/server.ts`
+  - `packages/contracts/src/runtime.ts`
+  - `packages/domain/src/runtime-state.ts`
+  - `packages/autoresearch-adapter/src/index.ts`
+
+- **Scripts updated**:
+  - `package.json` → `npm run dev:runtime-api`
+  - `README.md`에 runtime-api 실행 경로 추가
+
+- **Verification**:
+  - `npm run dev:runtime-api` 실행 성공
+  - `GET /api/runtime/health` 성공
+  - `POST /api/runtime/jobs` 성공
+  - `POST /api/runtime/jobs/:id/commands` with `pause` 성공
+  - `npm run docs:refresh` 성공
+  - `npm run docs:check` 성공
+  - `npm run build` 성공
+
+### Key Findings
+- 현재 코드베이스를 건드리지 않고도 병행 가능한 백엔드 경계 스캐폴드를 추가할 수 있음
+- 이 단계에서는 live shell 이동 없이 contracts/domain을 먼저 뽑아내는 방식이 충돌을 가장 적게 만듦
+- 다음 위험 구간은 `jobStore`를 runtime contract 뒤로 보내는 단계
+
+### Pending
+- runtime-api를 in-memory stub에서 persisted runtime으로 교체
+- `AutoresearchPage`를 runtime snapshot/SSE 소비 구조로 전환
+- `src/fixed/*` 와 `src-svelte/lib/utils/*` 중복 제거 시작
+
+---
+
 ## 2026-03-15 (cont): Full-stack refactor planning for continuous autoresearch
 
 ### Context

@@ -23,6 +23,12 @@
 - `memento-kit` core repo layer integrated
 - `docs:refresh` and `docs:check` pass
 - `.agent-context/` runtime memory now available for checkpoints / briefs / handoffs
+- parallel refactor scaffold added:
+  - `apps/web`
+  - `apps/runtime-api`
+  - `packages/contracts`
+  - `packages/domain`
+  - `packages/autoresearch-adapter`
 
 ## Key Decisions (confirmed by user)
 - Economics tab → renamed **Protocol**
@@ -62,6 +68,7 @@
 - **Autopilot extension added**: semantic autosave + compact + context-only auto-commit on `stop` / `pre-push`
 - **Canonical rollout summary added** in `docs/exec-plans/active/continuous-autoresearch-refactor.md`
 - **Engineering authority doc populated** in `docs/ENGINEERING.md`
+- **Runtime API scaffold added** and smoke-tested (`health`, `job create`, `pause command`)
 
 ## Topic Files
 - [session-log.md](session-log.md) — what was done, pending tasks

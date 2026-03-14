@@ -40,6 +40,17 @@ Turn the current repo into a continuously running autoresearch product surface w
 - Canonical doc routing, generated docs, Claude hooks, and `.agent-context/` runtime memory are working.
 - `docs:refresh`, `docs:check`, `build`, `ctx:checkpoint`, `ctx:save`, `ctx:compact` all pass.
 
+### Parallel refactor scaffold
+- `apps/web/` boundary added without moving the live shell yet.
+- `apps/runtime-api/src/server.ts` added as an in-memory API scaffold.
+- `packages/contracts/` now contains shared runtime job and event contracts.
+- `packages/domain/` now contains pure runtime state helpers.
+- `packages/autoresearch-adapter/` now marks the future worker-ingestion boundary.
+- runtime-api smoke check verified:
+  - health endpoint
+  - job creation
+  - pause command
+
 ## Current Problems
 
 1. `src-svelte/lib/stores/jobStore.ts` still owns state, timers, and simulation.
@@ -82,7 +93,7 @@ Turn the current repo into a continuously running autoresearch product surface w
 ## Immediate Next Tasks
 
 1. Scaffold `apps/web`, `apps/runtime-api`, and `packages/*`.
-2. Write the canonical event and command schema.
+2. Replace the in-memory runtime-api store with shared persisted state.
 3. Move `jobStore` simulation responsibility behind runtime contracts.
 4. Point `AutoresearchPage` at runtime state instead of local timers.
 

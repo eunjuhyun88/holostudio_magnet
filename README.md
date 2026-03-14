@@ -48,6 +48,12 @@ Start the default app:
 npm run dev
 ```
 
+Start the parallel runtime-api scaffold:
+
+```bash
+npm run dev:runtime-api
+```
+
 This now boots the Svelte shell by default. The globe and telemetry behavior stay the same, but the primary layout and panel hierarchy are now driven by Svelte.
 
 Build the default Svelte runtime:

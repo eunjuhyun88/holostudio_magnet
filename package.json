@@ -5,6 +5,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "vite",
+    "dev:web": "vite",
+    "dev:runtime-api": "node --experimental-strip-types apps/runtime-api/src/server.ts",
     "dev:svelte": "vite",
     "build": "vite build",
     "build:svelte": "vite build",

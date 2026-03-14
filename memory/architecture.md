@@ -107,6 +107,14 @@ Reference repo reviewed: [karpathy/autoresearch](https://github.com/karpathy/aut
   - `run.log` / `results.tsv` ingestion
   - workspace bootstrap helpers
 
+### Current scaffold status
+- `apps/web/README.md` added as the frontend boundary marker
+- `apps/runtime-api/src/server.ts` added and smoke-tested
+- `packages/contracts/src/runtime.ts` added
+- `packages/domain/src/runtime-state.ts` added
+- `packages/autoresearch-adapter/src/index.ts` added
+- Existing live implementation still remains in `src-svelte/` and `scripts/`
+
 ### Runtime persistence
 - Start with SQLite for local durability and restart recovery.
 - Persist:
