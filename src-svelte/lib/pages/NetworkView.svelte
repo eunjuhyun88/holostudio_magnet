@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   import {
     buildJobNodeCountMap,
@@ -152,6 +153,10 @@
   }
 
   onMount(() => {
+    if (get(jobStore).phase === 'idle') {
+      void jobStore.connectRuntime();
+    }
+
     viewportWidth = window.innerWidth;
     telemetryUrl = resolveTelemetryUrl(window.location.search);
     telemetryMode = telemetryUrl ? "live" : "fixture";

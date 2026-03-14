@@ -4,6 +4,11 @@ import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseCliArgs } from "./autoresearch_to_telemetry.ts";
+import {
+  readAutoresearchStackStatus,
+  resolvePreferredAutoresearchRepoPath,
+  resolvePreferredNanochatRepoPath,
+} from "../packages/autoresearch-adapter/src/index.ts";
 
 type ManifestWorkspace = {
   workspace: string;
@@ -48,6 +53,9 @@ type SupervisorConfig = {
   restartAgents: boolean;
   restartDelayMs: number;
   model?: string;
+  round1BaselineCommit: string;
+  round1ReferencePaths: string[];
+  nanochatRepoPath: string;
 };
 
 type Preflight = {
@@ -74,12 +82,16 @@ type WorkspaceRuntime = {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
 
-function parseConfig(): SupervisorConfig {
+async function parseConfig(): Promise<SupervisorConfig> {
   const args = parseCliArgs(process.argv.slice(2));
   const runtimeRoot = resolveInputPath(args.get("runtime-root")?.[0] ?? resolve(rootDir, "runtime/autoresearch-loop-live"));
+  const stack = await readAutoresearchStackStatus(rootDir);
+  const nanochatRepoPath = resolvePreferredNanochatRepoPath(rootDir, stack);
+  const round1BaselineCommit = stack.lock?.nanochat.round1BaselineCommit ?? stack.spec.nanochat.round1BaselineCommit;
+  const round1ReferencePaths = stack.lock?.nanochat.round1ReferencePaths ?? stack.spec.nanochat.round1ReferencePaths;
 
   return {
-    repoPath: resolveInputPath(args.get("repo")?.[0] ?? "/Users/ej/autoresearch"),
+    repoPath: resolvePreferredAutoresearchRepoPath(rootDir, stack, args.get("repo")?.[0]),
     runtimeRoot,
     workspaceRoot: resolveInputPath(args.get("workspace-root")?.[0] ?? resolve(runtimeRoot, "workspaces")),
     manifestPath: resolveInputPath(args.get("manifest")?.[0] ?? resolve(runtimeRoot, "manifest.json")),
@@ -93,11 +105,14 @@ function parseConfig(): SupervisorConfig {
     restartAgents: args.get("restart-agents")?.[0] !== "false",
     restartDelayMs: Math.max(1000, Number(args.get("restart-delay-ms")?.[0] ?? "12000")),
     model: args.get("model")?.[0],
+    round1BaselineCommit,
+    round1ReferencePaths,
+    nanochatRepoPath,
   };
 }
 
 async function main() {
-  const config = parseConfig();
+  const config = await parseConfig();
   await mkdir(config.runtimeRoot, { recursive: true });
 
   const controller = await ensureController(config);
@@ -329,12 +344,19 @@ async function launchWorkspaceAgent(config: SupervisorConfig, workspace: Workspa
 }
 
 function buildAgentPrompt(workspace: WorkspaceRuntime, config: SupervisorConfig): string {
+  const referenceLines = config.round1ReferencePaths.map(
+    (referencePath) => `- ${resolve(config.nanochatRepoPath, referencePath)}`,
+  );
+
   return [
     `You are ${workspace.entry.workerId}, one worker in a long-running autoresearch swarm.`,
     `Work only inside this git worktree: ${workspace.workspaceDir}.`,
     `The controller is already running at http://localhost:${config.controllerPort}/events and watches run.log + results.tsv.`,
     `Setup is already done: stay on the current branch, do not create a new branch, and do not wait for human confirmation.`,
     `Before changing anything, read README.md, program.md, prepare.py, and train.py.`,
+    `This workspace is bootstrapped from the pinned Karpathy upstream autoresearch repo at ${config.repoPath}.`,
+    `Use nanochat round-1 commit ${config.round1BaselineCommit} as the baseline reference. Review these files for concrete ideas before radical changes:`,
+    ...referenceLines,
     `Respect program.md, with these overrides:`,
     `- do not ask for confirmation`,
     `- do not create a new branch`,
@@ -400,8 +422,8 @@ async function writeBlockedStatus(workspace: WorkspaceRuntime, preflight: Prefli
     "",
     "## Required Commands",
     "",
-    "- `cd /Users/ej/autoresearch && uv sync`",
-    "- `cd /Users/ej/autoresearch && uv run prepare.py`",
+    `- \`cd ${workspace.workspaceDir} && uv sync\``,
+    `- \`cd ${workspace.workspaceDir} && uv run prepare.py\``,
     "- run on a machine with a visible NVIDIA GPU (`nvidia-smi` must succeed)",
     "",
   ].join("\n");
@@ -417,6 +439,8 @@ async function writeSupervisorState(config: SupervisorConfig, manifest: Manifest
       controllerPort: config.controllerPort,
       manifestPath: config.manifestPath,
       repoPath: config.repoPath,
+      nanochatRepoPath: config.nanochatRepoPath,
+      round1BaselineCommit: config.round1BaselineCommit,
       workers: manifest.workspaces.length,
       preflight,
       updatedAt: new Date().toISOString(),

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { router } from '../stores/router.ts';
   import { jobStore, keepCount, statusMessage } from '../stores/jobStore.ts';
   import ModelSummaryCard from '../components/ModelSummaryCard.svelte';
@@ -33,11 +34,16 @@
   }
 
   function handleLaunch(e: CustomEvent<string>) {
+    const runtimeConfig = readRuntimeConfig();
+    if (runtimeConfig.runtimeRoot || runtimeConfig.apiBase) {
+      void jobStore.connectRuntime(runtimeConfig);
+      return;
+    }
     jobStore.startJob(e.detail);
   }
 
   function handleStop() {
-    jobStore.reset();
+    jobStore.stopJob();
   }
 
   function handleNewResearch() {
@@ -45,8 +51,23 @@
   }
 
   onMount(() => {
+    const runtimeConfig = readRuntimeConfig();
+    void (async () => {
+      const connected = await jobStore.connectRuntime(runtimeConfig);
+      if (!connected) {
+        const params = getCurrentRouteParams();
+        if (params.topic && get(jobStore).phase === 'idle') {
+          jobStore.startJob(params.topic);
+        }
+      }
+    })();
+
     const unsub = router.params.subscribe(p => {
-      if (p.topic && job.phase === 'idle') {
+      const current = get(jobStore);
+      if (current.sourceMode === 'runtime') {
+        return;
+      }
+      if (p.topic && current.phase === 'idle') {
         jobStore.startJob(p.topic);
       }
     });
@@ -55,6 +76,34 @@
       unsub();
     };
   });
+
+  function readRuntimeConfig(): { runtimeRoot?: string | null; apiBase?: string | null } {
+    if (typeof window === 'undefined') {
+      return {};
+    }
+
+    const fromSearch = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.slice(1) || '/';
+    const hashQueryIndex = hash.indexOf('?');
+    const fromHash = new URLSearchParams(hashQueryIndex >= 0 ? hash.slice(hashQueryIndex + 1) : '');
+
+    const runtimeRoot = fromHash.get('runtimeRoot') || fromSearch.get('runtimeRoot');
+    const apiBase = fromHash.get('runtimeApi') || fromSearch.get('runtimeApi');
+
+    return {
+      runtimeRoot: runtimeRoot?.trim() || null,
+      apiBase: apiBase?.trim() || null,
+    };
+  }
+
+  function getCurrentRouteParams() {
+    const hash = window.location.hash.slice(1) || '/';
+    const queryIndex = hash.indexOf('?');
+    const query = new URLSearchParams(queryIndex >= 0 ? hash.slice(queryIndex + 1) : '');
+    return {
+      topic: query.get('topic') || undefined,
+    };
+  }
 </script>
 
 <div class="autoresearch">

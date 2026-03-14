@@ -1,15 +1,27 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { CATEGORY_SHORT, CATEGORY_COLORS, resolveExperimentCategory } from '../data/modifications.ts';
+
+  import type { VerificationState } from '../stores/jobStore.ts';
 
   interface TreeNode {
     id: number;
     parentId: number | null;
     status: string;
+    verification: VerificationState;
     metric: number;
     modification: string;
     branchId: number;
     tier: number;
   }
+
+  const VERIFY_ICON_COLOR: Record<VerificationState, string> = {
+    'pending': 'none',
+    'committed': '#e67e22',
+    'revealed': '#2980b9',
+    'verified': '#27864a',
+    'spot-checked': '#8b5cf6',
+  };
 
   export let data: TreeNode[] = [];
   export let width: number = 560;
@@ -31,6 +43,20 @@
   })();
 
   $: branches = [...branchMap.keys()].sort((a, b) => a - b);
+
+  /** Derive short category label for each branch from its first node's modification */
+  $: branchLabel = (() => {
+    const labels = new Map<number, { short: string; color: string }>();
+    for (const [bid, nodes] of branchMap) {
+      const first = nodes[0];
+      const cat = first ? resolveExperimentCategory(first.modification) : undefined;
+      labels.set(bid, {
+        short: cat ? CATEGORY_SHORT[cat] : `B${bid}`,
+        color: cat ? CATEGORY_COLORS[cat] : 'var(--text-muted, #9a9590)',
+      });
+    }
+    return labels;
+  })();
   $: maxLen = Math.max(1, ...branches.map(b => branchMap.get(b)?.length ?? 0));
 
   $: plotW = width - PAD.left - PAD.right;
@@ -101,8 +127,11 @@
 <div class="tree-container" class:mounted>
   <svg {width} height={plotH} viewBox="0 0 {width} {plotH}" class="tree-svg">
     <defs>
-      <filter id="tree-best-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="rgba(39,134,74,0.5)" />
+      <filter id="tree-best-glow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(39,134,74,0.65)" />
+      </filter>
+      <filter id="tree-keep-glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="rgba(39,134,74,0.25)" />
       </filter>
     </defs>
 
@@ -112,12 +141,12 @@
         x={PAD.left - 6}
         y={PAD.top + i * ROW_GAP + ROW_GAP / 2 + 3}
         text-anchor="end"
-        fill="var(--text-muted, #9a9590)"
+        fill={branchLabel.get(branchId)?.color ?? 'var(--text-muted, #9a9590)'}
         font-size="7"
-        font-weight="600"
+        font-weight="700"
         font-family="var(--font-mono, 'JetBrains Mono', monospace)"
         letter-spacing="0.04em"
-      >B{branchId}</text>
+      >{branchLabel.get(branchId)?.short ?? `B${branchId}`}</text>
 
       <!-- Lane guideline -->
       <line
@@ -156,7 +185,7 @@
           fill={nodeColor(n)}
           stroke={isBest ? 'rgba(255,255,255,0.8)' : n.status === 'keep' ? 'rgba(39,134,74,0.3)' : 'none'}
           stroke-width={isBest ? 1.5 : n.status === 'keep' ? 0.8 : 0}
-          filter={isBest ? 'url(#tree-best-glow)' : undefined}
+          filter={isBest ? 'url(#tree-best-glow)' : n.status === 'keep' ? 'url(#tree-keep-glow)' : undefined}
           style="transition-delay:{mounted ? (30 + idx * 20) : 0}ms"
         >
           <title>#{n.id} B{n.branchId} {n.status} {n.metric > 0 ? n.metric.toFixed(3) : '--'} T{n.tier}</title>
@@ -188,6 +217,22 @@
             font-weight="700"
             font-family="var(--font-mono, 'JetBrains Mono', monospace)"
           >{n.metric.toFixed(3)}</text>
+        {/if}
+
+        <!-- Verification indicator -->
+        {#if n.verification && n.verification !== 'pending'}
+          {@const vc = VERIFY_ICON_COLOR[n.verification]}
+          {#if n.verification === 'verified' || n.verification === 'spot-checked'}
+            <!-- Checkmark for verified/spot-checked -->
+            <circle cx={pos.x + nodeRadius(n) + 4} cy={pos.y - 2} r="3.5" fill={vc} opacity="0.8" class="tree-badge" />
+            <path
+              d="M{pos.x + nodeRadius(n) + 2},{pos.y - 2} l1.5,1.5 l2.5,-3"
+              fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" class="tree-badge"
+            />
+          {:else}
+            <!-- Small dot for committed/revealed -->
+            <circle cx={pos.x + nodeRadius(n) + 4} cy={pos.y - 1} r="2" fill={vc} opacity="0.7" class="tree-badge" />
+          {/if}
         {/if}
       {/if}
     {/each}

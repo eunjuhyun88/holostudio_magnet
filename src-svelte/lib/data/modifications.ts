@@ -99,6 +99,19 @@ export const CATEGORY_LABELS: Record<ModCategory, string> = {
   baseline: 'Baseline',
 };
 
+/** Short category labels for compact charts */
+export const CATEGORY_SHORT: Record<ModCategory, string> = {
+  learning_rate: 'LR',
+  batch_size: 'Batch',
+  architecture: 'Arch',
+  regularization: 'Reg',
+  optimizer: 'Opt',
+  context: 'Ctx',
+  activation: 'Act',
+  embedding: 'Emb',
+  baseline: 'Base',
+};
+
 /** Category colors for charts */
 export const CATEGORY_COLORS: Record<ModCategory, string> = {
   learning_rate: '#D97757',
@@ -138,3 +151,40 @@ export const AI_THOUGHTS = [
   'Adjusting search distribution based on promising regions...',
   'Running statistical significance tests on top results...',
 ];
+
+/** Resolve a category for both simulator-native mods and runtime result descriptions */
+export function resolveExperimentCategory(modification: string): ModCategory {
+  const exact = MOD_CATEGORY[modification];
+  if (exact) {
+    return exact;
+  }
+
+  const normalized = modification.toLowerCase();
+
+  if (/adam|adamw|muon|optimizer|momentum|beta1|beta2|betas/.test(normalized)) {
+    return 'optimizer';
+  }
+  if (/lr|learning rate|warmup|warmdown|schedule|decay floor|final lr|cosine decay/.test(normalized)) {
+    return 'learning_rate';
+  }
+  if (/batch|device batch|total batch|micro.?batch/.test(normalized)) {
+    return 'batch_size';
+  }
+  if (/dropout|weight decay|gradient clipping|regularization|mixup|label smoothing/.test(normalized)) {
+    return 'regularization';
+  }
+  if (/gelu|relu|silu|mish|activation/.test(normalized)) {
+    return 'activation';
+  }
+  if (/embedding|unembedding|vocab/.test(normalized)) {
+    return 'embedding';
+  }
+  if (/context|seq|sequence|window|rope|rotary|theta|alibi|span/.test(normalized)) {
+    return 'context';
+  }
+  if (/attention|head|residual|projection|layer|depth|width|norm|gate|mlp|softcap|architecture|init|qk/.test(normalized)) {
+    return 'architecture';
+  }
+
+  return 'baseline';
+}

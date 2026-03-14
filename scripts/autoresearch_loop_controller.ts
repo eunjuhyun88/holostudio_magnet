@@ -14,6 +14,13 @@ import { fileURLToPath } from "node:url";
 import {
   parseCliArgs,
 } from "./autoresearch_to_telemetry.ts";
+import {
+  readAutoresearchStackStatus,
+  resolvePreferredAutoresearchRepoPath,
+} from "../packages/autoresearch-adapter/src/index.ts";
+import type {
+  RuntimeJobCommand,
+} from "../packages/contracts/src/index.ts";
 import type {
   ExperimentResult,
   Job,
@@ -130,6 +137,13 @@ type ActiveRun = {
   resultEmitted: boolean;
 };
 
+type ControllerControlState = {
+  paused: boolean;
+  boostedCategories: string[];
+  pausedCategories: string[];
+  lastCommandAt: string | null;
+};
+
 type Client = {
   id: string;
   response: import("node:http").ServerResponse<import("node:http").IncomingMessage>;
@@ -147,6 +161,7 @@ type ControllerRuntime = {
   crashes: number;
   startedAt: number;
   stopReason: string | null;
+  control: ControllerControlState;
 };
 
 type ResultRow = {
@@ -155,6 +170,11 @@ type ResultRow = {
   memoryGb?: number;
   status?: ExperimentResult;
   description: string;
+};
+
+type ExperimentIdea = {
+  description: string;
+  category: string;
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -176,17 +196,17 @@ const regionPresets: RegionPreset[] = [
   { slug: "new-york-h100", region: "New York", lat: 40.7128, lng: -74.006, gpuLabel: "H100 80GB", cpu: 32, gpu: 1, memGb: 80 },
 ];
 
-const experimentIdeas = [
-  "raise muon momentum on attention path",
-  "shrink residual projection init scale",
-  "swap window pattern for denser local blocks",
-  "increase device batch size after warmup",
-  "reduce depth and widen heads slightly",
-  "tighten lr decay floor to stabilize endgame",
-  "bias norm eps toward lower-variance tokens",
-  "reweight mlp expansion against kv bandwidth",
-  "trim rotary span for shorter effective context",
-  "rebalance adamw decay on embedding table",
+const experimentIdeas: ExperimentIdea[] = [
+  { description: "raise muon momentum on attention path", category: "optimizer" },
+  { description: "shrink residual projection init scale", category: "architecture" },
+  { description: "swap window pattern for denser local blocks", category: "context" },
+  { description: "increase device batch size after warmup", category: "batch_size" },
+  { description: "reduce depth and widen heads slightly", category: "architecture" },
+  { description: "tighten lr decay floor to stabilize endgame", category: "learning_rate" },
+  { description: "bias norm eps toward lower-variance tokens", category: "regularization" },
+  { description: "reweight mlp expansion against kv bandwidth", category: "architecture" },
+  { description: "trim rotary span for shorter effective context", category: "context" },
+  { description: "rebalance adamw decay on embedding table", category: "optimizer" },
 ];
 
 function mainModulePath(): string | null {
@@ -199,17 +219,18 @@ function isMain(): boolean {
   return entry !== null && fileURLToPath(import.meta.url) === entry;
 }
 
-function parseConfig(): ControllerConfig {
+async function parseConfig(): Promise<ControllerConfig> {
   const args = parseCliArgs(process.argv.slice(2));
   const mode = (args.get("mode")?.[0] ?? "simulate") as ControllerMode;
   const runtimeRoot = resolveInputPath(args.get("runtime-root")?.[0] ?? defaultRuntimeRoot);
   const workspaceRoot = resolveInputPath(args.get("workspace-root")?.[0] ?? resolve(runtimeRoot, "workspaces"));
   const manifestPath = resolveInputPath(args.get("manifest")?.[0] ?? resolve(runtimeRoot, "manifest.json"));
   const telemetryLogPath = resolveInputPath(args.get("telemetry-log")?.[0] ?? resolve(runtimeRoot, "telemetry.ndjson"));
+  const stack = await readAutoresearchStackStatus(rootDir);
 
   return {
     mode: mode === "watch" ? "watch" : "simulate",
-    repoPath: args.get("repo")?.[0] ? resolveInputPath(args.get("repo")?.[0]!) : undefined,
+    repoPath: resolvePreferredAutoresearchRepoPath(rootDir, stack, args.get("repo")?.[0]),
     baseRef: args.get("base-ref")?.[0] ?? "HEAD",
     runtimeRoot,
     workspaceRoot,
@@ -290,6 +311,12 @@ async function setupRuntime(config: ControllerConfig): Promise<ControllerRuntime
     crashes: 0,
     startedAt: Date.now(),
     stopReason: null,
+    control: {
+      paused: false,
+      boostedCategories: [],
+      pausedCategories: [],
+      lastCommandAt: null,
+    },
   };
 
   for (const workspace of runtime.workspaces) {
@@ -332,6 +359,10 @@ async function setupRuntime(config: ControllerConfig): Promise<ControllerRuntime
 async function bootstrapManifest(config: ControllerConfig): Promise<ManifestFile> {
   const manifestDir = dirname(config.manifestPath);
   await mkdir(manifestDir, { recursive: true });
+
+  if (!(await pathExists(config.repoPath!))) {
+    throw new Error(`Autoresearch repo not found at ${config.repoPath}. Run npm run autoresearch:bootstrap first or pass --repo=...`);
+  }
 
   const selectedPresets = selectRegionPresets(config.workers);
   const workspaces: ManifestWorkspace[] = [];
@@ -449,16 +480,26 @@ async function runProcess(command: string, args: string[], cwd: string): Promise
 function createServerRuntime(runtime: ControllerRuntime) {
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host}`);
+    const jsonHeaders = {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "content-type",
+      "access-control-allow-methods": "GET,POST,OPTIONS",
+    };
+
+    if (request.method === "OPTIONS") {
+      response.writeHead(204, jsonHeaders);
+      response.end();
+      return;
+    }
 
     if (url.pathname === "/healthz") {
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-        "access-control-allow-origin": "*",
-      });
+      response.writeHead(200, jsonHeaders);
       response.end(JSON.stringify({
         ok: true,
         mode: runtime.config.mode,
+        supportsCommands: runtime.config.mode === "simulate",
         iterations: runtime.iterations,
         keeps: runtime.keeps,
         discards: runtime.discards,
@@ -466,30 +507,28 @@ function createServerRuntime(runtime: ControllerRuntime) {
         stopReason: runtime.stopReason,
         workers: runtime.workspaces.length,
         events: runtime.history.length,
+        paused: runtime.control.paused,
+        boostedCategories: runtime.control.boostedCategories,
+        pausedCategories: runtime.control.pausedCategories,
+        lastCommandAt: runtime.control.lastCommandAt,
       }));
       return;
     }
 
     if (url.pathname === "/manifest") {
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-        "access-control-allow-origin": "*",
-      });
+      response.writeHead(200, jsonHeaders);
       response.end(JSON.stringify(runtime.manifest, null, 2));
       return;
     }
 
     if (url.pathname === "/state") {
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-        "access-control-allow-origin": "*",
-      });
+      response.writeHead(200, jsonHeaders);
       response.end(JSON.stringify({
         mode: runtime.config.mode,
+        supportsCommands: runtime.config.mode === "simulate",
         startedAt: new Date(runtime.startedAt).toISOString(),
         stopReason: runtime.stopReason,
+        control: runtime.control,
         workspaces: runtime.workspaces.map((workspace) => ({
           workerId: workspace.workerId,
           region: workspace.region,
@@ -510,11 +549,36 @@ function createServerRuntime(runtime: ControllerRuntime) {
       return;
     }
 
+    if (request.method === "POST" && url.pathname === "/commands") {
+      if (runtime.config.mode !== "simulate") {
+        response.writeHead(409, jsonHeaders);
+        response.end(JSON.stringify({ error: "commands are only supported in simulate mode" }));
+        return;
+      }
+
+      const body = await readRequestJson(request);
+      const command = parseRuntimeCommand(body);
+      if (!command) {
+        response.writeHead(400, jsonHeaders);
+        response.end(JSON.stringify({ error: "invalid command payload" }));
+        return;
+      }
+
+      runtime.control = applyRuntimeCommand(runtime.control, command, new Date().toISOString());
+      if (command.type === "stop" && !runtime.stopReason) {
+        runtime.stopReason = "stopped by command";
+      }
+      response.writeHead(202, jsonHeaders);
+      response.end(JSON.stringify({
+        ok: true,
+        command,
+        control: runtime.control,
+      }, null, 2));
+      return;
+    }
+
     if (url.pathname !== "/events") {
-      response.writeHead(404, {
-        "content-type": "application/json; charset=utf-8",
-        "access-control-allow-origin": "*",
-      });
+      response.writeHead(404, jsonHeaders);
       response.end(JSON.stringify({ error: "Not found" }));
       return;
     }
@@ -588,7 +652,7 @@ async function tickSimulation(runtime: ControllerRuntime) {
 
   for (const workspace of runtime.workspaces) {
     if (!workspace.activeRun) {
-      if (now >= workspace.nextStartAt) {
+      if (!runtime.control.paused && now >= workspace.nextStartAt) {
         startSimulatedRun(runtime, workspace, now);
       }
       continue;
@@ -695,6 +759,7 @@ function startSimulatedRun(runtime: ControllerRuntime, workspace: ControllerWork
   const nextIndex = workspace.nextExperimentIndex;
   workspace.nextExperimentIndex += 1;
   const baseMetric = workspace.bestMetric;
+  const idea = selectExperimentIdea(nextIndex, runtime.control);
   const crashRoll = Math.random();
   let status: ExperimentResult = "discard";
   let targetMetric: number | undefined;
@@ -718,7 +783,7 @@ function startSimulatedRun(runtime: ControllerRuntime, workspace: ControllerWork
   const run: ActiveRun = {
     experimentId: `exp-${workspace.slug}-${String(nextIndex).padStart(4, "0")}`,
     jobId: `job-${workspace.slug}-${String(nextIndex).padStart(4, "0")}`,
-    description: experimentIdeas[nextIndex % experimentIdeas.length],
+    description: idea.description,
     commit: shortHash(`${workspace.slug}:${nextIndex}:${now}`),
     status,
     targetMetric,
@@ -1089,6 +1154,56 @@ function maybeStop(runtime: ControllerRuntime) {
   }
 }
 
+function selectExperimentIdea(index: number, control: ControllerControlState): ExperimentIdea {
+  const candidates = experimentIdeas.filter((idea) => !control.pausedCategories.includes(idea.category));
+  const pool = candidates.length > 0 ? candidates : experimentIdeas;
+  const weightedPool = pool.flatMap((idea) => (
+    control.boostedCategories.includes(idea.category) ? [idea, idea] : [idea]
+  ));
+  return weightedPool[index % weightedPool.length];
+}
+
+function applyRuntimeCommand(
+  control: ControllerControlState,
+  command: RuntimeJobCommand,
+  appliedAt: string,
+): ControllerControlState {
+  switch (command.type) {
+    case "pause":
+      return { ...control, paused: true, lastCommandAt: appliedAt };
+    case "resume":
+      return { ...control, paused: false, lastCommandAt: appliedAt };
+    case "stop":
+      return { ...control, paused: true, lastCommandAt: appliedAt };
+    case "boost_category":
+      return {
+        ...control,
+        lastCommandAt: appliedAt,
+        boostedCategories: appendUnique(control.boostedCategories, command.category),
+        pausedCategories: removeItem(control.pausedCategories, command.category),
+      };
+    case "unboost_category":
+      return {
+        ...control,
+        lastCommandAt: appliedAt,
+        boostedCategories: removeItem(control.boostedCategories, command.category),
+      };
+    case "pause_category":
+      return {
+        ...control,
+        lastCommandAt: appliedAt,
+        pausedCategories: appendUnique(control.pausedCategories, command.category),
+        boostedCategories: removeItem(control.boostedCategories, command.category),
+      };
+    case "resume_category":
+      return {
+        ...control,
+        lastCommandAt: appliedAt,
+        pausedCategories: removeItem(control.pausedCategories, command.category),
+      };
+  }
+}
+
 function selectRegionPresets(count: number): RegionPreset[] {
   const presets: RegionPreset[] = [];
 
@@ -1186,6 +1301,52 @@ async function pathExists(targetPath: string): Promise<boolean> {
   }
 }
 
+async function readRequestJson(request: import("node:http").IncomingMessage): Promise<unknown> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of request) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+
+  if (chunks.length === 0) {
+    return {};
+  }
+
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw.trim() ? JSON.parse(raw) : {};
+}
+
+function parseRuntimeCommand(input: unknown): RuntimeJobCommand | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const value = input as Record<string, unknown>;
+  const type = typeof value.type === "string" ? value.type : null;
+  const category = typeof value.category === "string" && value.category.trim() ? value.category.trim() : null;
+
+  switch (type) {
+    case "pause":
+    case "resume":
+    case "stop":
+      return { type };
+    case "boost_category":
+    case "unboost_category":
+    case "pause_category":
+    case "resume_category":
+      return category ? { type, category } : null;
+    default:
+      return null;
+  }
+}
+
+function appendUnique(items: string[], value: string): string[] {
+  return items.includes(value) ? items : [...items, value];
+}
+
+function removeItem(items: string[], value: string): string[] {
+  return items.filter((item) => item !== value);
+}
+
 function resolveInputPath(inputPath: string): string {
   return isAbsolute(inputPath) ? inputPath : resolve(process.cwd(), inputPath);
 }
@@ -1207,7 +1368,7 @@ function toErrorMessage(error: unknown): string {
 }
 
 async function main() {
-  const config = parseConfig();
+  const config = await parseConfig();
   const runtime = await setupRuntime(config);
   const server = createServerRuntime(runtime);
 

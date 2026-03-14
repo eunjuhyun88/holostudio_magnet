@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "description": "Pinned Karpathy upstream stack for exact autoresearch + nanochat round-1 integration.",
+  "updatedAt": "2026-03-15T00:00:00.000Z",
+  "autoresearch": {
+    "remoteUrl": "https://github.com/karpathy/autoresearch",
+    "ref": "c2450add72cc80317be1fe8111974b892da10944",
+    "localPath": "runtime/upstreams/karpathy-autoresearch"
+  },
+  "nanochat": {
+    "remoteUrl": "https://github.com/karpathy/nanochat",
+    "ref": "6ed7d1d82cee16c2e26f45d559ad3338447a6c1b",
+    "localPath": "runtime/upstreams/karpathy-nanochat",
+    "round1BaselineCommit": "6ed7d1d82cee16c2e26f45d559ad3338447a6c1b",
+    "round1ReferencePaths": [
+      "nanochat/gpt.py",
+      "nanochat/optim.py",
+      "scripts/base_train.py"
+    ]
+  }
+}
