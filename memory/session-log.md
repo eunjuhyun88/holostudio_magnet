@@ -325,6 +325,56 @@ runtime-api가 실제 runtime summary를 읽게 된 뒤, 다음 단계로 `Autor
 ### Pending
 - current worktree still contains uncommitted UI/widget/runtime artifacts on `codex/dashboard-widget-lane`
 - `feat/next-iteration` is ready as the clean integration branch, but it has not been pushed
+
+---
+
+## 2026-03-15 (cont): dashboard/widget boundary refactor
+
+### Context
+사용자 요청: "계속해 실제로 리팩토링다될때까지"
+
+현재 레인:
+- branch `codex/dashboard-widget-lane`
+- work id `W-20260315-dashboard-widget-lane`
+
+### Completed
+- **Dashboard orchestration moved out of the page**:
+  - new store: `src-svelte/lib/stores/dashboardStore.ts`
+  - fixture playback, mesh animation clock, runtime connection bootstrap, wallet-aware widget layout sync, and dashboard summaries now live in the store
+  - `DashboardPage.svelte` is reduced to a view shell that renders store data and delegates topic launch to the store
+
+- **Widget persistence bug fixed structurally**:
+  - `src-svelte/lib/stores/widgetStore.ts`
+  - widget layout persistence now uses separate localStorage keys for logged-out and logged-in modes
+  - this prevents stale guest layouts from hiding portfolio widgets after wallet connect
+
+- **Dashboard data boundary tightened**:
+  - `src-svelte/lib/services/dashboardService.ts` cleaned up as the dashboard-facing data adapter
+  - new dashboard surface pieces now explicitly hang off the service/store/component split:
+    - `AppDock.svelte`
+    - `InfoBar.svelte`
+    - `WidgetContainer.svelte`
+    - `ConvergenceChart.svelte`
+    - `ResearchStats.svelte`
+
+- **A11y/build cleanup**:
+  - `AppDock.svelte` popover wrapper warning removed
+  - `AutoresearchPage.svelte` and `RunningDashboard.svelte` branch control action wrappers fixed
+  - `ConvergenceChart.svelte` keyboard selection support added
+  - `ResearchStats.svelte` now consumes the `discards` prop instead of leaving it unused
+
+### Verification
+- `npm run build` ✓
+- `npm run coord:check` ✓
+- build completed without the previous touched-surface warnings
+
+### Pending
+- current dashboard/widget lane still contains broader WIP files beyond this refactor pass:
+  - `src-svelte/lib/components/*`
+  - `src-svelte/lib/stores/*`
+  - `src-svelte/lib/services/*`
+  - runtime fixture artifacts under `runtime/*`
+- next structural step is to cut the remaining widget/dashboard WIP into finalized component ownership and then merge this lane back into the integration branch
   - `npm run coord:claim -- --work-id "W-20260315-agent-lane-enforcement" ...`
   - `npm run agent:guard` ✓
   - `npm run coord:check` ✓

@@ -88,6 +88,14 @@
   - `jobStore` can mirror `/api/runtime/mesh`
   - `AutoresearchPage` prefers runtime mesh over browser simulation
   - local simulation remains as fallback only
+- **Dashboard surface now has a dedicated orchestration store**:
+  - `src-svelte/lib/stores/dashboardStore.ts`
+  - `DashboardPage.svelte` now acts as a view shell over store-driven mesh playback, summary aggregation, and runtime hookup
+  - widget layout persistence is now split by auth mode in `widgetStore` (`guest` vs `member`) to avoid logged-out layouts hiding portfolio widgets after login
+- **Current dashboard/widget lane has a cleaner UI boundary**:
+  - `src-svelte/lib/services/*` is the dashboard-facing data adapter layer
+  - `src-svelte/lib/components/AppDock.svelte`, `WidgetContainer.svelte`, `InfoBar.svelte`, `ResearchStats.svelte`, `ConvergenceChart.svelte` are part of the new dashboard surface
+  - build warnings in touched dashboard/research surfaces were cleared on 2026-03-15
 - **Runtime control path now works end-to-end for simulate mode**:
   - controller exposes `/commands`
   - runtime-api exposes `POST /api/runtime/control`
