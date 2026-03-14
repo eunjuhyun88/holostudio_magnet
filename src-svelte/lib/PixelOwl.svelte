@@ -200,29 +200,49 @@
   $: displayW = canvasW * size;
   $: displayH = canvasH * size;
 
-  function drawFrame(grid: string[]) {
+  // Pre-rendered frame cache — avoids per-pixel iteration every animation tick
+  const frameCache = new Map<FrameName, HTMLCanvasElement>();
+  const RENDER_SCALE = 2;
+
+  function preRenderAllFrames() {
+    const w = canvasW * RENDER_SCALE;
+    const h = canvasH * RENDER_SCALE;
+    for (const [name, grid] of Object.entries(frames) as [FrameName, string[]][]) {
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const ctx = off.getContext('2d')!;
+      const offX = Math.floor((maxW - grid[0].length) / 2);
+      const offY = Math.floor((maxH - grid.length) / 2);
+      for (let y = 0; y < grid.length; y++) {
+        const row = grid[y];
+        for (let x = 0; x < row.length; x++) {
+          const fill = COLORS[row[x]];
+          if (fill) {
+            ctx.fillStyle = fill;
+            ctx.fillRect((x + offX) * PX * RENDER_SCALE, (y + offY) * PX * RENDER_SCALE, PX * RENDER_SCALE, PX * RENDER_SCALE);
+          }
+        }
+      }
+      frameCache.set(name, off);
+    }
+  }
+
+  function drawFrame(frameName: FrameName) {
     if (!canvasEl) return;
     const ctx = canvasEl.getContext('2d');
     if (!ctx) return;
-    const scale = 2;
-    ctx.clearRect(0, 0, canvasW * scale, canvasH * scale);
-    const offX = Math.floor((maxW - grid[0].length) / 2);
-    const offY = Math.floor((maxH - grid.length) / 2);
-    grid.forEach((row, y) => {
-      [...row].forEach((c, x) => {
-        const fill = COLORS[c];
-        if (fill) {
-          ctx.fillStyle = fill;
-          ctx.fillRect((x + offX) * PX * scale, (y + offY) * PX * scale, PX * scale, PX * scale);
-        }
-      });
-    });
+    const cached = frameCache.get(frameName);
+    if (cached) {
+      ctx.clearRect(0, 0, canvasW * RENDER_SCALE, canvasH * RENDER_SCALE);
+      ctx.drawImage(cached, 0, 0);
+    }
   }
 
   function runSequence() {
     const seq = sequences[currentMood] || sequences.idle;
     const [frameName, dur] = seq[seqIdx % seq.length];
-    drawFrame(frames[frameName]);
+    drawFrame(frameName);
     seqIdx++;
     animTimer = setTimeout(runSequence, dur);
   }
@@ -231,6 +251,7 @@
     if (animTimer) clearTimeout(animTimer);
     seqIdx = 0;
     currentMood = mood;
+    preRenderAllFrames();
     runSequence();
   }
 
@@ -257,7 +278,7 @@
   height={canvasH * 2}
   class="pixel-owl"
   style="width:{displayW}px;height:{displayH}px;"
-/>
+></canvas>
 
 <style>
   .pixel-owl {

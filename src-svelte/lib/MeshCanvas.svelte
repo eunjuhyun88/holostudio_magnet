@@ -59,6 +59,7 @@
 
   let canvas: HTMLCanvasElement;
   let animFrame: number | null = null;
+  let isVisible = true;
   let W = 0;
   let H = 0;
   let dpr = 1;
@@ -77,7 +78,20 @@
 
   const AUTO_SPEED = 0.0012;
   const R_RATIO = 0.38;
-  const DOT_DENSITY = 48000;
+  const DOT_DENSITY = 18000;
+
+  // Performance: cache measureText results
+  const textWidthCache = new Map<string, number>();
+  function cachedMeasureText(ctx: CanvasRenderingContext2D, text: string, font: string): number {
+    const key = font + '|' + text;
+    let w = textWidthCache.get(key);
+    if (w !== undefined) return w;
+    ctx.font = font;
+    w = ctx.measureText(text).width;
+    textWidthCache.set(key, w);
+    if (textWidthCache.size > 200) textWidthCache.clear();
+    return w;
+  }
 
   // ─── Compute node locations ───
   const CITIES = [
@@ -298,19 +312,29 @@
     ctx.arc(cx, cy, R + 1, 0, Math.PI * 2);
     ctx.clip();
 
+    // Batch dots by opacity bucket for fewer style changes
+    const dotBuckets: [number, number, number][][] = [[], [], [], []];
     for (let i = 0; i < dots.length; i++) {
       const d = dots[i];
       const p = proj(d.x, d.y, d.z, cx, cy, R);
       if (p.z > 0.12) continue;
-
-      // Smooth depth falloff
       const depthA = Math.max(0, Math.min(1, 0.2 + 0.8 * (-p.z + 0.12)));
-      const sz = Math.max(0.5, 1.0 * p.sc);
       if (depthA < 0.03) continue;
-
+      const sz = Math.max(0.5, 1.0 * p.sc);
+      const bucket = depthA > 0.6 ? 3 : depthA > 0.35 ? 2 : depthA > 0.15 ? 1 : 0;
+      dotBuckets[bucket].push([p.sx, p.sy, sz]);
+    }
+    const bucketAlphas = [0.08, 0.2, 0.38, 0.6];
+    for (let b = 0; b < 4; b++) {
+      const pts = dotBuckets[b];
+      if (!pts.length) continue;
+      ctx.fillStyle = `rgba(100, 95, 88, ${bucketAlphas[b]})`;
       ctx.beginPath();
-      ctx.arc(p.sx, p.sy, sz, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 95, 88, ${depthA * 0.75})`;
+      for (let i = 0; i < pts.length; i++) {
+        const [x, y, r] = pts[i];
+        ctx.moveTo(x + r, y);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+      }
       ctx.fill();
     }
     ctx.restore();
@@ -329,7 +353,7 @@
       ctx.beginPath();
       let started = false;
       let anyVisible = false;
-      for (let f = 0; f <= 1; f += 0.012) {
+      for (let f = 0; f <= 1; f += 0.03) {
         const [ax, ay, az] = arcPt(arc.from, arc.to, f, lift);
         const ap = proj(ax, ay, az, cx, cy, R);
         if (ap.z > 0.25) { started = false; continue; }
@@ -402,26 +426,24 @@
         }
       }
 
-      // Pin glow — state-based
-      if (isActive) {
-        const gr = (pin.isMyGpu ? 18 : isTop ? 14 : 8) * sc;
-        let glowColor: string;
+      // Pin glow — simple circle with alpha (avoid per-pin gradient)
+      if (isActive && (isTop || pin.isMyGpu)) {
+        const gr = (pin.isMyGpu ? 14 : 10) * sc;
+        let glowAlpha: number;
+        let glowRGB: string;
         if (pin.isMyGpu) {
-          glowColor = `rgba(217, 119, 87, ${0.5 * pulse})`;
+          glowRGB = '217, 119, 87'; glowAlpha = 0.12 * pulse;
         } else if (pin.trainingCount > 0) {
-          glowColor = `rgba(217, 119, 87, ${(isTop ? 0.4 : 0.15) * pulse})`;
+          glowRGB = '217, 119, 87'; glowAlpha = 0.08 * pulse;
         } else if (pin.evaluatingCount > 0) {
-          glowColor = `rgba(183, 134, 14, ${(isTop ? 0.35 : 0.12) * pulse})`;
-        } else if (pin.availableCount > 0) {
-          glowColor = `rgba(39, 134, 74, ${(isTop ? 0.35 : 0.12) * pulse})`;
+          glowRGB = '183, 134, 14'; glowAlpha = 0.07 * pulse;
         } else {
-          glowColor = `rgba(80, 170, 255, ${isTop ? 0.4 * pulse : 0.15})`;
+          glowRGB = '80, 170, 255'; glowAlpha = 0.08 * pulse;
         }
-        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, gr);
-        g.addColorStop(0, glowColor);
-        g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g;
-        ctx.fillRect(sx - gr, sy - gr, gr * 2, gr * 2);
+        ctx.beginPath();
+        ctx.arc(sx, sy, gr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${glowRGB}, ${glowAlpha})`;
+        ctx.fill();
       }
 
       // Pin dot — STATE-BASED COLORS
@@ -491,16 +513,16 @@
       const fs = Math.max(9, Math.round(11 * sc));
       const fsSmall = Math.max(8, Math.round(9 * sc));
 
-      ctx.font = `600 ${fs}px 'JetBrains Mono', monospace`;
+      const nameFont = `600 ${fs}px 'JetBrains Mono', monospace`;
       const nameStr = pin.isMyGpu ? `★ ${pin.name}` : pin.name;
-      const nameW = ctx.measureText(nameStr).width;
+      const nameW = cachedMeasureText(ctx, nameStr, nameFont);
 
-      ctx.font = `400 ${fsSmall}px 'JetBrains Mono', monospace`;
+      const subFont = `400 ${fsSmall}px 'JetBrains Mono', monospace`;
       const activeCount = pin.trainingCount + pin.evaluatingCount + pin.availableCount;
       const countStr = pin.count > 0
         ? `${activeCount} active / ${pin.count} total · ${pin.region}`
         : pin.region;
-      const subW = ctx.measureText(countStr).width;
+      const subW = cachedMeasureText(ctx, countStr, subFont);
       const cardW = Math.max(nameW, subW) + 20;
       const cardH = fs + fsSmall + 16;
       const cardX = sx + dr + 10;
@@ -572,9 +594,9 @@
     ctx.restore();
   }
 
-  // ─── Loop ───
+  // ─── Loop (pauses when off-screen) ───
   function animate() {
-    if (canvas) {
+    if (isVisible && canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) draw(ctx);
     }
@@ -620,7 +642,10 @@
     animate();
     const ro = new ResizeObserver(resize);
     if (canvas.parentElement) ro.observe(canvas.parentElement);
-    return () => { ro.disconnect(); if (animFrame !== null) cancelAnimationFrame(animFrame); };
+    // Pause animation when scrolled off-screen
+    const io = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting; }, { threshold: 0.01 });
+    if (canvas.parentElement) io.observe(canvas.parentElement);
+    return () => { ro.disconnect(); io.disconnect(); if (animFrame !== null) cancelAnimationFrame(animFrame); };
   });
 </script>
 

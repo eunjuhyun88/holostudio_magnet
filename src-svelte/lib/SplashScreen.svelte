@@ -7,9 +7,9 @@
   let phase: 'enter' | 'show' | 'exit' = 'enter';
 
   onMount(() => {
-    setTimeout(() => { phase = 'show'; }, 100);
-    setTimeout(() => { phase = 'exit'; }, 1400);
-    setTimeout(() => { onDone(); }, 1900);
+    setTimeout(() => { phase = 'show'; }, 50);
+    setTimeout(() => { phase = 'exit'; }, 550);
+    setTimeout(() => { onDone(); }, 1000);
   });
 </script>
 

@@ -145,23 +145,24 @@
       frameIndex += 1;
     }, 2800);
 
-    const clockInterval = setInterval(() => { meshSimulationTime += 0.25; }, 250);
-    const popInterval = setInterval(() => {
+    // Combined tick: clock + population update (was 2 separate intervals at 250ms+140ms)
+    const tickInterval = setInterval(() => {
+      meshSimulationTime += 0.5;
       const floor = model.nodes.length;
       const cur = Math.max(meshPopulationDisplayed, floor);
-      if (cur === meshPopulationTarget) return;
-      const step = Math.max(2, Math.ceil(Math.abs(meshPopulationTarget - cur) * 0.015));
-      meshPopulationDisplayed = cur < meshPopulationTarget
-        ? Math.min(meshPopulationTarget, cur + step)
-        : Math.max(meshPopulationTarget, cur - step);
-    }, 140);
+      if (cur !== meshPopulationTarget) {
+        const step = Math.max(3, Math.ceil(Math.abs(meshPopulationTarget - cur) * 0.03));
+        meshPopulationDisplayed = cur < meshPopulationTarget
+          ? Math.min(meshPopulationTarget, cur + step)
+          : Math.max(meshPopulationTarget, cur - step);
+      }
+    }, 500);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
       clearInterval(fixtureInterval);
-      clearInterval(clockInterval);
-      clearInterval(popInterval);
+      clearInterval(tickInterval);
     };
   });
 </script>
