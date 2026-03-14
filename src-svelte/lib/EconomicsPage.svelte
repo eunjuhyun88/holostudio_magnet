@@ -53,6 +53,20 @@
       animateValue(0, 2341, 1400, v => activeBonds = v);
       animateValue(0, 892, 1500, v => mau = v);
     }, 300);
+
+    // Trust score animation
+    setTimeout(() => {
+      animateValue(0, trustScoreTarget, 2000, v => trustScore = v);
+    }, 600);
+
+    // PPAP pipeline animation
+    ppapInterval = setInterval(() => {
+      ppapActiveStage = (ppapActiveStage + 1) % 4;
+    }, 2200);
+
+    return () => {
+      if (ppapInterval) clearInterval(ppapInterval);
+    };
   });
 
   function fmtDollar(n: number): string {
@@ -293,6 +307,85 @@
     });
   }
 
+  // ── PPAP Pipeline ──
+  interface PpapStage {
+    id: string;
+    label: string;
+    sub: string;
+    icon: string;
+    color: string;
+  }
+
+  const ppapStages: PpapStage[] = [
+    { id: 'submit', label: 'Submit', sub: 'Contributor uploads data', icon: '📤', color: 'var(--blue)' },
+    { id: 'batch', label: 'Batch', sub: 'Aggregated into batch', icon: '📦', color: 'var(--accent)' },
+    { id: 'challenge', label: 'Challenge', sub: '24h verification window', icon: '⏱', color: 'var(--gold)' },
+    { id: 'confirmed', label: 'Confirmed', sub: 'PPAP immutable on-chain', icon: '✓', color: 'var(--green)' },
+  ];
+
+  let ppapActiveStage = 0;
+  let ppapAnimating = true;
+  let ppapInterval: ReturnType<typeof setInterval>;
+
+  // ── Trust Score ──
+  let trustScore = 0;
+  const trustScoreTarget = 847;
+
+  // trust score animated in onMount below
+
+  $: trustTier = trustScore >= 800 ? 3 : trustScore >= 500 ? 2 : 1;
+  $: trustTierName = trustTier === 3 ? 'Diamond' : trustTier === 2 ? 'Gold' : 'Silver';
+  $: trustTierColor = trustTier === 3 ? 'var(--blue)' : trustTier === 2 ? 'var(--gold)' : 'var(--text-muted)';
+  $: trustMultiplier = trustTier === 3 ? '2.5×' : trustTier === 2 ? '1.5×' : '1.0×';
+  $: trustBondReq = trustTier === 3 ? '10,000' : trustTier === 2 ? '2,000' : '500';
+
+  // ── Journey Actors ──
+  interface JourneyActor {
+    role: string;
+    desc: string;
+    icon: string;
+    color: string;
+    actions: string[];
+  }
+
+  const journeyActors: JourneyActor[] = [
+    {
+      role: 'Contributor',
+      desc: 'Provides data & annotations',
+      icon: '📊',
+      color: 'var(--accent)',
+      actions: ['Upload datasets', 'Earn Pool A rewards', 'Build PPAP provenance'],
+    },
+    {
+      role: 'Verifier',
+      desc: 'Validates data integrity',
+      icon: '🔍',
+      color: 'var(--blue)',
+      actions: ['Challenge batches', 'Earn notary fees', 'Maintain trust score'],
+    },
+    {
+      role: 'Compute',
+      desc: 'GPU nodes run experiments',
+      icon: '⚡',
+      color: 'var(--green)',
+      actions: ['Bond HOOT as stake', 'Execute research jobs', 'Earn Pool B rewards'],
+    },
+    {
+      role: 'Builder',
+      desc: 'Researchers & model creators',
+      icon: '🧪',
+      color: 'var(--gold)',
+      actions: ['Define ontologies', 'Launch Magnet jobs', 'Publish VTR results'],
+    },
+    {
+      role: 'Buyer',
+      desc: 'Consumes model outputs',
+      icon: '🔑',
+      color: 'var(--red)',
+      actions: ['Purchase model access', 'Burn HOOT for credits', 'Deploy agent bundles'],
+    },
+  ];
+
   // ── Radial Flow hover state ──
   let hoveredNode: string | null = null;
 
@@ -309,6 +402,40 @@
 </script>
 
 <div class="econ" data-theme="light" class:visible>
+
+  <!-- ══════════ 0. PAGE HEADER ══════════ -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-header-text">
+        <h1 class="page-title">
+          <!-- Pixel chain icon inline -->
+          <svg width="28" height="28" viewBox="0 0 16 16" fill="none" class="px-icon title-icon" shape-rendering="crispEdges">
+            <rect x="3" y="1" width="4" height="2" fill="var(--accent)"/>
+            <rect x="1" y="3" width="2" height="4" fill="var(--accent)"/>
+            <rect x="7" y="3" width="2" height="2" fill="var(--accent)"/>
+            <rect x="3" y="7" width="2" height="2" fill="var(--accent)" opacity="0.5"/>
+            <rect x="5" y="5" width="2" height="2" fill="var(--accent)" opacity="0.5"/>
+            <rect x="7" y="7" width="2" height="2" fill="var(--accent)" opacity="0.5"/>
+            <rect x="9" y="9" width="2" height="2" fill="var(--accent)" opacity="0.5"/>
+            <rect x="11" y="7" width="2" height="2" fill="var(--accent)" opacity="0.5"/>
+            <rect x="9" y="5" width="4" height="2" fill="var(--accent)"/>
+            <rect x="13" y="7" width="2" height="4" fill="var(--accent)"/>
+            <rect x="9" y="11" width="4" height="2" fill="var(--accent)"/>
+            <rect x="7" y="11" width="2" height="2" fill="var(--accent)"/>
+            <rect x="1" y="5" width="2" height="2" fill="var(--accent)"/>
+            <rect x="3" y="5" width="2" height="2" fill="var(--accent)"/>
+          </svg>
+          HOOT Protocol
+        </h1>
+        <p class="page-subtitle">On-chain operations, token flows & protocol mechanics</p>
+      </div>
+      <div class="page-header-meta">
+        <span class="header-tag">L1 PROOF</span>
+        <span class="header-tag">L2 MODEL</span>
+        <span class="header-tag">L3 AGENT</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════ 1. PROTOCOL METRICS STRIP ══════════ -->
   <div class="metrics-strip">
@@ -750,8 +877,95 @@
           </div>
         </div>
 
-        <!-- Panel F: Emission vs Burn Gauge -->
-        <div class="panel gauge-panel" style="--panel-delay: 1.5">
+        <!-- Panel F: PPAP Pipeline -->
+        <div class="panel ppap-panel" style="--panel-delay: 1.5">
+          <div class="panel-header">
+            <h2>PPAP Pipeline</h2>
+            <span class="panel-badge">Provenance</span>
+          </div>
+
+          <div class="ppap-pipeline">
+            {#each ppapStages as stage, i}
+              <div class="ppap-stage" class:active={ppapActiveStage >= i} class:current={ppapActiveStage === i}>
+                <div class="ppap-dot" style="--stage-color: {stage.color}">
+                  <span class="ppap-icon">{stage.icon}</span>
+                </div>
+                <div class="ppap-info">
+                  <span class="ppap-label">{stage.label}</span>
+                  <span class="ppap-sub">{stage.sub}</span>
+                </div>
+                {#if i < ppapStages.length - 1}
+                  <div class="ppap-connector" class:filled={ppapActiveStage > i}></div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+          <div class="ppap-stats">
+            <div class="ppap-stat">
+              <span class="ppap-stat-val">2,891</span>
+              <span class="ppap-stat-label">Batches</span>
+            </div>
+            <div class="ppap-stat">
+              <span class="ppap-stat-val">99.7%</span>
+              <span class="ppap-stat-label">Valid Rate</span>
+            </div>
+            <div class="ppap-stat">
+              <span class="ppap-stat-val">3</span>
+              <span class="ppap-stat-label">Challenged</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel G: Trust Score -->
+        <div class="panel trust-panel" style="--panel-delay: 2">
+          <div class="panel-header">
+            <h2>Trust Score</h2>
+            <span class="panel-badge" style="background: color-mix(in srgb, {trustTierColor} 12%, transparent); color: {trustTierColor}">
+              {trustTierName}
+            </span>
+          </div>
+
+          <div class="trust-score-display">
+            <div class="trust-ring">
+              <svg viewBox="0 0 120 120" class="trust-ring-svg">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="8" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="{trustTierColor}" stroke-width="8"
+                  stroke-dasharray="{(Math.round(trustScore) / 1000) * 327} 327"
+                  stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                  style="transition: stroke-dasharray 1.5s var(--ease-out-expo);"
+                />
+              </svg>
+              <div class="trust-center">
+                <span class="trust-num">{Math.round(trustScore)}</span>
+                <span class="trust-max">/1000</span>
+              </div>
+            </div>
+
+            <div class="trust-meta">
+              <div class="trust-meta-row">
+                <span class="trust-meta-label">Tier Bond</span>
+                <span class="trust-meta-val">{trustBondReq} HOOT</span>
+              </div>
+              <div class="trust-meta-row">
+                <span class="trust-meta-label">Reward Multiplier</span>
+                <span class="trust-meta-val" style="color: {trustTierColor}">{trustMultiplier}</span>
+              </div>
+              <div class="trust-meta-row">
+                <span class="trust-meta-label">Jobs Completed</span>
+                <span class="trust-meta-val">142</span>
+              </div>
+              <div class="trust-meta-row">
+                <span class="trust-meta-label">Challenges Won</span>
+                <span class="trust-meta-val">38/39</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel H: Emission vs Burn Gauge -->
+        <div class="panel gauge-panel" style="--panel-delay: 2.5">
           <div class="panel-header">
             <h2>Emission vs Burn</h2>
           </div>
@@ -801,6 +1015,28 @@
             <span class="gauge-pct">{(gaugeRatio * 100).toFixed(1)}% to deflation crossover</span>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ YOUR JOURNEY ══════════ -->
+  <div class="journey-section">
+    <div class="journey-inner">
+      <h2 class="journey-title">Your Journey in HOOT</h2>
+      <p class="journey-subtitle">Five roles power the autonomous research mesh</p>
+      <div class="journey-grid">
+        {#each journeyActors as actor, i}
+          <div class="journey-card" style="--journey-delay: {i}; --journey-color: {actor.color}">
+            <div class="journey-card-icon">{actor.icon}</div>
+            <h3 class="journey-card-role">{actor.role}</h3>
+            <p class="journey-card-desc">{actor.desc}</p>
+            <ul class="journey-card-actions">
+              {#each actor.actions as action}
+                <li>{action}</li>
+              {/each}
+            </ul>
+          </div>
+        {/each}
       </div>
     </div>
   </div>
@@ -2047,6 +2283,358 @@
     margin-bottom: 8px;
   }
 
+  /* ═══════ PAGE HEADER ═══════ */
+  .page-header {
+    padding: 32px 24px 20px;
+    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+  }
+
+  .page-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .title-icon {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6b6560);
+    margin: 4px 0 0;
+    font-weight: 500;
+  }
+
+  .page-header-meta {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .header-tag {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill, 100px);
+    border: 1px solid var(--border, #E5E0DA);
+    color: var(--text-muted, #9a9590);
+    background: var(--surface, #fff);
+  }
+
+  /* ═══════ PPAP PIPELINE ═══════ */
+  .ppap-pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .ppap-stage {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    position: relative;
+    opacity: 0.4;
+    transition: opacity 400ms ease;
+  }
+
+  .ppap-stage.active {
+    opacity: 1;
+  }
+
+  .ppap-stage.current .ppap-dot {
+    animation: ppapPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes ppapPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,87,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(217,119,87,0); }
+  }
+
+  .ppap-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--stage-color) 10%, var(--surface, #fff));
+    border: 2px solid var(--stage-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 300ms ease;
+  }
+
+  .ppap-stage.active .ppap-dot {
+    background: color-mix(in srgb, var(--stage-color) 15%, var(--surface, #fff));
+  }
+
+  .ppap-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .ppap-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+  }
+
+  .ppap-label {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .ppap-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .ppap-connector {
+    position: absolute;
+    left: 17px;
+    bottom: -2px;
+    width: 2px;
+    height: 12px;
+    background: var(--border);
+    transition: background 300ms ease;
+    z-index: 0;
+  }
+
+  .ppap-connector.filled {
+    background: var(--accent);
+  }
+
+  .ppap-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .ppap-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .ppap-stat-val {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ppap-stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  /* ═══════ TRUST SCORE ═══════ */
+  .trust-score-display {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .trust-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+  }
+
+  .trust-ring-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .trust-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .trust-num {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .trust-max {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .trust-meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .trust-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+  }
+
+  .trust-meta-row:last-child {
+    border-bottom: none;
+  }
+
+  .trust-meta-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .trust-meta-val {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ═══════ YOUR JOURNEY ═══════ */
+  .journey-section {
+    padding: 40px 24px 48px;
+    border-top: 1px solid var(--border-subtle, #EDEAE5);
+    background: linear-gradient(180deg, var(--page-bg, #FAF9F7) 0%, color-mix(in srgb, var(--accent) 3%, var(--page-bg, #FAF9F7)) 100%);
+  }
+
+  .journey-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .journey-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .journey-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0 0 28px;
+    font-weight: 500;
+  }
+
+  .journey-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .journey-card {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #E5E0DA);
+    border-radius: var(--radius-lg, 16px);
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 300ms ease;
+    animation: fadeInUp var(--dur-entrance, 700ms) var(--ease-out-expo) calc(var(--journey-delay, 0) * 80ms + 400ms) both;
+  }
+
+  .journey-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--journey-color);
+  }
+
+  .journey-card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+
+  .journey-card-role {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+  }
+
+  .journey-card-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+
+  .journey-card-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+
+  .journey-card-actions li {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: var(--page-bg, #FAF9F7);
+    border-radius: var(--radius-sm, 6px);
+    line-height: 1.3;
+  }
+
+  .journey-card-actions li::before {
+    content: '→ ';
+    color: var(--journey-color);
+  }
+
   /* ═══════ RESPONSIVE ═══════ */
   @media (max-width: 860px) {
     .dash-grid {
@@ -2058,6 +2646,20 @@
     }
 
     .metric-item { padding: 0 14px; }
+
+    .page-header-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .journey-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .trust-score-display {
+      flex-direction: column;
+      align-items: center;
+    }
   }
 
   @media (max-width: 600px) {
@@ -2083,5 +2685,19 @@
     .gauge-svg { width: 160px; height: 96px; }
 
     .flow-viz { max-width: 300px; }
+
+    .page-header { padding: 20px 12px 16px; }
+    .page-title { font-size: 1.4rem; }
+    .page-title .title-icon { width: 22px; height: 22px; }
+    .page-header-meta { flex-wrap: wrap; }
+
+    .journey-grid { grid-template-columns: 1fr 1fr; }
+    .journey-section { padding: 28px 12px 36px; }
+    .journey-title { font-size: 1.2rem; }
+
+    .trust-ring { width: 96px; height: 96px; }
+    .trust-num { font-size: 1.3rem; }
+
+    .ppap-stats { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
   }
 </style>
