@@ -663,7 +663,7 @@
   "retrieval": {
     "enabled": true,
     "indexPath": "docs/generated/contextual-retrieval-index.json",
-    "chunkCount": 301,
+    "chunkCount": 303,
     "sourceCount": 34,
     "sources": [
       {
