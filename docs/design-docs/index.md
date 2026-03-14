@@ -3,4 +3,4 @@
 ## Current Design Docs
 
 - `docs/design-docs/core-beliefs.md`
-- Add deeper design docs here as they become stable enough to cite
+- `docs/design-docs/research-semantic-zoom.md`
