@@ -1,6 +1,9 @@
-<script lang="ts">
+  <script lang="ts">
+  import { get } from "svelte/store";
   import { router } from "../stores/router.ts";
   import { jobStore } from "../stores/jobStore.ts";
+  import { readRuntimeConfig } from "../api/client.ts";
+  import { isConnected } from "../stores/connectionStore.ts";
   import {
     type ResearchOntology,
     type OntologyBranch,
@@ -131,9 +134,24 @@
     launching = true;
     const branchCount = enabledBranches.length;
     const avgIters = Math.round(totalExperiments / branchCount);
-    jobStore.startJob(ontology.name.trim(), branchCount, avgIters);
+    const topic = ontology.name.trim();
+
+    if (get(isConnected)) {
+      const rc = readRuntimeConfig();
+      void jobStore.startRuntimeJob(topic, {
+        ...rc,
+        totalExperiments,
+      }).then((jobId) => {
+        router.navigate("research", jobId ? { topic, jobId } : { topic });
+        launching = false;
+      });
+      return;
+    }
+
+    jobStore.startJob(topic, branchCount, avgIters);
     setTimeout(() => {
-      router.navigate("research", { topic: ontology.name.trim() });
+      router.navigate("research", { topic });
+      launching = false;
     }, 600);
   }
 

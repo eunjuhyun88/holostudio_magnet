@@ -10,7 +10,7 @@
 
 <div class="jl">
   {#each jobs as job (job.id)}
-    <button class="jl-row" on:click={() => router.navigate("research", { topic: job.topic })}>
+    <button class="jl-row" on:click={() => router.navigate("research", { topic: job.topic, jobId: job.id })}>
       <span class="jl-dot" style:color={statusColor(job.status)}>{statusIcon(job.status)}</span>
       <div class="jl-info">
         <span class="jl-name">{job.topic}</span>

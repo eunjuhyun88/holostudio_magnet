@@ -41,7 +41,7 @@
     </div>
     <div class="dg-cards">
       {#each topJobs as job (job.id)}
-        <button class="dg-card" on:click={() => router.navigate("research", { topic: job.topic })}>
+        <button class="dg-card" on:click={() => router.navigate("research", { topic: job.topic, jobId: job.id })}>
           <div class="dg-card-top">
             <span class="dg-card-status" style:color={statusColor(job.status)}>
               {#if job.status === "running"}<span class="dg-pulse"></span>{/if}

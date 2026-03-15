@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { onMount } from 'svelte';
   import { router } from '../stores/router.ts';
   import {
@@ -9,7 +10,8 @@
     eventLog, trainingExperiment,
   } from '../stores/jobStore.ts';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
-  import { CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
+  import { CATEGORY_COLORS, CATEGORY_LABELS, resolveExperimentCategory, type ModCategory } from '../data/modifications.ts';
+  import { humanizeModification } from '../stores/jobTypes.ts';
   import { readRuntimeConfig } from '../api/client.ts';
   import { isConnected } from '../stores/connectionStore.ts';
 
@@ -37,6 +39,7 @@
   $: bestBr = $bestBranch;
   $: paused = $isPaused;
   $: runtimeReadonly = job.sourceMode === 'runtime' && !job.controlsAvailable;
+  $: trainingExps = job.experiments.filter(e => e.status === 'training');
 
   type FocusView = 'convergence' | 'activity' | 'treemap' | 'context' | 'lineage' | 'mesh' | 'scatter' | 'effect';
 
@@ -138,10 +141,13 @@
   function handleLaunch(e: CustomEvent<string>) {
     if ($isConnected) {
       const rc = readRuntimeConfig();
-      void jobStore.connectRuntime(rc);
+      void jobStore.startRuntimeJob(e.detail, rc).then((jobId) => {
+        router.navigate('research', jobId ? { topic: e.detail, jobId } : { topic: e.detail });
+      });
       return;
     }
     jobStore.startJob(e.detail);
+    router.navigate('research', { topic: e.detail });
   }
   function handleStop() { jobStore.stopJob(); }
   function handleNewResearch() { jobStore.reset(); }
@@ -155,20 +161,37 @@
   function handleRetrain(e: CustomEvent<{ code: string; parentId: number | null }>) {
     console.log('Retrain requested with edited code:', e.detail);
     jobStore.reset();
+    if ($isConnected) {
+      const topic = job.topic || 'Custom retrain';
+      const rc = readRuntimeConfig();
+      void jobStore.startRuntimeJob(topic, rc).then((jobId) => {
+        router.navigate('research', jobId ? { topic, jobId } : { topic });
+      });
+      return;
+    }
     jobStore.startJob(job.topic || 'Custom retrain');
   }
   function handleImprove(e: CustomEvent<{ instruction: string }>) {
     console.log('Improve requested:', e.detail.instruction);
     const prevTopic = job.topic || 'Research';
     jobStore.reset();
-    jobStore.startJob(`${prevTopic} (improved: ${e.detail.instruction})`);
+    const topic = `${prevTopic} (improved: ${e.detail.instruction})`;
+    if ($isConnected) {
+      const rc = readRuntimeConfig();
+      void jobStore.startRuntimeJob(topic, rc).then((jobId) => {
+        router.navigate('research', jobId ? { topic, jobId } : { topic });
+      });
+      return;
+    }
+    jobStore.startJob(topic);
   }
 
   // Auto-connect on mount when in connected mode (no auto-start — user must click)
   onMount(() => {
     if ($isConnected) {
       const rc = readRuntimeConfig();
-      void jobStore.connectRuntime(rc);
+      const routeParams = get(router.params);
+      void jobStore.connectRuntime({ ...rc, jobId: routeParams.jobId ?? null });
     }
   });
 </script>
@@ -198,38 +221,36 @@
     </div>
   {/if}
 
-  <!-- ═══ HERO BAND ═══ -->
+  <!-- ═══ ACTIVE OPS ═══ -->
   <div class="tile hero-tile" style="grid-area: hero">
-    <div class="hero-owl">
-      <PixelOwl size={0.35} mood={heroOwlMood} />
-    </div>
-    <div class="hero-data">
-      {#if job.bestMetric < Infinity}
-        <div class="hero-top">
-          <div class="hero-metric">{job.bestMetric.toFixed(2)}</div>
-          <div class="hero-sublabel">val_bpb</div>
-        </div>
-        <div class="hero-compare">
-          {#if delta}
-            <div class="hero-delta">▼ {delta.percent}%</div>
+    {#if trainingExps.length > 0}
+      <div class="ops-list">
+        {#each trainingExps as t (t.id)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="ops-row" on:click={() => selectedExperimentId.set(t.id)}>
+            <span class="ops-id">#{t.id}</span>
+            <span class="ops-cat" style="color: {CATEGORY_COLORS[resolveExperimentCategory(t.modification)]}">{CATEGORY_LABELS[resolveExperimentCategory(t.modification)] ?? '?'}</span>
+            <span class="ops-mod">{humanizeModification(t.modification)}</span>
+            <span class="ops-node">{t.nodeId.slice(-8)}</span>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="ops-fallback">
+        {#if job.bestMetric < Infinity}
+          <span class="ops-best">{job.bestMetric.toFixed(3)}</span>
+          {#if delta}<span class="ops-delta">▼{delta.percent}%</span>{/if}
+          {#if bestBr}<span class="ops-branch" style="color: {bestBr.color}">{bestBr.label}</span>{/if}
+          {#if $bestFrontier.length > 1}
+            <svg class="ops-spark" viewBox="0 0 120 20" preserveAspectRatio="none">
+              <polyline points={$sparkPoints} fill="none" stroke="#D97757" stroke-width="1.5" stroke-linejoin="round" />
+            </svg>
           {/if}
-          {#if job.baselineMetric < Infinity}
-            <div class="hero-from">from {job.baselineMetric.toFixed(2)}</div>
-          {/if}
-        </div>
-        {#if bestBr}
-          <div class="hero-branch" style="color: {bestBr.color}">{bestBr.label}</div>
+        {:else}
+          <span class="ops-idle">Waiting...</span>
         {/if}
-        {#if $bestFrontier.length > 1}
-          <svg class="hero-spark" viewBox="0 0 120 20" preserveAspectRatio="none">
-            <polyline points={$sparkPoints} fill="none" stroke="#D97757" stroke-width="1.5" stroke-linejoin="round" />
-          </svg>
-        {/if}
-      {:else}
-        <div class="hero-metric dim">—</div>
-        <div class="hero-sublabel">val_bpb</div>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 
   <!-- ═══ CONVERGENCE CHART ═══ -->
@@ -315,6 +336,7 @@
               {#if branch.active}<span class="br-live">⚡</span>{/if}
               <span class="br-metric">{branch.bestMetric < Infinity ? branch.bestMetric.toFixed(3) : '—'}</span>
             </div>
+            <span class="br-kdc" title="Keep/Discard/Crash">{branch.keeps}/{branch.total - branch.keeps - branch.crashes}/{branch.crashes}</span>
             <span class="br-hit">{branch.hitRate}%</span>
             <div class="br-actions">
               <button
@@ -671,54 +693,57 @@
     display: block;
   }
 
-  /* ═══ HERO ═══ */
+  /* ═══ ACTIVE OPS ═══ */
   .hero-tile {
-    display: flex; flex-direction: row;
-    align-items: center; justify-content: center;
-    padding: 8px 12px; gap: 8px;
-  }
-  .hero-owl {
-    flex-shrink: 0;
-    display: flex; align-items: center;
-  }
-  .hero-data {
     display: flex; flex-direction: column;
-    align-items: center; gap: 2px;
+    padding: 6px 8px; gap: 0;
+    overflow-y: auto;
   }
-  .hero-top {
-    display: flex; align-items: baseline; gap: 4px;
+  .ops-list { display: flex; flex-direction: column; gap: 2px; }
+  .ops-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 4px; border-radius: 4px; cursor: pointer;
+    font: 500 10px/1.3 'Inter', -apple-system, sans-serif;
+    color: #555; transition: background 120ms;
   }
-  .hero-metric {
-    font: 900 2rem/1 'Inter', -apple-system, sans-serif;
-    color: #1a1a1a;
-    letter-spacing: -0.04em;
+  .ops-row:hover { background: rgba(217,119,87,0.06); }
+  .ops-id {
+    font: 700 9px/1 'SF Mono', 'Fira Code', monospace;
+    color: #999; flex-shrink: 0; min-width: 24px;
     font-variant-numeric: tabular-nums;
   }
-  .hero-metric.dim { color: #ddd; font-size: 2rem; }
-  .hero-compare {
-    display: flex; align-items: center; gap: 4px;
+  .ops-cat {
+    font: 700 8px/1 'Inter', -apple-system, sans-serif;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    flex-shrink: 0;
   }
-  .hero-delta {
+  .ops-mod {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 10px; color: #666;
+  }
+  .ops-node {
+    font: 400 9px/1 'SF Mono', 'Fira Code', monospace;
+    color: #bbb; flex-shrink: 0;
+  }
+  .ops-fallback {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 100%;
+  }
+  .ops-best {
+    font: 900 1.4rem/1 'Inter', -apple-system, sans-serif;
+    color: #1a1a1a; font-variant-numeric: tabular-nums;
+  }
+  .ops-delta {
     font: 700 10px/1 'Inter', -apple-system, sans-serif;
-    color: #27864a;
-    background: rgba(39, 134, 74, 0.06);
-    padding: 2px 6px; border-radius: 4px;
+    color: #27864a; background: rgba(39,134,74,0.06);
+    padding: 2px 5px; border-radius: 4px;
   }
-  .hero-from {
-    font: 400 10px/1 'Inter', -apple-system, sans-serif;
-    color: #bbb;
-  }
-  .hero-branch {
+  .ops-branch {
     font: 600 9px/1 'Inter', -apple-system, sans-serif;
     letter-spacing: 0.06em; text-transform: uppercase;
   }
-  .hero-sublabel {
-    font: 500 9px/1 'Inter', -apple-system, sans-serif;
-    color: #ccc; text-transform: uppercase; letter-spacing: 0.08em;
-  }
-  .hero-spark {
-    width: 80px; height: 16px; margin-top: 2px;
-  }
+  .ops-spark { width: 60px; height: 14px; }
+  .ops-idle { font: 500 10px/1 'Inter', -apple-system, sans-serif; color: #ccc; }
 
   /* ═══ BRANCHES ═══ */
   .branches-tile {
@@ -775,6 +800,11 @@
     font: 700 11px/1 'Inter', -apple-system, sans-serif;
     color: #999;
     margin-left: auto; flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .br-kdc {
+    font: 500 9px/1 'SF Mono', 'Fira Code', monospace;
+    color: #bbb; flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
   .br-hit {
