@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+
   export let m: {
     kept: number;
     discarded: number;
@@ -12,6 +14,17 @@
     metric: number;
     delta: number;
   }>;
+
+  export let selectedId: number | null = null;
+
+  const dispatch = createEventDispatcher<{
+    selectExperiment: { experimentId: number };
+  }>();
+
+  function handleRowClick(id: number) {
+    selectedId = id;
+    dispatch('selectExperiment', { experimentId: id });
+  }
 </script>
 
 <div class="exp-header">
@@ -31,7 +44,17 @@
     <span class="exp-col delta">Delta</span>
   </div>
   {#each experimentLog as exp}
-    <div class="exp-table-row" class:keep={exp.status === 'keep'} class:discard={exp.status === 'discard'} class:crash={exp.status === 'crash'}>
+    <div
+      class="exp-table-row"
+      class:keep={exp.status === 'keep'}
+      class:discard={exp.status === 'discard'}
+      class:crash={exp.status === 'crash'}
+      class:selected={selectedId === exp.id}
+      on:click={() => handleRowClick(exp.id)}
+      role="button"
+      tabindex="0"
+      on:keydown={(e) => e.key === 'Enter' && handleRowClick(exp.id)}
+    >
       <span class="exp-col id">{exp.id}</span>
       <span class="exp-col status">
         <span class="status-badge {exp.status}">{exp.status.toUpperCase()}</span>
@@ -88,11 +111,16 @@
     padding: 8px 14px;
     font-size: 0.8rem;
     border-top: 1px solid var(--border-subtle, #EDEAE5);
+    border-left: 3px solid transparent;
     background: var(--surface, #fff);
-    transition: background 100ms;
+    transition: background 100ms, border-color 100ms;
+    cursor: pointer;
+    outline: none;
   }
   .exp-table-row:hover { background: rgba(217, 119, 87, 0.02); }
   .exp-table-row.keep:hover { background: rgba(39, 134, 74, 0.03); }
+  .exp-table-row.selected { border-left-color: var(--accent, #D97757); background: rgba(217, 119, 87, 0.04); }
+  .exp-table-row:focus-visible { box-shadow: inset 0 0 0 2px rgba(217, 119, 87, 0.3); }
   .exp-col { font-family: var(--font-mono, 'JetBrains Mono', monospace); }
   .exp-col.id { width: 50px; color: var(--text-muted, #9a9590); font-size: 0.72rem; }
   .exp-col.status { width: 90px; }
