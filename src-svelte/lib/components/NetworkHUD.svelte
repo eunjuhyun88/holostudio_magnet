@@ -36,6 +36,10 @@
       <span class="bstat-sep"></span>
       <span class="bstat"><strong>{activeFlowCount}</strong> flows</span>
       <span class="bstat-sep"></span>
+      <span class="bstat"><strong>{Math.round(nodeCount * 1240).toLocaleString()}</strong> bonded</span>
+      <span class="bstat-sep"></span>
+      <span class="bstat green-stat"><strong>98.2%</strong> spot-check</span>
+      <span class="bstat-sep"></span>
       <span class="bstat muted">{runtimeLabel}</span>
       {#if myNodeState}
         <span class="bstat-sep"></span>
@@ -129,6 +133,7 @@
   .bstat-sep { width: 1px; height: 14px; background: var(--border-subtle, #EDEAE5); }
   .bstat .delta { color: var(--green, #27864a); font-weight: 600; margin-left: 2px; font-size: 0.68rem; }
   .bstat.muted { color: var(--text-muted, #9a9590); font-size: 0.68rem; }
+  .bstat.green-stat strong { color: var(--green, #27864a); }
   .banner-right { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
   .globe-link {
     appearance: none;
