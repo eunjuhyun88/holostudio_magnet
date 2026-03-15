@@ -10,6 +10,7 @@
   import { selectedExperimentId } from '../stores/selectionStore.ts';
   import { CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
   import { readRuntimeConfig } from '../api/client.ts';
+  import { isConnected } from '../stores/connectionStore.ts';
 
   // Components
   import PromptBar from '../components/PromptBar.svelte';
@@ -122,8 +123,8 @@
 
   // Handlers
   function handleLaunch(e: CustomEvent<string>) {
-    const rc = readRuntimeConfig();
-    if (rc.runtimeRoot || rc.apiBase) {
+    if ($isConnected) {
+      const rc = readRuntimeConfig();
       void jobStore.connectRuntime(rc);
       return;
     }
@@ -150,10 +151,12 @@
     jobStore.startJob(`${prevTopic} (improved: ${e.detail.instruction})`);
   }
 
-  // Auto-connect on mount (no auto-start — user must click)
+  // Auto-connect on mount when in connected mode (no auto-start — user must click)
   onMount(() => {
-    const rc = readRuntimeConfig();
-    void jobStore.connectRuntime(rc);
+    if ($isConnected) {
+      const rc = readRuntimeConfig();
+      void jobStore.connectRuntime(rc);
+    }
   });
 </script>
 

@@ -12,6 +12,7 @@ import { HUMAN_READABLE } from '../data/modifications.ts';
 import { normalizeRuntimeApiBase, fetchRuntimeMesh, sendRuntimeCommand, subscribeRuntimeMesh } from '../api/client.ts';
 import { mapRuntimeMeshToJob, applyRuntimeControllerToJob } from '../api/meshAdapter.ts';
 import { runSetupPhase, runSimulationLoop, type SimulationDeps } from '../services/simulationService.ts';
+import { connectionMode, apiBase } from './connectionStore.ts';
 
 import type { RuntimeJobCommand } from '@mesh/contracts';
 
@@ -130,6 +131,14 @@ function createJobStore() {
       closeRuntimeStream();
       closeRuntimeStream = null;
     }
+  }
+
+  /**
+   * Start in demo mode — runs local simulation without API.
+   * Shorthand for startJob with default params.
+   */
+  function startDemo(topic = 'Demo Research') {
+    startJob(topic);
   }
 
   /** Start a new autoresearch job (local simulation) */
@@ -361,7 +370,7 @@ function createJobStore() {
     });
   }
 
-  return { subscribe, startJob, connectRuntime, reset, stopJob, togglePause, toggleCategoryBoost, toggleCategoryPause };
+  return { subscribe, startJob, startDemo, connectRuntime, reset, stopJob, togglePause, toggleCategoryBoost, toggleCategoryPause };
 }
 
 /* ─── Derived stores ─── */

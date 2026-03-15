@@ -37,6 +37,7 @@
   import { SIMULATED_BALANCE, MAU_TARGET, TRUST_SCORE_TARGET } from '../data/protocolData.ts';
   import { animateCounter } from '../utils/animate.ts';
   import { rewardStore, rewardSummary } from '../stores/rewardStore.ts';
+  import { isConnected } from '../stores/connectionStore.ts';
 
   // ── Wallet ──
   $: walletConnected = $wallet.connected;
@@ -245,7 +246,10 @@
 
   onMount(() => {
     if (get(jobStore).phase === 'idle') {
-      void jobStore.connectRuntime();
+      if (get(isConnected)) {
+        void jobStore.connectRuntime();
+      }
+      // demo mode: fixture playback handles visualization
     }
 
     viewportWidth = window.innerWidth;
