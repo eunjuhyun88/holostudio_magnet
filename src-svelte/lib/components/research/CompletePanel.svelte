@@ -22,6 +22,28 @@
   let codeEditorContent = '';
   let improveText = '';
 
+  // ── Mini Playground ──
+  let pgInput = '{ "symbol": "ETH", "timeframe": "24h" }';
+  let pgResult = '';
+  let pgLoading = false;
+  let pgTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function runInference() {
+    pgLoading = true;
+    pgResult = '';
+    if (pgTimeout) clearTimeout(pgTimeout);
+    pgTimeout = setTimeout(() => {
+      pgLoading = false;
+      pgResult = JSON.stringify({
+        prediction: +(0.5 + Math.random() * 0.4).toFixed(2),
+        confidence: +(0.7 + Math.random() * 0.25).toFixed(2),
+        direction: Math.random() > 0.5 ? 'up' : 'down',
+        latency_ms: Math.floor(20 + Math.random() * 60),
+        model: `best@${bestMetric < Infinity ? bestMetric.toFixed(4) : '---'}`,
+      }, null, 2);
+    }, 800 + Math.random() * 600);
+  }
+
   $: totalDone = experiments.filter(e => e.status !== 'training').length;
   $: totalKeeps = experiments.filter(e => e.status === 'keep').length;
   $: totalCrashes = experiments.filter(e => e.status === 'crash').length;
@@ -145,6 +167,28 @@
   {/if}
 </div>
 
+<div class="playground-section">
+  <span class="section-label">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+    Model Test
+  </span>
+  <div class="pg-input-row">
+    <textarea class="pg-input" bind:value={pgInput} spellcheck="false" rows="2" placeholder='&#123; "input": "..." &#125;'></textarea>
+    <button class="pg-run" on:click={runInference} disabled={pgLoading}>
+      {#if pgLoading}
+        <span class="pg-spin"></span>
+      {:else}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+      {/if}
+    </button>
+  </div>
+  {#if pgResult}
+    <pre class="pg-output">{pgResult}</pre>
+  {:else if pgLoading}
+    <div class="pg-loading">inferencing...</div>
+  {/if}
+</div>
+
 <div class="panel-hint">
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <span>Use the top bar to publish or start new research</span>
@@ -250,6 +294,61 @@
     cursor: pointer; transition: all 150ms;
   }
   .improve-cancel:hover { border-color: #585b70; color: #cdd6f4; }
+
+  /* -- Mini Playground -- */
+  .playground-section {
+    padding: 8px 14px; border-top: 1px solid #313244;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .playground-section .section-label {
+    display: flex; align-items: center; gap: 5px;
+    color: #fab387;
+  }
+  .playground-section .section-label svg { color: #fab387; }
+  .pg-input-row {
+    display: flex; gap: 4px; align-items: stretch;
+  }
+  .pg-input {
+    flex: 1; box-sizing: border-box;
+    padding: 6px 8px;
+    background: #11111b; border: 1px solid #313244; border-radius: 5px;
+    font: 400 10px/1.5 'SF Mono', 'Fira Code', monospace;
+    color: #cdd6f4; resize: none; outline: none;
+  }
+  .pg-input:focus { border-color: #fab387; }
+  .pg-run {
+    width: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #fab387; color: #1e1e2e;
+    border: none; border-radius: 5px;
+    cursor: pointer; transition: all 150ms;
+  }
+  .pg-run:hover:not(:disabled) { background: #f9e2af; box-shadow: 0 0 8px rgba(250,179,135,0.3); }
+  .pg-run:disabled { opacity: 0.5; cursor: not-allowed; }
+  .pg-spin {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid rgba(30,30,46,0.3);
+    border-top-color: #1e1e2e;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pg-output {
+    margin: 0; padding: 8px;
+    background: #11111b; border: 1px solid #313244; border-radius: 5px;
+    font: 400 10px/1.5 'SF Mono', 'Fira Code', monospace;
+    color: #a6e3a1; white-space: pre-wrap; overflow-x: auto;
+    max-height: 140px; overflow-y: auto;
+    animation: fadeIn 200ms ease;
+  }
+  .pg-output::-webkit-scrollbar { width: 3px; }
+  .pg-output::-webkit-scrollbar-thumb { background: #45475a; border-radius: 2px; }
+  .pg-loading {
+    font: 400 10px/1 'SF Mono', monospace;
+    color: #fab387; padding: 4px 0;
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   /* -- Hint (points to top banner for deploy/new-research) -- */
   .panel-hint {
