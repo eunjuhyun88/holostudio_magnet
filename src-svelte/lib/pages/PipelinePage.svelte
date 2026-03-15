@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { fly, fade } from 'svelte/transition';
   import PixelOwl from '../components/PixelOwl.svelte';
 
   // ── Pipeline stages ──
@@ -55,6 +56,17 @@
     ...t,
     status: i < activeStageIdx ? 'done' : i === activeStageIdx ? 'active' : 'pending',
   }));
+
+  // UX-P4: Progress bar color by stage
+  const STAGE_COLORS: string[] = [
+    '#D97757, #E8956E',   // Research — orange
+    '#D97757, #e0a84a',   // Hypothesis — orange-gold
+    '#c09a35, #e0c84a',   // Experiment — gold
+    '#6dbf6d, #4ade80',   // Evaluate — green
+    '#4ade80, #34d399',   // Build — green-teal
+    '#34d399, #22d3ee',   // Deploy — teal-cyan
+  ];
+  $: progressGradient = `linear-gradient(90deg, ${STAGE_COLORS[activeStageIdx] ?? STAGE_COLORS[0]})`;
 
   // ── Single simulation loop (replaces 3 separate setIntervals) ──
   let simInterval: ReturnType<typeof setInterval>;
@@ -120,7 +132,7 @@
         <span class="td yellow"></span>
         <span class="td green"></span>
       </div>
-      <span class="term-title">hoot — research pipeline</span>
+      <span class="term-title">hoot — research pipeline<span class="cursor-blink">▌</span></span>
     </div>
 
     <div class="term-content">
@@ -155,7 +167,13 @@
                 class:dot-done={stage.status === 'done'}
                 class:dot-active={stage.status === 'active'}
                 class:dot-pending={stage.status === 'pending'}
-              ></div>
+              >
+                {#if stage.status === 'done'}
+                  <svg width="8" height="8" viewBox="0 0 12 12" fill="none" class="check-icon">
+                    <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {/if}
+              </div>
               {#if i < stages.length - 1}
                 <div class="stage-line"
                   class:line-done={stage.status === 'done'}
@@ -180,14 +198,14 @@
           <span class="progress-pct">{Math.round(progress)}%</span>
         </div>
         <div class="progress-track">
-          <div class="progress-fill" style="width: {progress}%"></div>
+          <div class="progress-fill" style="width: {progress}%; background: {progressGradient}"></div>
         </div>
       </div>
 
-      <!-- Log -->
+      <!-- UX-P3: Log with typewriter slide-in -->
       <div class="log-section">
-        {#each logs as log}
-          <div class="log-line">
+        {#each logs as log, i (log.time + log.message)}
+          <div class="log-line" in:fly={{ x: -12, duration: 250 }}>
             <span class="log-time">{log.time}</span>
             <span class="log-arrow">▸</span>
             <span class="log-msg">{log.message}</span>
@@ -247,6 +265,16 @@
     font-size: 0.72rem;
     color: rgba(255,255,255,0.25);
     letter-spacing: 0.03em;
+  }
+  /* UX-P5: Blinking cursor in title */
+  .cursor-blink {
+    animation: cursorBlink 1s step-end infinite;
+    color: #D97757;
+    margin-left: 2px;
+  }
+  @keyframes cursorBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
   }
 
   /* ── Content ── */
@@ -355,10 +383,27 @@
     border-radius: 50%;
     flex-shrink: 0;
     transition: all 400ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+  /* UX-P2: Done stage checkmark + green flash */
   .dot-done {
     background: #4ade80;
     box-shadow: 0 0 8px rgba(74,222,128,0.4);
+    animation: stageFlash 500ms ease-out;
+  }
+  .check-icon {
+    animation: checkPop 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes stageFlash {
+    0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); }
+    50% { box-shadow: 0 0 16px 4px rgba(74,222,128,0.4); }
+    100% { box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+  }
+  @keyframes checkPop {
+    from { opacity: 0; transform: scale(0); }
+    to { opacity: 1; transform: scale(1); }
   }
   .dot-active {
     background: #D97757;
@@ -454,11 +499,12 @@
     border-radius: 3px;
     overflow: hidden;
   }
+  /* UX-P4 + P6: Dynamic gradient + smooth transition */
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #D97757, #E8956E);
     border-radius: 3px;
-    transition: width 600ms ease;
+    transition: width 600ms ease, background 800ms ease;
     box-shadow: 0 0 12px rgba(217,119,87,0.3);
   }
 
@@ -524,5 +570,11 @@
     .stage-detail { display: none; }
     .stage-label { font-size: 0.75rem; }
     .log-section { margin-top: 12px; }
+  }
+
+  /* C-1: prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dot-done, .dot-active, .cursor-blink, .check-icon { animation: none !important; }
+    .progress-fill, .stage-dot, .stage-line, .stage-label { transition: none !important; }
   }
 </style>
