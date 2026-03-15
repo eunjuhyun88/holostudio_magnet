@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { resolveExperimentCategory, CATEGORY_COLORS, CATEGORY_LABELS, type ModCategory } from '../data/modifications.ts';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
-  import type { Experiment } from '../stores/jobStore.ts';
+  import { jobStore, type Experiment } from '../stores/jobStore.ts';
 
   export let experiments: Experiment[] = [];
   export let bestMetric: number = Infinity;
@@ -15,11 +15,14 @@
     expand: void;
   }>();
 
-  $: recent = experiments
+  // Fallback: if prop experiments is empty but store has data, use store directly
+  $: allExps = $jobStore.experiments.length > 0 ? $jobStore.experiments : experiments;
+
+  $: recent = [...allExps]
     .filter(e => e.status !== 'training')
     .slice(0, 20);
 
-  $: trainingList = experiments.filter(e => e.status === 'training');
+  $: trainingList = allExps.filter(e => e.status === 'training');
 
   function handleClick(id: number) {
     selectedExperimentId.set(id);
