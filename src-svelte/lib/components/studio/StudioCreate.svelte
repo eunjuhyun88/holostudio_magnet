@@ -53,6 +53,9 @@
   $: recoMetric = recoOntology.evaluation?.metric ?? 'accuracy';
   $: recoDirection = recoOntology.evaluation?.direction ?? 'maximize';
 
+  // Fork source detection
+  $: forkSource = $studioStore.forkSource;
+
   // Show recommendation: immediately if preset, after 3 chars if typing
   $: showRecommendation = !!matchedPreset || topic.trim().length >= 3;
 
@@ -118,6 +121,15 @@
   </div>
 
   <div class="create-body">
+    <!-- Fork indicator -->
+    {#if forkSource}
+      <div class="fork-banner">
+        <span class="fb-icon">🔀</span>
+        <span class="fb-text">Fork from: <strong>{forkSource}</strong></span>
+        <button class="fb-clear" on:click={() => studioStore.setForkSource(null)}>✕</button>
+      </div>
+    {/if}
+
     <!-- Question -->
     <h2 class="create-question">어떤 연구를 하고 싶으세요?</h2>
 
@@ -450,6 +462,31 @@
   }
   .start-btn:hover:not(:disabled) { background: var(--accent-hover, #C4644A); box-shadow: 0 4px 16px rgba(217, 119, 87, 0.3); transform: translateY(-1px); }
   .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Fork banner */
+  .fork-banner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(41, 128, 185, 0.06);
+    border: 1px solid rgba(41, 128, 185, 0.15);
+    margin-bottom: 4px;
+  }
+  .fb-icon { font-size: 14px; }
+  .fb-text {
+    flex: 1; font-size: 0.72rem;
+    color: var(--text-secondary, #6b6560);
+  }
+  .fb-text strong {
+    font-family: var(--font-mono);
+    color: var(--text-primary, #2D2D2D);
+  }
+  .fb-clear {
+    appearance: none; border: none; background: none;
+    font-size: 0.72rem; color: var(--text-muted, #9a9590);
+    cursor: pointer; padding: 2px; border-radius: 4px;
+    transition: all 100ms;
+  }
+  .fb-clear:hover { background: rgba(0,0,0,0.05); }
 
   @media (max-width: 640px) {
     .create-body { padding: 24px 16px; }

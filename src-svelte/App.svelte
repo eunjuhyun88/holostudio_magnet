@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { router, type AppView } from "./lib/stores/router.ts";
   import { unlockedPages } from "./lib/stores/stageStore.ts";
   import { fly, fade } from "svelte/transition";
@@ -8,9 +9,17 @@
   import SplashScreen from "./lib/components/SplashScreen.svelte";
   import PageSkeleton from "./lib/components/PageSkeleton.svelte";
   import AgentDock from "./lib/components/agent/AgentDock.svelte";
+  import { nodeStore } from "./lib/stores/nodeStore.ts";
+  import { ppapStore } from "./lib/stores/ppapStore.ts";
   import "./lib/tokens.css";
 
   let showSplash = true;
+
+  // Initialize demo data for stores
+  onMount(() => {
+    nodeStore.init();
+    ppapStore.init();
+  });
 
   // Lazy-loaded page components (everything except Dashboard which is the landing page)
   const pageLoaders: Record<string, () => Promise<{ default: any }>> = {
