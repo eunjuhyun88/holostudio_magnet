@@ -449,7 +449,7 @@
 <div class="zoom-lab">
   <section class="lab-hero">
     <div class="lab-copy">
-      <button class="lab-back" type="button" on:click={() => router.navigate('research')}>Back to Research</button>
+      <button class="lab-back" type="button" on:click={() => router.navigate('studio')}>Back to Studio</button>
       <div class="lab-eyebrow">Reference-aligned prototype</div>
       <h1>Research Semantic Zoom Lab</h1>
       <p>
