@@ -10,6 +10,7 @@
   import PageSkeleton from "./lib/components/PageSkeleton.svelte";
   import AgentDock from "./lib/components/agent/AgentDock.svelte";
   import ToastContainer from "./lib/components/ToastContainer.svelte";
+  import { toastStore } from "./lib/stores/toastStore.ts";
   import { nodeStore } from "./lib/stores/nodeStore.ts";
   import { ppapStore } from "./lib/stores/ppapStore.ts";
   import "./lib/tokens.css";
@@ -34,6 +35,7 @@
 
   // Stage guard: redirect to studio if page is locked
   $: if (!$unlockedPages.includes($router) && $router !== 'studio' && $router !== 'dashboard') {
+    toastStore.info('이 페이지는 아직 잠겨 있습니다. 연구를 먼저 완료해주세요.');
     router.navigate('studio');
   }
 
