@@ -33,6 +33,7 @@
   import type { ContractCall } from '../data/protocolData.ts';
   import { SIMULATED_BALANCE, MAU_TARGET, TRUST_SCORE_TARGET } from '../data/protocolData.ts';
   import { animateCounter } from '../utils/animate.ts';
+  import { rewardStore, rewardSummary } from '../stores/rewardStore.ts';
 
   // ── Wallet ──
   $: walletConnected = $wallet.connected;
@@ -111,6 +112,12 @@
   let mau = 0;
   const mauTarget = MAU_TARGET;
   let bondTrustDestroyed = false;
+
+  // ── Pool B reward summary for node operators ──
+  $: poolBRewards = $rewardStore.filter(r => r.pool === 'B' && r.amount > 0);
+  $: poolBTotal = +poolBRewards.reduce((s, r) => s + r.amount, 0).toFixed(2);
+  $: poolBToday = +poolBRewards.filter(r => Date.now() - new Date(r.timestamp).getTime() < 86400000).reduce((s, r) => s + r.amount, 0).toFixed(2);
+  $: poolB7d = +poolBRewards.filter(r => Date.now() - new Date(r.timestamp).getTime() < 7 * 86400000).reduce((s, r) => s + r.amount, 0).toFixed(2);
 
   function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -349,6 +356,23 @@
             <BondPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
             <div style="margin-top: 20px;">
               <TrustGaugePanel {trustScore} {mau} {mauTarget} />
+            </div>
+            <div class="node-reward-summary">
+              <h4 class="slabel" style="margin-top: 16px;">GPU Earnings (Pool B)</h4>
+              <div class="nrs-grid">
+                <div class="nrs-card nrs-total">
+                  <span class="nrs-val">{poolBTotal.toFixed(2)}</span>
+                  <span class="nrs-lbl">Total HOOT</span>
+                </div>
+                <div class="nrs-card">
+                  <span class="nrs-val">{poolBToday.toFixed(2)}</span>
+                  <span class="nrs-lbl">Today</span>
+                </div>
+                <div class="nrs-card">
+                  <span class="nrs-val">{poolB7d.toFixed(2)}</span>
+                  <span class="nrs-lbl">7-Day</span>
+                </div>
+              </div>
             </div>
           </div>
         {:else if activeTab === 'swarms'}
@@ -614,6 +638,42 @@
   .rc.crash { background: rgba(139, 58, 98, 0.08); color: #8b3a62; }
 
   .empty { padding: 20px; text-align: center; color: var(--text-muted, #9a9590); font-size: 0.78rem; }
+
+  /* ====== NODE REWARD SUMMARY ====== */
+  .nrs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .nrs-card {
+    background: var(--page-bg, #FAF9F7);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: var(--radius-sm, 6px);
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .nrs-card.nrs-total {
+    border-color: var(--accent, #D97757);
+    background: rgba(217,119,87,0.04);
+  }
+  .nrs-val {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    font-variant-numeric: tabular-nums;
+  }
+  .nrs-lbl {
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #9a9590);
+  }
 
   /* My GPU tab */
   .gpu-hero { padding: 14px 16px; }
