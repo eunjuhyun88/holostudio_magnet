@@ -171,6 +171,16 @@
     const matchFilter = activeFilter === 'all' || m.category === activeFilter;
     return matchSearch && matchFilter;
   });
+
+  /** UX-M6: Track mouse position on card for directional glow */
+  function handleCardMouse(e: MouseEvent) {
+    const card = e.currentTarget as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(0);
+    const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(0);
+    card.style.setProperty('--glow-x', `${x}%`);
+    card.style.setProperty('--glow-y', `${y}%`);
+  }
 </script>
 
 <div class="models">
@@ -214,11 +224,13 @@
       />
       <span class="search-count">{filteredModels.length}</span>
     </div>
-    <div class="filter-chips">
+    <div class="filter-chips" role="tablist" aria-label="Model filters">
       {#each filters as f}
         <button
           class="filter-chip"
           class:active={activeFilter === f.id}
+          role="tab"
+          aria-selected={activeFilter === f.id}
           on:click={() => activeFilter = f.id}
         >{f.label}</button>
       {/each}
@@ -228,7 +240,7 @@
   <!-- Model Grid -->
   <div class="model-grid">
     {#each filteredModels as model, i (model.id)}
-      <button class="model-card" style:--i={i} on:click={() => router.navigate('model-detail', { modelId: model.id })}>
+      <button class="model-card" style:--i={i} on:click={() => router.navigate('model-detail', { modelId: model.id })} on:mousemove={handleCardMouse}>
         <!-- Card Header -->
         <div class="card-top">
           <div class="card-icon">
@@ -299,7 +311,7 @@
       </div>
       <h3 class="empty-title">No models found</h3>
       <p class="empty-desc">Try a different search query or filter.</p>
-      <button class="empty-cta" on:click={() => { searchQuery = ''; activeFilter = 'all'; }}>
+      <button class="empty-cta" on:click={() => { searchQuery = ''; debouncedQuery = ''; activeFilter = 'all'; }}>
         Clear Filters
       </button>
     </div>
@@ -464,35 +476,39 @@
     font-family: var(--font-mono, 'JetBrains Mono', monospace);
   }
 
+  /* UX-M3: Segment control style filter chips */
   .filter-chips {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-wrap: wrap;
+    background: var(--border-subtle, #EDEAE5);
+    padding: 3px;
+    border-radius: var(--radius-pill, 100px);
+    width: fit-content;
   }
 
   .filter-chip {
     appearance: none;
-    border: 1px solid var(--border, #E5E0DA);
-    background: var(--surface, #fff);
-    padding: 5px 14px;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 6px 16px;
     border-radius: var(--radius-pill, 100px);
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-secondary, #6b6560);
     cursor: pointer;
-    transition: all 150ms;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .filter-chip:hover {
-    border-color: var(--text-muted, #9a9590);
+    color: var(--text-primary, #2D2D2D);
   }
 
   .filter-chip.active {
-    background: var(--text-primary, #2D2D2D);
-    border-color: var(--text-primary, #2D2D2D);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(45, 45, 45, 0.15);
-    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--surface, #fff);
+    color: var(--text-primary, #2D2D2D);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    font-weight: 600;
   }
 
   /* ── Model Grid ── */
@@ -524,9 +540,26 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  /* UX-M6: Mouse-position directional glow */
+  .model-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: radial-gradient(
+      200px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+      rgba(217, 119, 87, 0.15) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 250ms ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .model-card:hover::before { opacity: 1; }
   .model-card:hover {
     border-color: var(--accent, #D97757);
-    box-shadow: var(--card-glow, 0 0 0 1px rgba(217, 119, 87, 0.2), 0 4px 16px rgba(217, 119, 87, 0.06));
+    box-shadow: 0 4px 16px rgba(217, 119, 87, 0.08);
     transform: translateY(-3px);
   }
 
@@ -679,6 +712,7 @@
     animation: fade-up 500ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both;
   }
 
+  /* UX-M5: Empty state bounce animation */
   .empty-icon {
     width: 72px;
     height: 72px;
@@ -689,6 +723,11 @@
     justify-content: center;
     color: var(--text-muted, #9a9590);
     margin-bottom: var(--space-4, 16px);
+    animation: emptyBounce 2s ease-in-out infinite;
+  }
+  @keyframes emptyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
   }
 
   .empty-title {
@@ -775,13 +814,22 @@
       margin: 0 -12px;
       padding-left: 12px;
       padding-right: 12px;
+      width: auto;
+      border-radius: var(--radius-md, 10px);
     }
-    .filter-chip { flex-shrink: 0; }
+    .filter-chip { flex-shrink: 0; padding: 5px 12px; font-size: 0.72rem; }
   }
 
   @media (max-width: 400px) {
     .models { padding: var(--space-2, 8px); }
     .page-title { font-size: 1.15rem; }
     .card-tags { display: none; }
+  }
+
+  /* C-1: prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .model-card, .page-header, .toolbar, .empty-state { animation: none !important; }
+    .empty-icon { animation: none !important; }
+    .model-card::before { transition: none; }
   }
 </style>
