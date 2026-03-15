@@ -14,6 +14,7 @@
   import { humanizeModification } from '../stores/jobTypes.ts';
   import { readRuntimeConfig } from '../api/client.ts';
   import { isConnected } from '../stores/connectionStore.ts';
+  import { flashCelebrate } from '../stores/owlMoodStore.ts';
 
   // Components
   import PromptBar from '../components/PromptBar.svelte';
@@ -107,6 +108,11 @@
   $: totalExp = job.totalExperiments || 60;
   $: completed = $completedCount;
   $: progress = totalExp > 0 ? Math.round((completed / totalExp) * 100) : 0;
+
+  // Flash celebrate on first keep
+  let _prevKeeps = 0;
+  $: if ($keepCount === 1 && _prevKeeps === 0) { flashCelebrate(2000); _prevKeeps = 1; }
+  $: if ($keepCount === 0) { _prevKeeps = 0; }
 
   let _etaCache = { completed: -1, elapsed: -1, total: -1, result: '—' };
   $: eta = (() => {

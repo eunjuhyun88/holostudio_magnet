@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { createEventDispatcher } from 'svelte';
   import type { BranchInfo, Experiment } from '../../stores/jobStore.ts';
   import { resolveExperimentCategory, CATEGORY_COLORS, CATEGORY_LABELS } from '../../data/modifications.ts';
+  import { flashCelebrate } from '../../stores/owlMoodStore.ts';
   import TerminalHeader from './TerminalHeader.svelte';
   import PixelOwl from '../PixelOwl.svelte';
+
+  onMount(() => { flashCelebrate(3000); });
 
   export let branches: BranchInfo[] = [];
   export let experiments: Experiment[] = [];
