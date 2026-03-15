@@ -2,11 +2,8 @@
   /**
    * StudioCreate — Topic + AI Recommendation (Spotlight pattern).
    *
-   * Single screen with progressive disclosure:
-   * 1. User enters topic
-   * 2. AI recommendation slides in below
-   * 3. Resource selection (demo/local/network/hybrid)
-   * 4. [시작하기] or [세부 설정]
+   * When coming from a preset card: topic pre-filled + recommendation auto-expanded.
+   * When coming from "AI 연구 시작": empty input → type topic → recommendation slides in.
    *
    * Events:
    *   back: void — go to IDLE
@@ -36,24 +33,32 @@
 
   let topic = initialTopic || $studioTopic;
   let inputEl: HTMLInputElement;
-  let showRecommendation = false;
   let resourceMode: ResourceMode = $studioResourceMode;
 
-  // AI recommendation data (simulated — from preset)
-  let recoOntology = createOntologyFromPreset('balanced');
+  // ── Preset detection ──
+  // Check if studioStore has a preset selected
+  $: currentPresetId = $studioStore.createPreset;
+  $: matchedPreset = currentPresetId
+    ? ONTOLOGY_PRESETS.find(p => p.id === currentPresetId)
+    : null;
+
+  // AI recommendation data — use preset if available, otherwise default
+  $: recoOntology = matchedPreset
+    ? createOntologyFromPreset(currentPresetId!)
+    : createOntologyFromPreset('balanced');
+
   $: recoBranches = getEnabledBranches(recoOntology);
   $: recoTotal = getTotalExperiments(recoOntology);
   $: recoBudget = estimateBudgetHoot(recoOntology);
+  $: recoMetric = recoOntology.evaluation?.metric ?? 'accuracy';
+  $: recoDirection = recoOntology.evaluation?.direction ?? 'maximize';
 
-  // Show recommendation after topic input
-  $: if (topic.trim().length >= 3 && !showRecommendation) {
-    showRecommendation = true;
-  }
+  // Show recommendation: immediately if preset, after 3 chars if typing
+  $: showRecommendation = !!matchedPreset || topic.trim().length >= 3;
 
   // Available resource options
   $: hasGpu = false; // TODO: wire to connectionStore.hasGpu
   $: hasWallet = $dashboardStore.isLoggedIn;
-
   $: resourceOptions = buildResourceOptions(hasGpu, hasWallet);
 
   function buildResourceOptions(gpu: boolean, wallet: boolean) {
@@ -90,13 +95,16 @@
     dispatch('goToSetup', { topic: topic.trim() });
   }
 
-  function selectPresetChip(label: string) {
-    topic = label;
-    showRecommendation = true;
+  function selectPresetChip(preset: typeof ONTOLOGY_PRESETS[0]) {
+    topic = preset.label;
+    studioStore.setPreset(preset.id);
   }
 
   onMount(() => {
-    inputEl?.focus();
+    // Only auto-focus if no preset (user needs to type)
+    if (!matchedPreset) {
+      inputEl?.focus();
+    }
   });
 </script>
 
@@ -120,6 +128,7 @@
         bind:value={topic}
         type="text"
         class="topic-input"
+        class:has-value={topic.trim().length > 0}
         placeholder="비트코인 가격 예측 모델"
       />
     </div>
@@ -127,13 +136,27 @@
     <!-- Preset chips -->
     <div class="preset-chips">
       {#each presetChips as p}
-        <button class="preset-chip" on:click={() => selectPresetChip(p.label)}>{p.label}</button>
+        <button
+          class="preset-chip"
+          class:preset-chip-active={currentPresetId === p.id}
+          on:click={() => selectPresetChip(p)}
+        >
+          {p.label}
+        </button>
       {/each}
     </div>
 
     <!-- AI Recommendation (slides in) -->
-    {#if showRecommendation && topic.trim().length >= 3}
-      <div class="reco-section" class:show={showRecommendation}>
+    {#if showRecommendation}
+      <div class="reco-section">
+        <!-- Preset badge if from preset -->
+        {#if matchedPreset}
+          <div class="preset-badge">
+            <PixelIcon type="sparkle" size={12} />
+            <span>{matchedPreset.name} 프리셋 적용됨</span>
+          </div>
+        {/if}
+
         <div class="reco-card">
           <div class="reco-header">
             <PixelIcon type="sparkle" size={14} />
@@ -142,16 +165,18 @@
           <div class="reco-branches">
             {#each recoBranches as br}
               <div class="reco-branch">
-                <span class="rb-icon">&#9679;</span>
-                <span class="rb-name">{br.type.replace('_', ' ')}</span>
+                <span class="rb-icon" style:color={br.color || 'var(--accent)'}>{br.icon || '●'}</span>
+                <span class="rb-name">{br.label || br.type.replace('_', ' ')}</span>
                 <span class="rb-iters">{br.iters} iterations</span>
               </div>
             {/each}
           </div>
           <div class="reco-summary">
-            <span>총 {recoTotal}회 실험</span>
+            <span>총 <strong>{recoTotal}</strong>회 실험</span>
             <span class="reco-dot">·</span>
             <span>~{recoBudget} HOOT</span>
+            <span class="reco-dot">·</span>
+            <span>메트릭: {recoMetric} ({recoDirection})</span>
           </div>
         </div>
 
@@ -262,6 +287,9 @@
     transition: all 200ms;
     text-align: center;
   }
+  .topic-input.has-value {
+    border-color: var(--accent, #D97757);
+  }
   .topic-input:focus {
     outline: none;
     border-color: var(--accent, #D97757);
@@ -281,6 +309,27 @@
     transition: all 120ms;
   }
   .preset-chip:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); }
+  .preset-chip-active {
+    border-color: var(--accent, #D97757);
+    background: rgba(217, 119, 87, 0.06);
+    color: var(--accent, #D97757);
+    font-weight: 600;
+  }
+
+  /* ── Preset badge ── */
+  .preset-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(217, 119, 87, 0.06);
+    border: 1px solid rgba(217, 119, 87, 0.15);
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--accent, #D97757);
+    align-self: flex-start;
+  }
 
   /* ── AI Recommendation ── */
   .reco-section {
@@ -314,22 +363,26 @@
     letter-spacing: 0.04em;
   }
   .reco-branches {
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column; gap: 6px;
   }
   .reco-branch {
     display: flex; align-items: center; gap: 8px;
     font-size: 0.76rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.015);
   }
-  .rb-icon { color: var(--accent, #D97757); font-size: 6px; }
+  .rb-icon { font-size: 10px; flex-shrink: 0; }
   .rb-name { color: var(--text-primary, #2D2D2D); font-weight: 500; text-transform: capitalize; flex: 1; }
-  .rb-iters { font-family: var(--font-mono); font-size: 0.66rem; color: var(--text-muted, #9a9590); }
+  .rb-iters { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted, #9a9590); font-weight: 500; }
 
   .reco-summary {
-    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
     color: var(--text-secondary, #6b6560);
-    display: flex; gap: 4px;
+    display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
     padding-top: 8px; border-top: 1px solid var(--border-subtle, #EDEAE5);
   }
+  .reco-summary strong { color: var(--text-primary, #2D2D2D); }
   .reco-dot { color: var(--border, #E5E0DA); }
 
   /* ── Resource selection ── */
@@ -393,12 +446,14 @@
     border: none; background: var(--accent, #D97757);
     color: #fff; font-size: 0.82rem; font-weight: 600;
     cursor: pointer; transition: all 140ms;
+    box-shadow: 0 2px 10px rgba(217, 119, 87, 0.25);
   }
-  .start-btn:hover:not(:disabled) { background: var(--accent-hover, #C4644A); }
+  .start-btn:hover:not(:disabled) { background: var(--accent-hover, #C4644A); box-shadow: 0 4px 16px rgba(217, 119, 87, 0.3); transform: translateY(-1px); }
   .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   @media (max-width: 640px) {
     .create-body { padding: 24px 16px; }
     .create-question { font-size: 1.2rem; }
+    .create-actions { flex-direction: column; }
   }
 </style>

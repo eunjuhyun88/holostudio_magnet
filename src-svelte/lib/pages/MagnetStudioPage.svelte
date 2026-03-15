@@ -50,8 +50,11 @@
 
   // ── Event Handlers ──
 
-  function handleStartCreate(e: CustomEvent<{ topic?: string }>) {
+  function handleStartCreate(e: CustomEvent<{ topic?: string; presetId?: string }>) {
     studioStore.startCreate(e.detail.topic);
+    if (e.detail.presetId) {
+      studioStore.setPreset(e.detail.presetId);
+    }
   }
 
   function handleGoToSetup() {
