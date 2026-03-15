@@ -134,22 +134,10 @@
     <div class="cb-actions">
       <button class="cb-btn test" on:click={() => openFocus('playground')}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
-        모델 테스트
+        테스트
       </button>
       <button class="cb-btn publish" on:click={() => dispatch('deploy', { target: 'publish' })}>
-        모델 발행 →
-      </button>
-      <button class="cb-btn secondary" on:click={() => dispatch('newResearch')}>
-        새 연구
-      </button>
-      <button class="cb-btn secondary" on:click={() => dispatch('retrain', { code: '', parentId: null })}>
-        설정 수정 후 재실행
-      </button>
-      <button class="cb-btn secondary" on:click={() => dispatch('improve', { instruction: '' })}>
-        이 결과 기반 개선
-      </button>
-      <button class="cb-btn ghost" on:click={() => router.navigate('models')}>
-        모델 허브 →
+        발행 →
       </button>
     </div>
   </div>
@@ -441,10 +429,6 @@
   .cb-btn.test:hover svg { transform: scale(1.15); }
   .cb-btn.publish { background: var(--accent, #D97757); color: #fff; }
   .cb-btn.publish:hover { background: #C4644A; box-shadow: 0 2px 8px rgba(217,119,87,0.2); }
-  .cb-btn.secondary { background: transparent; border: 1px solid var(--border, #E5E0DA); color: var(--text-secondary, #6b6560); }
-  .cb-btn.secondary:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); }
-  .cb-btn.ghost { background: transparent; border: none; color: var(--text-muted, #9a9590); font-size: 0.75rem; padding: 6px 10px; }
-  .cb-btn.ghost:hover { color: var(--accent, #D97757); text-decoration: underline; }
 
   /* ═══ HERO ═══ */
   .hero-tile { display: flex; flex-direction: column; padding: 6px 8px; overflow-y: auto; }
@@ -565,8 +549,8 @@
       gap: 8px; padding: 0 6px 14px;
     }
     .complete-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .cb-actions { width: 100%; }
-    .cb-btn { flex: 1; text-align: center; }
+    .cb-actions { width: 100%; justify-content: stretch; }
+    .cb-btn { flex: 1; text-align: center; justify-content: center; }
     .branch-list { max-height: 200px; }
     .tile { border-radius: 14px; }
   }
