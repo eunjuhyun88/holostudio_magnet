@@ -51,12 +51,17 @@
     <button class="claim-modal-close" on:click={close}>&times;</button>
 
     {#if step === 'review'}
-      <div class="claim-step-indicator">
-        <span class="cm-step active">Review</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step">Pending</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step">Confirmed</span>
+      <div class="cm-stepper" aria-label="Claim progress: Step 1 of 3">
+        <div class="cm-node active"><span class="cm-num">1</span></div>
+        <div class="cm-line"><div class="cm-line-fill"></div></div>
+        <div class="cm-node"><span class="cm-num">2</span></div>
+        <div class="cm-line"><div class="cm-line-fill"></div></div>
+        <div class="cm-node"><span class="cm-num">3</span></div>
+      </div>
+      <div class="cm-stepper-labels">
+        <span class="cm-label active">Review</span>
+        <span class="cm-label">Pending</span>
+        <span class="cm-label">Confirmed</span>
       </div>
 
       <h3 class="claim-modal-title">Claim Research Job</h3>
@@ -111,12 +116,17 @@
       </button>
 
     {:else if step === 'pending'}
-      <div class="claim-step-indicator">
-        <span class="cm-step done">Review</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step active">Pending</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step">Confirmed</span>
+      <div class="cm-stepper" aria-label="Claim progress: Step 2 of 3">
+        <div class="cm-node done"><svg viewBox="0 0 16 16" width="12" height="12"><polyline points="3.5 8 6.5 11 12.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="cm-line"><div class="cm-line-fill filled"></div></div>
+        <div class="cm-node active"><span class="cm-num">2</span></div>
+        <div class="cm-line"><div class="cm-line-fill"></div></div>
+        <div class="cm-node"><span class="cm-num">3</span></div>
+      </div>
+      <div class="cm-stepper-labels">
+        <span class="cm-label done">Review</span>
+        <span class="cm-label active">Pending</span>
+        <span class="cm-label">Confirmed</span>
       </div>
 
       <div class="claim-pending">
@@ -128,12 +138,17 @@
       </div>
 
     {:else if step === 'confirmed'}
-      <div class="claim-step-indicator">
-        <span class="cm-step done">Review</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step done">Pending</span>
-        <span class="cm-arrow">&rarr;</span>
-        <span class="cm-step active cm-confirmed">Confirmed</span>
+      <div class="cm-stepper" aria-label="Claim progress: Step 3 of 3, complete">
+        <div class="cm-node done"><svg viewBox="0 0 16 16" width="12" height="12"><polyline points="3.5 8 6.5 11 12.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="cm-line"><div class="cm-line-fill filled"></div></div>
+        <div class="cm-node done"><svg viewBox="0 0 16 16" width="12" height="12"><polyline points="3.5 8 6.5 11 12.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="cm-line"><div class="cm-line-fill filled"></div></div>
+        <div class="cm-node done cm-confirmed-node"><svg viewBox="0 0 16 16" width="12" height="12"><polyline points="3.5 8 6.5 11 12.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="cm-stepper-labels">
+        <span class="cm-label done">Review</span>
+        <span class="cm-label done">Pending</span>
+        <span class="cm-label done">Confirmed</span>
       </div>
 
       <div class="claim-confirmed">
@@ -208,33 +223,98 @@
     color: var(--accent, #D97757);
   }
 
-  .claim-step-indicator {
+  /* UX-J4: Visual step indicator (circles + connecting lines) */
+  .cm-stepper {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    font-size: 0.72rem;
+    gap: 0;
+    margin-bottom: 4px;
+    padding: 0 8px;
+  }
+  .cm-node {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border, #E5E0DA);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface, #fff);
+    color: var(--text-muted, #9a9590);
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 300ms ease;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  }
+  .cm-node.active {
+    border-color: var(--accent, #D97757);
+    color: var(--accent, #D97757);
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12);
+    animation: stepPulse 600ms ease-out;
+  }
+  .cm-node.done {
+    border-color: var(--green, #27864a);
+    background: var(--green, #27864a);
+    color: #fff;
+  }
+  .cm-node.cm-confirmed-node {
+    animation: stepConfirm 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .cm-num {
+    line-height: 1;
+  }
+  .cm-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border-subtle, #EDEAE5);
+    position: relative;
+    min-width: 20px;
+  }
+  .cm-line-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--border, #E5E0DA);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 400ms ease, background-color 300ms ease;
+  }
+  .cm-line-fill.filled {
+    transform: scaleX(1);
+    background: var(--green, #27864a);
+  }
+  .cm-stepper-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+    margin-bottom: 16px;
+  }
+  .cm-label {
+    font-size: 0.6rem;
     font-weight: 600;
     color: var(--text-muted, #9a9590);
+    text-align: center;
+    flex: 0 0 auto;
+    width: 28px;
+    min-width: fit-content;
+    transition: color 200ms;
   }
-  .cm-step {
-    padding: 4px 10px;
-    border-radius: var(--radius-pill, 100px);
-    transition: all 200ms;
-  }
-  .cm-step.active {
-    background: rgba(217, 119, 87, 0.1);
+  .cm-label:first-child { text-align: left; }
+  .cm-label:last-child { text-align: right; }
+  .cm-label.active {
     color: var(--accent, #D97757);
   }
-  .cm-step.done {
+  .cm-label.done {
     color: var(--green, #27864a);
   }
-  .cm-step.cm-confirmed {
-    background: rgba(39, 134, 74, 0.1);
-    color: var(--green, #27864a);
+  @keyframes stepPulse {
+    0% { transform: scale(0.85); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
   }
-  .cm-arrow {
-    color: var(--border, #E5E0DA);
+  @keyframes stepConfirm {
+    0% { transform: scale(0.6); }
+    100% { transform: scale(1); }
   }
 
   .claim-modal-title {
@@ -485,6 +565,21 @@
   .claim-done-btn:hover {
     border-color: var(--accent, #D97757);
     color: var(--accent, #D97757);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .claim-overlay { animation: none; }
+    .claim-modal { animation: none; }
+    .claim-spinner { animation: none; }
+    .claim-check-icon { animation: none; }
+    .cm-node { transition: none; }
+    .cm-node.active { animation: none; }
+    .cm-node.cm-confirmed-node { animation: none; }
+    .cm-line-fill { transition: none; }
+    .cm-label { transition: none; }
+    .claim-modal-close { transition: none; }
+    .claim-done-btn { transition: none; }
   }
 
   @media (max-width: 600px) {
