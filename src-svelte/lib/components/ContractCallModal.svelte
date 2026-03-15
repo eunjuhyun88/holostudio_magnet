@@ -11,9 +11,26 @@
 
   let errorMessage = '';
 
+  /** Payment method selection — HOOT (default) or USDC (+25%) */
+  let paymentMethod: 'hoot' | 'usdc' = 'hoot';
+
+  /** Active fee display — recalculated when payment method changes */
+  $: activeFee = (() => {
+    if (!modalCall?.paymentEnabled) return modalCall?.fee ?? '';
+    return paymentMethod === 'hoot'
+      ? `${modalCall.hootAmount ?? modalCall.fee} HOOT`
+      : `${modalCall.usdcAmount ?? modalCall.fee} USDC`;
+  })();
+
+  /** Surcharge note for USDC */
+  $: surchargeNote = paymentMethod === 'usdc' ? '+25% → Treasury' : '';
+
+  /** Reset payment method when modal opens with new call */
+  $: if (modalCall) { paymentMethod = 'hoot'; }
+
   const dispatch = createEventDispatcher<{
     close: void;
-    confirm: void;
+    confirm: { paymentMethod: 'hoot' | 'usdc' };
     connectWallet: void;
   }>();
 
@@ -27,6 +44,10 @@
   function retryTransaction() {
     errorMessage = '';
     modalStep = 'review';
+  }
+
+  function handleConfirm() {
+    dispatch('confirm', { paymentMethod });
   }
 </script>
 
@@ -79,8 +100,47 @@
           <span class="modal-fn">)</span>
         </div>
 
+        <!-- ═══ Payment Method Selector (x402) ═══ -->
+        {#if modalCall.paymentEnabled}
+          <div class="payment-selector">
+            <span class="modal-label">결제 수단</span>
+            <div class="payment-options">
+              <button
+                class="payment-opt"
+                class:selected={paymentMethod === 'hoot'}
+                on:click={() => { paymentMethod = 'hoot'; }}
+              >
+                <span class="po-radio">{paymentMethod === 'hoot' ? '●' : '○'}</span>
+                <div class="po-body">
+                  <span class="po-name">HOOT</span>
+                  <span class="po-amount">{modalCall.hootAmount ?? modalCall.fee}</span>
+                </div>
+                <span class="po-badge po-default">기본</span>
+              </button>
+              <button
+                class="payment-opt"
+                class:selected={paymentMethod === 'usdc'}
+                on:click={() => { paymentMethod = 'usdc'; }}
+              >
+                <span class="po-radio">{paymentMethod === 'usdc' ? '●' : '○'}</span>
+                <div class="po-body">
+                  <span class="po-name">USDC</span>
+                  <span class="po-amount">{modalCall.usdcAmount ?? modalCall.fee}</span>
+                </div>
+                <span class="po-badge po-surcharge">+25%</span>
+              </button>
+            </div>
+            {#if surchargeNote}
+              <p class="payment-note">USDC 결제 시 25% 수수료가 Treasury로 이동합니다</p>
+            {/if}
+          </div>
+        {/if}
+
         <div class="modal-details">
-          <div class="modal-detail"><span>Fee</span><span class="mono">{modalCall.fee}</span></div>
+          <div class="modal-detail">
+            <span>Fee</span>
+            <span class="mono">{activeFee}</span>
+          </div>
           <div class="modal-detail"><span>Est. Gas</span><span class="mono">{modalCall.gas}</span></div>
         </div>
 
@@ -89,7 +149,7 @@
         <button
           class="action-btn primary modal-confirm"
           disabled={!walletConnected}
-          on:click={() => dispatch('confirm')}
+          on:click={handleConfirm}
         >
           {walletConnected ? 'Confirm Transaction' : 'Connect Wallet First'}
         </button>
@@ -133,6 +193,9 @@
           <div class="confirmed-details">
             <span class="modal-mono">Block #18,442,891</span>
             <span class="modal-mono">Gas used: {modalCall.gas}</span>
+            {#if modalCall.paymentEnabled}
+              <span class="modal-mono">Paid: {activeFee}</span>
+            {/if}
           </div>
           <button class="action-btn secondary" on:click={() => dispatch('close')}>Done</button>
         </div>
@@ -171,32 +234,62 @@
 {/if}
 
 <style>
+  /* ═══ OVERLAY — glass-morphic ═══ */
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: var(--z-modal, 300);
     padding: 24px;
-    animation: fadeIn 200ms ease;
+    animation: overlayIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
+  /* ═══ CARD — glass-morphic with accent glow ═══ */
   .modal-card {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(217,119,87,0.15);
+    border-radius: 20px;
     padding: 28px;
     max-width: 520px;
     width: 100%;
     max-height: 85vh;
     overflow-y: auto;
     position: relative;
-    animation: scaleIn 300ms var(--ease-out-expo);
-    box-shadow: var(--shadow-lg);
+    animation: cardIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow:
+      0 4px 24px rgba(0,0,0,0.08),
+      0 0 0 1px rgba(217,119,87,0.06),
+      0 8px 40px rgba(217,119,87,0.06);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: scale(0.92) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Confirmed glow */
+  .modal-card.confirmed {
+    border-color: rgba(39,134,74,0.2);
+    box-shadow:
+      0 4px 24px rgba(0,0,0,0.06),
+      0 0 0 1px rgba(39,134,74,0.1),
+      0 0 40px rgba(39,134,74,0.08);
+    animation: cardIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1), celebrationGlow 2s ease-in-out;
+  }
+  @keyframes celebrationGlow {
+    0% { box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 0 0 1px rgba(39,134,74,0.1), 0 0 40px rgba(39,134,74,0.08); }
+    30% { box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 0 0 2px rgba(39,134,74,0.25), 0 0 60px rgba(39,134,74,0.15); }
+    100% { box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 0 0 1px rgba(39,134,74,0.1), 0 0 40px rgba(39,134,74,0.08); }
   }
 
   .modal-close {
@@ -206,7 +299,7 @@
     width: 28px;
     height: 28px;
     border: none;
-    background: var(--page-bg);
+    background: rgba(0,0,0,0.04);
     border-radius: 50%;
     font-size: 1.1rem;
     color: var(--text-muted);
@@ -217,8 +310,8 @@
     transition: all 150ms;
   }
   .modal-close:hover {
-    background: var(--accent-subtle);
-    color: var(--accent);
+    background: rgba(217,119,87,0.1);
+    color: var(--accent, #D97757);
   }
 
   .modal-step-indicator {
@@ -231,18 +324,18 @@
     color: var(--text-muted);
   }
 
-  .step { padding: 4px 10px; border-radius: var(--radius-pill); transition: all 200ms; }
-  .step.active { background: var(--accent-subtle); color: var(--accent); }
-  .step.done { color: var(--green); }
-  .step.confirmed-step { background: rgba(39,134,74,0.1); color: var(--green); }
-  .step-arrow { color: var(--border); }
+  .step { padding: 4px 10px; border-radius: 100px; transition: all 200ms; }
+  .step.active { background: rgba(217,119,87,0.1); color: var(--accent, #D97757); }
+  .step.done { color: var(--green, #27864a); }
+  .step.confirmed-step { background: rgba(39,134,74,0.1); color: var(--green, #27864a); }
+  .step-arrow { color: var(--border, #E5E0DA); }
 
   .modal-title {
-    font-family: var(--font-display);
+    font-family: var(--font-display, 'Playfair Display', serif);
     font-size: 1.2rem;
     font-weight: 700;
     margin: 0 0 16px 0;
-    color: var(--text-primary);
+    color: var(--text-primary, #2D2D2D);
   }
 
   .modal-wallet-prompt {
@@ -251,26 +344,26 @@
     justify-content: space-between;
     padding: 10px 14px;
     background: rgba(192,57,43,0.06);
-    border-radius: var(--radius-sm);
+    border-radius: 10px;
     margin-bottom: 16px;
     font-size: 0.8rem;
     color: var(--text-secondary);
   }
 
   .wallet-connect-inline {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.7rem;
     font-weight: 700;
     padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--accent);
+    border-radius: 8px;
+    border: 1px solid var(--accent, #D97757);
     background: transparent;
-    color: var(--accent);
+    color: var(--accent, #D97757);
     cursor: pointer;
     transition: all 150ms;
   }
   .wallet-connect-inline:hover {
-    background: var(--accent);
+    background: var(--accent, #D97757);
     color: #fff;
   }
 
@@ -280,11 +373,11 @@
     gap: 6px;
     padding: 10px 14px;
     background: rgba(39,134,74,0.06);
-    border-radius: var(--radius-sm);
+    border-radius: 10px;
     margin-bottom: 16px;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.75rem;
-    color: var(--green);
+    color: var(--green, #27864a);
     font-weight: 600;
   }
 
@@ -292,9 +385,13 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--green);
+    background: var(--green, #27864a);
     display: inline-block;
     animation: breathe 2s infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
 
   .modal-contract-row, .modal-fn-row, .modal-details {
@@ -312,7 +409,7 @@
   }
 
   .modal-mono {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.78rem;
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
@@ -322,17 +419,17 @@
     cursor: pointer;
     transition: color 150ms;
   }
-  .modal-mono.clickable:hover { color: var(--accent); }
+  .modal-mono.clickable:hover { color: var(--accent, #D97757); }
 
   .modal-fn-row {
-    background: var(--page-bg);
-    border-radius: var(--radius-sm);
+    background: rgba(0,0,0,0.02);
+    border-radius: 10px;
     padding: 12px;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.75rem;
   }
 
-  .modal-fn { color: var(--accent); font-weight: 700; }
+  .modal-fn { color: var(--accent, #D97757); font-weight: 700; }
 
   .modal-param {
     display: flex;
@@ -345,6 +442,99 @@
   .param-type { color: var(--text-muted); font-size: 0.65rem; }
   .param-value { color: var(--text-secondary); margin-left: auto; }
 
+  /* ═══ PAYMENT METHOD SELECTOR ═══ */
+  .payment-selector {
+    margin-bottom: 14px;
+  }
+
+  .payment-options {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .payment-opt {
+    flex: 1;
+    appearance: none;
+    border: 1.5px solid var(--border, #E5E0DA);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(8px);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+  }
+  .payment-opt:hover {
+    border-color: rgba(217,119,87,0.3);
+    background: rgba(255,255,255,0.9);
+  }
+  .payment-opt.selected {
+    border-color: var(--accent, #D97757);
+    background: rgba(217,119,87,0.04);
+    box-shadow: 0 0 0 1px rgba(217,119,87,0.15), 0 2px 12px rgba(217,119,87,0.08);
+  }
+
+  .po-radio {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+  }
+  .payment-opt.selected .po-radio { color: var(--accent, #D97757); }
+
+  .po-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .po-name {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+  }
+  .po-amount {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--text-primary, #2D2D2D);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .po-badge {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.48rem;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .po-default {
+    background: rgba(39,134,74,0.08);
+    color: var(--green, #27864a);
+  }
+  .po-surcharge {
+    background: rgba(212,160,23,0.1);
+    color: #b8860b;
+  }
+
+  .payment-note {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+    padding-left: 2px;
+    font-style: italic;
+  }
+
+  /* ═══ DETAILS ═══ */
   .modal-details {
     display: flex;
     gap: 24px;
@@ -370,16 +560,16 @@
     line-height: 1.5;
     margin: 12px 0 20px;
     padding: 10px;
-    background: var(--page-bg);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--accent);
+    background: rgba(0,0,0,0.02);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent, #D97757);
   }
 
   .modal-confirm { margin-top: 0; }
 
-  .mono { font-family: var(--font-mono); }
+  .mono { font-family: var(--font-mono, 'JetBrains Mono', monospace); }
 
-  /* Pending state */
+  /* ═══ PENDING — spring easing spinner ═══ */
   .modal-pending {
     display: flex;
     flex-direction: column;
@@ -392,32 +582,34 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
+    border: 3px solid rgba(217,119,87,0.15);
+    border-top-color: var(--accent, #D97757);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: springPulse 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  @keyframes springPulse {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.05); }
+    100% { transform: rotate(360deg) scale(1); }
   }
 
   .modal-pending h3 {
-    font-family: var(--font-display);
+    font-family: var(--font-display, 'Playfair Display', serif);
     font-size: 1.1rem;
     margin: 0;
   }
 
   .pending-hash {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.7rem;
     color: var(--text-muted);
     padding: 6px 12px;
-    background: var(--page-bg);
-    border-radius: var(--radius-sm);
+    background: rgba(0,0,0,0.02);
+    border-radius: 8px;
   }
 
-  /* Confirmed state */
+  /* ═══ CONFIRMED — celebration glow ═══ */
   .modal-confirmed {
     display: flex;
     flex-direction: column;
@@ -435,16 +627,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: scaleIn 400ms var(--ease-spring);
+    animation: checkPop 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes checkPop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 
   .confirm-check svg { width: 24px; height: 24px; }
 
   .modal-confirmed h3 {
-    font-family: var(--font-display);
+    font-family: var(--font-display, 'Playfair Display', serif);
     font-size: 1.1rem;
     margin: 0;
-    color: var(--green);
+    color: var(--green, #27864a);
   }
 
   .confirmed-details {
@@ -454,17 +650,17 @@
     margin-bottom: 8px;
   }
 
-  /* Action buttons (shared pattern) */
+  /* ═══ ACTION BUTTONS ═══ */
   .action-btn {
     font-family: var(--font-body);
     font-weight: 700;
     font-size: 0.9rem;
     padding: 14px 24px;
-    border-radius: var(--radius-md, 10px);
+    border-radius: 100px;
     width: 100%;
     border: none;
     cursor: pointer;
-    transition: all 200ms;
+    transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
   }
@@ -474,19 +670,19 @@
     color: #fff;
   }
   .action-btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover, #C4644A);
-    box-shadow: 0 4px 16px rgba(217,119,87,0.3);
+    background: color-mix(in srgb, var(--accent, #D97757) 85%, black);
+    box-shadow: 0 4px 20px rgba(217,119,87,0.3);
     transform: translateY(-1px);
   }
 
   .action-btn.secondary {
-    background: var(--page-bg, #FAF9F7);
+    background: rgba(0,0,0,0.03);
     color: var(--text-primary);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border, #E5E0DA);
   }
   .action-btn.secondary:hover:not(:disabled) {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--accent, #D97757);
+    color: var(--accent, #D97757);
     transform: translateY(-1px);
   }
 
@@ -498,9 +694,13 @@
 
   .action-btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
 
-  /* Error state */
+  /* ═══ ERROR ═══ */
   .modal-card.error {
     border-color: rgba(243, 139, 168, 0.3);
+    box-shadow:
+      0 4px 24px rgba(0,0,0,0.06),
+      0 0 0 1px rgba(243, 139, 168, 0.15),
+      0 0 30px rgba(243, 139, 168, 0.06);
   }
 
   .step.error-step { background: rgba(243, 139, 168, 0.1); color: #f38ba8; }
@@ -522,13 +722,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: scaleIn 400ms var(--ease-spring);
+    animation: checkPop 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .error-icon svg { width: 24px; height: 24px; }
 
   .modal-error h3 {
-    font-family: var(--font-display);
+    font-family: var(--font-display, 'Playfair Display', serif);
     font-size: 1.1rem;
     margin: 0;
     color: #f38ba8;
@@ -540,8 +740,8 @@
     line-height: 1.5;
     margin: 0;
     padding: 8px 14px;
-    background: var(--page-bg);
-    border-radius: var(--radius-sm);
+    background: rgba(0,0,0,0.02);
+    border-radius: 10px;
     border-left: 3px solid #f38ba8;
     text-align: left;
     width: 100%;
@@ -553,5 +753,11 @@
     gap: 8px;
     width: 100%;
     margin-top: 8px;
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 500px) {
+    .modal-card { padding: 22px 18px; border-radius: 16px; }
+    .payment-options { flex-direction: column; }
   }
 </style>

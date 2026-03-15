@@ -71,4 +71,10 @@ export interface ContractCall {
   note: string;
   accentColor: string;
   requiresApproval?: boolean;
+  /** When true, show HOOT / USDC payment selector in review step */
+  paymentEnabled?: boolean;
+  /** HOOT amount (base price) — displayed when paymentEnabled */
+  hootAmount?: string;
+  /** USDC amount (+25% surcharge) — displayed when paymentEnabled */
+  usdcAmount?: string;
 }
