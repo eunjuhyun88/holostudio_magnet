@@ -291,6 +291,10 @@
 
         {#if !isMobile || mobileTab === 'events'}
         <div class="mobile-group" in:fly={{ y: isMobile ? 8 : 0, duration: isMobile ? 200 : 0 }}>
+          <div class="section-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="section-icon"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Protocol Events
+          </div>
           <!-- Panel E: Recent Protocol Events -->
           <div class="panel feed-panel" style="--panel-delay: 1">
             <div class="panel-header">
@@ -417,7 +421,7 @@
     border: 1px solid var(--border-subtle, #EDEAE5);
     border-radius: var(--group-radius, 16px);
     box-shadow: var(--shadow-sm, 0 1px 4px rgba(0,0,0,0.04));
-    margin: 0 24px;
+    margin: 16px 24px 0;
     padding: 0 24px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -515,7 +519,7 @@
 
   .dash-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 1fr 1.15fr;
     gap: 28px;
     align-items: start;
   }
@@ -628,7 +632,7 @@
 
   /* ====== SECTION LABELS ====== */
   .section-label {
-    display: none;
+    display: flex;
     align-items: center;
     gap: 6px;
     font-size: 0.7rem;
@@ -637,6 +641,7 @@
     letter-spacing: 0.08em;
     color: var(--text-muted, #9a9590);
     padding: 0 4px;
+    margin-bottom: -8px;
   }
 
   /* UX-E6: Section icon micro-rotation on hover/visibility */
@@ -719,8 +724,7 @@
 
   /* ====== MY ACTIVITY SECTION ====== */
   .my-activity-section {
-    padding: 0 24px;
-    margin-top: -8px;
+    padding: 16px 24px 0;
   }
   .my-activity-inner {
     max-width: 1400px;
@@ -744,9 +748,15 @@
     .metric-item { padding: 0 8px; }
     .metric-value { font-size: 0.95rem; }
     .metrics-strip {
-      margin: 0 6px;
+      margin: 8px 6px 0;
       border-radius: var(--radius-md, 10px);
       padding: 0 6px;
+    }
+    .my-activity-section {
+      padding: 10px 6px 0;
+    }
+    .section-label {
+      margin-bottom: -4px;
     }
     .page-header { padding: 12px 10px 10px; }
     .page-title { font-size: 1.18rem; }
@@ -776,9 +786,6 @@
       top: calc(var(--header-height, 52px) + 0px);
       z-index: calc(var(--z-sticky, 10) - 1);
     }
-
-    /* Section labels visible */
-    .section-label { display: flex; }
 
     /* Mobile group becomes flex column */
     .mobile-group {
