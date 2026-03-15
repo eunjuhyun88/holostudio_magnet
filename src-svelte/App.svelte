@@ -9,6 +9,7 @@
   import SplashScreen from "./lib/components/SplashScreen.svelte";
   import PageSkeleton from "./lib/components/PageSkeleton.svelte";
   import AgentDock from "./lib/components/agent/AgentDock.svelte";
+  import ToastContainer from "./lib/components/ToastContainer.svelte";
   import { nodeStore } from "./lib/stores/nodeStore.ts";
   import { ppapStore } from "./lib/stores/ppapStore.ts";
   import "./lib/tokens.css";
@@ -76,6 +77,7 @@
     <SiteFooter />
   {/if}
   <AgentDock />
+  <ToastContainer />
 </div>
 
 <style>
