@@ -1,10 +1,11 @@
 <script lang="ts">
   /**
-   * GPUOnboardWizard — 3-step GPU onboarding wizard.
+   * GPUOnboardWizard — 4-step GPU onboarding wizard.
    *
    * Step 1: Connect GPU (detect → confirm)
    * Step 2: Select Tier & Bond (Lite/Standard/Enterprise + approve)
-   * Step 3: Confirmation (registered, show available jobs)
+   * Step 3: PoAW Initial Verification (auto-progress)
+   * Step 4: Confirmation (registered, show available jobs)
    *
    * Events:
    *   close: void — dismiss wizard
@@ -19,12 +20,20 @@
     complete: { nodeId: string; tier: number };
   }>();
 
-  let step: 1 | 2 | 3 = 1;
+  let step: 1 | 2 | 3 | 4 = 1;
   let connectionType: 'local' | 'remote' = 'local';
   let selectedTier = 2;
   let detecting = false;
   let detected = false;
   let registering = false;
+
+  // PoAW verification state
+  interface PoAWStep { label: string; done: boolean; active: boolean; }
+  let poawSteps: PoAWStep[] = [
+    { label: 'GPU 벤치마크 실행 완료', done: false, active: false },
+    { label: '블록 서명 테스트 중...', done: false, active: false },
+    { label: 'PoAW 검증자 승인 대기', done: false, active: false },
+  ];
 
   // Demo GPU detection
   const detectedGPU = { model: 'NVIDIA RTX 4090', vram: 24 };
@@ -67,7 +76,21 @@
       });
       registering = false;
       step = 3;
+      runPoAWVerification();
     }, 2000);
+  }
+
+  async function runPoAWVerification() {
+    for (let i = 0; i < poawSteps.length; i++) {
+      poawSteps[i].active = true;
+      poawSteps = [...poawSteps];
+      await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
+      poawSteps[i].done = true;
+      poawSteps[i].active = false;
+      poawSteps = [...poawSteps];
+    }
+    // Auto-advance to step 4
+    setTimeout(() => { step = 4; }, 500);
   }
 
   function handleComplete() {
@@ -83,10 +106,11 @@
       <h2 class="wiz-title">
         {#if step === 1}GPU 연결
         {:else if step === 2}노드 본딩
+        {:else if step === 3}PoAW 초기 검증
         {:else}등록 완료!
         {/if}
       </h2>
-      <span class="wiz-step">{step}/3</span>
+      <span class="wiz-step">{step}/4</span>
       <button class="wiz-close" on:click={() => dispatch('close')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -198,7 +222,38 @@
         </button>
       </div>
 
-    <!-- Step 3: Complete -->
+    <!-- Step 3: PoAW Verification -->
+    {:else if step === 3}
+      <div class="wiz-body">
+        <p class="poaw-desc">GPU 성능을 검증하고 네트워크에 등록하고 있습니다.</p>
+
+        <div class="poaw-progress">
+          {#each poawSteps as ps, i}
+            <div class="poaw-step" class:done={ps.done} class:active={ps.active}>
+              <div class="poaw-icon">
+                {#if ps.done}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {:else if ps.active}
+                  <div class="poaw-spinner"></div>
+                {:else}
+                  <div class="poaw-circle"></div>
+                {/if}
+              </div>
+              <span class="poaw-label">{ps.label}</span>
+            </div>
+            {#if i < poawSteps.length - 1}
+              <div class="poaw-connector" class:done={ps.done}></div>
+            {/if}
+          {/each}
+        </div>
+
+        <div class="poaw-hint">
+          <div class="poaw-dot"></div>
+          자동 진행 중
+        </div>
+      </div>
+
+    <!-- Step 4: Complete -->
     {:else}
       <div class="wiz-body">
         <div class="success-icon">🎉</div>
@@ -398,6 +453,66 @@
     font-size: 0.68rem;
     color: #c0392b;
     text-align: center;
+  }
+
+  /* PoAW Verification (Step 3) */
+  .poaw-desc {
+    font-size: 0.76rem; color: var(--text-muted, #9a9590);
+    margin: 0; text-align: center;
+  }
+  .poaw-progress {
+    display: flex; flex-direction: column;
+    padding: 16px;
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 12px;
+    background: var(--surface, #fff);
+  }
+  .poaw-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; opacity: 0.4;
+    transition: opacity 400ms;
+  }
+  .poaw-step.active, .poaw-step.done { opacity: 1; }
+  .poaw-icon {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .poaw-icon svg { color: #27864a; }
+  .poaw-circle {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--border, #E5E0DA);
+  }
+  .poaw-spinner {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--border, #E5E0DA);
+    border-top-color: var(--accent, #D97757);
+    animation: spin 600ms linear infinite;
+  }
+  .poaw-label {
+    font-size: 0.76rem; font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+  }
+  .poaw-connector {
+    width: 2px; height: 14px;
+    background: var(--border, #E5E0DA);
+    margin-left: 10px;
+    transition: background 300ms;
+  }
+  .poaw-connector.done { background: #27864a; }
+  .poaw-hint {
+    display: flex; align-items: center; gap: 8px;
+    justify-content: center;
+    font-size: 0.68rem; color: var(--text-muted, #9a9590);
+  }
+  .poaw-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent, #D97757);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
 
   /* Success */
