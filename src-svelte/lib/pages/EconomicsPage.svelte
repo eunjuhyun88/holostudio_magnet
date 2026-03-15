@@ -63,6 +63,7 @@
     return () => {
       destroyed = true;
       clearTimeout(delayMetrics);
+      clearTimeout(confirmTimer);
     };
   });
 
@@ -86,9 +87,12 @@
     modalStep = 'review';
   }
 
+  let confirmTimer: ReturnType<typeof setTimeout> | undefined;
+
   function confirmTx() {
     modalStep = 'pending';
-    setTimeout(() => {
+    confirmTimer = setTimeout(() => {
+      if (destroyed) return;
       modalStep = 'confirmed';
     }, 2200);
   }
