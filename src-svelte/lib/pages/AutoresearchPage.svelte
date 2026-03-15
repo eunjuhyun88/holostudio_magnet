@@ -614,7 +614,7 @@
     height: calc(100vh - 48px);
     display: grid;
     grid-template-columns: minmax(160px, 200px) minmax(100px, 1fr) 1fr 1fr 280px;
-    grid-template-rows: auto 56px minmax(80px, 1fr) 1fr 36px;
+    grid-template-rows: auto minmax(100px, 140px) minmax(80px, 1fr) 1fr 36px;
     grid-template-areas:
       "prompt    prompt    prompt    prompt    prompt"
       "hero      converge  converge  converge  stats"
@@ -763,9 +763,9 @@
   .branch-list::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 2px; }
 
   .branch-row {
-    display: flex; align-items: center; gap: 6px;
-    padding: 8px 10px; cursor: pointer;
-    border-radius: 10px;
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 8px; cursor: pointer;
+    border-radius: 6px;
     transition: background 150ms, transform 150ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
     transform-origin: left center;
   }
@@ -788,9 +788,9 @@
   }
   .br-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
   .br-name {
-    font: 600 12px/1.3 'Inter', -apple-system, sans-serif;
+    font: 600 11px/1.2 'Inter', -apple-system, sans-serif;
     overflow: hidden; text-overflow: ellipsis;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
     color: #444;
   }
   .br-live { font-size: 10px; }

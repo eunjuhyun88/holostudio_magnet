@@ -28,7 +28,7 @@
   export let width: number = 560;
   export let bestMetric: number = Infinity;
 
-  const PAD = { top: 24, right: 20, bottom: 20, left: 20 };
+  const PAD = { top: 24, right: 20, bottom: 20, left: 44 };
   const NODE_R = 5;
   const COL_GAP = 22;
   const ROW_GAP = 40;

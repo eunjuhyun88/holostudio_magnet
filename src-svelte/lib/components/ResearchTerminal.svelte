@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import type { Experiment } from '../stores/jobStore.ts';
+  import { selectedExperimentId } from '../stores/selectionStore.ts';
+  import { jobStore, humanizeModification, type Experiment } from '../stores/jobStore.ts';
+  import { resolveExperimentCategory, CATEGORY_LABELS } from '../data/modifications.ts';
 
   export let eventLog: { time: string; type: string; message: string }[] = [];
   export let trainingExp: Experiment | null = null;
@@ -13,6 +15,25 @@
   let scrollRafHandle: number | null = null;
   let searchQuery = '';
   let hiddenTypes = new Set<string>();
+  let expandedId: number | null = null;
+
+  // Extract experiment ID from log message (#N prefix)
+  function extractExpId(msg: string): number | null {
+    const m = msg.match(/^#(\d+)\s/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function toggleExpand(evt: { type: string; message: string }) {
+    if (evt.type === 'SYSTEM' || evt.type === 'SUBMIT') return;
+    const id = extractExpId(evt.message);
+    if (id === null) return;
+    expandedId = expandedId === id ? null : id;
+    selectedExperimentId.set(id);
+  }
+
+  function getExpById(id: number): Experiment | undefined {
+    return $jobStore.experiments.find(e => e.id === id);
+  }
 
   function toggleType(type: string) {
     const next = new Set(hiddenTypes);
@@ -86,7 +107,16 @@
     </div>
     <div class="term-body term-scroll" bind:this={terminalEl}>
       {#each filteredLog as evt}
-        <div class="term-log-line" class:keep={evt.type === 'KEEP'} class:crash={evt.type === 'CRASH'}>
+        {@const expId = extractExpId(evt.message)}
+        {@const isExpandable = expId !== null && evt.type !== 'SYSTEM' && evt.type !== 'SUBMIT'}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="term-log-line"
+          class:keep={evt.type === 'KEEP'}
+          class:crash={evt.type === 'CRASH'}
+          class:expandable={isExpandable}
+          on:click={() => toggleExpand(evt)}
+        >
           <span class="tl-time">{evt.time}</span>
           <span class="tl-type"
             class:type-keep={evt.type === 'KEEP'}
@@ -96,7 +126,21 @@
             class:type-training={evt.type === 'TRAIN'}
           >{evt.type}</span>
           <span class="tl-msg">{evt.message}</span>
+          {#if isExpandable}<span class="tl-expand">{expandedId === expId ? '▾' : '▸'}</span>{/if}
         </div>
+        {#if expId !== null && expandedId === expId}
+          {@const exp = getExpById(expId)}
+          {#if exp}
+            <div class="term-detail">
+              <span class="td-cat">{CATEGORY_LABELS[resolveExperimentCategory(exp.modification)] ?? '?'}</span>
+              <span class="td-mod">{humanizeModification(exp.modification)}</span>
+              {#if exp.status !== 'crash'}
+                <span class="td-metric">val_bpb: {exp.metric.toFixed(4)}</span>
+              {/if}
+              <span class="td-node">node: {exp.nodeId.slice(-8)} · {exp.duration}s</span>
+            </div>
+          {/if}
+        {/if}
       {/each}
       {#if trainingExp && !hiddenTypes.has('TRAIN')}
         <div class="term-log-line training">
@@ -207,6 +251,27 @@
   .tl-type.type-system { color: #D97757; }
   .tl-type.type-training { color: #fbbf24; }
   .tl-msg { flex: 1; min-width: 0; white-space: normal; word-break: break-word; }
+  .tl-expand {
+    flex-shrink: 0; font-size: 0.55rem; color: rgba(255,255,255,0.2);
+    width: 10px; text-align: center;
+  }
+  .term-log-line.expandable { cursor: pointer; }
+  .term-log-line.expandable:hover { background: rgba(255,255,255,0.03); }
+  .term-detail {
+    display: flex; flex-wrap: wrap; gap: 6px 10px;
+    padding: 2px 0 4px 60px;
+    font: 400 0.6rem/1.4 var(--font-mono, 'JetBrains Mono', monospace);
+    color: rgba(137,180,250,0.7);
+    border-left: 2px solid rgba(137,180,250,0.15);
+    margin-left: 52px; margin-bottom: 2px;
+  }
+  .td-cat {
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.4);
+  }
+  .td-mod { color: rgba(166,227,161,0.7); }
+  .td-metric { color: rgba(250,179,135,0.8); font-weight: 600; }
+  .td-node { color: rgba(255,255,255,0.2); }
   .tl-blink { animation: blink 0.8s step-end infinite; color: #fbbf24; }
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
