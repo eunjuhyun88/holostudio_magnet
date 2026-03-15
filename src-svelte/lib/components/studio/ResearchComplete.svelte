@@ -95,7 +95,6 @@
   function openFocus(view: FocusView) { focusView = view; }
   function closeFocus() { focusView = null; }
 
-  function handleDeploy(e: CustomEvent<{ target: string }>) { dispatch('deploy', e.detail); }
   function handleRetrain(e: CustomEvent<{ code: string; parentId: number | null }>) { dispatch('retrain', e.detail); }
   function handleImprove(e: CustomEvent<{ instruction: string }>) { dispatch('improve', e.detail); }
 </script>
@@ -267,8 +266,6 @@
       experiments={$jobStore.experiments}
       totalExperiments={totalExp}
       expandable
-      on:newresearch={() => dispatch('newResearch')}
-      on:deploy={handleDeploy}
       on:retrain={handleRetrain}
       on:improve={handleImprove}
       on:expand={() => openFocus('context')}
