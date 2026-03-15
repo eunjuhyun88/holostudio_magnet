@@ -31,15 +31,23 @@ export function hydrateRuntimeState(jobs: RuntimeJob[], events: RuntimeEvent[]):
   }
 
   for (const event of events) {
-    const jobId = event.type === "job.command.accepted"
-      ? event.jobId
-      : event.type === "runtime.snapshot"
-        ? null
-        : event.job.id;
-    if (!jobId) {
-      continue;
+    switch (event.type) {
+      case "job.created":
+      case "job.updated": {
+        if (!state.jobs[event.job.id]) {
+          state.jobs[event.job.id] = event.job;
+          state.jobOrder.unshift(event.job.id);
+        }
+        state.eventsByJob[event.job.id] = [...(state.eventsByJob[event.job.id] ?? []), event];
+        break;
+      }
+      case "job.command.accepted": {
+        state.eventsByJob[event.jobId] = [...(state.eventsByJob[event.jobId] ?? []), event];
+        break;
+      }
+      case "runtime.snapshot":
+        break;
     }
-    state.eventsByJob[jobId] = [...(state.eventsByJob[jobId] ?? []), event];
   }
 
   return state;
