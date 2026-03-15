@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { zoomable } from '../actions/zoomable.ts';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
   import {
@@ -238,6 +238,9 @@
   // ── Zoom animation state ──
   let zoomViewBox = ''; // override viewBox during animation
   let isZooming = false;
+  let zoomTimer: ReturnType<typeof setTimeout> | undefined;
+  let zoomRaf: number | undefined;
+  let zoomTimer2: ReturnType<typeof setTimeout> | undefined;
 
   $: defaultViewBox = `0 0 ${VW} ${VH}`;
 
@@ -248,7 +251,7 @@
       isZooming = true;
       zoomViewBox = `${cell.x} ${cell.y} ${cell.w} ${cell.h}`;
 
-      setTimeout(() => {
+      zoomTimer = setTimeout(() => {
         drillCategory = cell.category!;
         drillLevel = 'category';
         zoomViewBox = '';
@@ -286,10 +289,10 @@
           drillCategory = null;
           zoomViewBox = `${targetCell.x} ${targetCell.y} ${targetCell.w} ${targetCell.h}`;
 
-          requestAnimationFrame(() => {
+          zoomRaf = requestAnimationFrame(() => {
             // Transition to full viewBox
             zoomViewBox = '';
-            setTimeout(() => { isZooming = false; }, 350);
+            zoomTimer2 = setTimeout(() => { isZooming = false; }, 350);
           });
           return;
         }
@@ -298,6 +301,12 @@
       drillCategory = null;
     }
   }
+
+  onDestroy(() => {
+    clearTimeout(zoomTimer);
+    if (zoomRaf !== undefined) cancelAnimationFrame(zoomRaf);
+    clearTimeout(zoomTimer2);
+  });
 
   // ── Label sizing ──
   function cellFontSize(cell: TreemapCell): number {
