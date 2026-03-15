@@ -75,6 +75,71 @@
     setTimeout(() => { modalStep = 'confirmed'; }, 2200);
   }
 
+  // ── Phase 5: Jobs commit/reveal + Claim ──
+  function handleJobCommit(jobId: string) {
+    openContractModal({
+      title: 'Config 해시 제출',
+      contract: '0x4F0a...7E3d  HootJobs.sol',
+      fn: 'commitResult',
+      params: [
+        { name: 'jobId', type: 'uint256', value: jobId },
+        { name: 'keccak256Hash', type: 'bytes32', value: '0x' + Math.random().toString(16).slice(2, 18) + '...' },
+      ],
+      fee: '0 HOOT',
+      gas: '~85,000',
+      note: '결과 해시를 제출합니다. Reveal 단계에서 실제 결과를 공개해야 합니다.',
+      accentColor: 'var(--accent)',
+    });
+  }
+
+  function handleJobReveal(jobId: string) {
+    openContractModal({
+      title: 'Config 공개',
+      contract: '0x4F0a...7E3d  HootJobs.sol',
+      fn: 'revealResult',
+      params: [
+        { name: 'jobId', type: 'uint256', value: jobId },
+        { name: 'actualResult', type: 'bytes', value: '0x...' },
+      ],
+      fee: '0 HOOT',
+      gas: '~95,000',
+      note: 'Commit된 해시와 일치하는 실제 결과를 공개합니다.',
+      accentColor: 'var(--green)',
+    });
+  }
+
+  function handleClaimRewards() {
+    const eBase = +(poolBTotal * 0.4).toFixed(2);
+    const eWork = +(poolBTotal * 0.6).toFixed(2);
+    openContractModal({
+      title: '보상 수령',
+      contract: '0x3E8b...5A2f  HootNodes.sol',
+      fn: 'claimRewards',
+      params: [
+        { name: 'nodeId', type: 'string', value: myNode?.id ?? 'node-???' },
+      ],
+      fee: `0 HOOT (수령: ${poolBTotal.toFixed(2)} HOOT)`,
+      gas: '~110,000',
+      note: `Pool B (GPU 보상): ${poolBTotal.toFixed(2)} HOOT\n  E_base (기본): ${eBase} HOOT\n  E_work (작업): ${eWork} HOOT`,
+      accentColor: 'var(--green)',
+    });
+  }
+
+  function handleBondRelease() {
+    openContractModal({
+      title: 'Bond 해제',
+      contract: '0x3E8b...5A2f  HootNodes.sol',
+      fn: 'unbondNode',
+      params: [
+        { name: 'nodeId', type: 'string', value: myNode?.id ?? 'node-???' },
+      ],
+      fee: '0 HOOT',
+      gas: '~75,000',
+      note: '⚠ Bond 해제 시 90일 잠금 기간이 시작됩니다. 잠금 기간 중 노드 운영이 불가합니다.',
+      accentColor: '#c0392b',
+    });
+  }
+
   // ── Live Jobs: derive from model.jobs (telemetry/fixture data) ──
   // Use worker Map for O(jobs + workers) instead of O(jobs × workers)
   $: workerMap = new Map(model.workers.map(w => [w.id, w]));
@@ -499,6 +564,13 @@
               <h4 class="slabel">My Node</h4>
               <NodeCard node={myNode} worker={myWorker} trustScore={myTrustScore} selected={true} showEarnings={true} />
 
+              <!-- Phase 5: Reward claim button -->
+              {#if poolBTotal > 0}
+                <button class="reward-claim-btn" on:click={handleClaimRewards}>
+                  보상 수령 ({poolBTotal.toFixed(2)} HOOT) →
+                </button>
+              {/if}
+
               <h4 class="slabel" style="margin-top: 16px;">Activity Log</h4>
               <div class="activity-log">
                 {#each activityLog as entry, i (entry.time + entry.text + entry.type)}
@@ -533,6 +605,28 @@
             {autoresearchTopic}
             myNodeId={myNode?.id ?? null}
           />
+          <!-- Phase 5: Commit/Reveal actions per job -->
+          {#if runningJobs.length > 0 || doneJobs.length > 0}
+            <div class="psection job-actions-section">
+              <h4 class="slabel">On-Chain Actions</h4>
+              <div class="job-action-list">
+                {#each runningJobs as job}
+                  <div class="job-action-row">
+                    <span class="ja-id">{job.id.slice(0, 8)}</span>
+                    <span class="ja-state ja-executing">EXECUTING</span>
+                    <button class="ja-btn" on:click={() => handleJobCommit(job.id)}>commit →</button>
+                  </div>
+                {/each}
+                {#each doneJobs as job}
+                  <div class="job-action-row">
+                    <span class="ja-id">{job.id.slice(0, 8)}</span>
+                    <span class="ja-state ja-committed">COMMITTED</span>
+                    <button class="ja-btn ja-btn-reveal" on:click={() => handleJobReveal(job.id)}>reveal →</button>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         {:else if activeTab === 'bond-trust'}
           <div class="psection bond-trust-section">
             <BondPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
@@ -556,6 +650,15 @@
                 </div>
               </div>
             </div>
+            <!-- Phase 5: Bond release -->
+            {#if $hasGpuNode}
+              <div class="bond-release-section">
+                <button class="bond-release-btn" on:click={handleBondRelease}>
+                  Bond 해제
+                </button>
+                <span class="bond-release-warn">⚠ 90일 잠금 기간 시작</span>
+              </div>
+            {/if}
           </div>
         {:else if activeTab === 'swarms'}
           <div class="psection">
@@ -1050,5 +1153,68 @@
     display: flex; align-items: center; gap: 4px;
     color: var(--text-muted, #9a9590);
     font-size: 0.6rem;
+  }
+
+  /* ═══ Phase 5: Job commit/reveal actions ═══ */
+  .job-actions-section { margin-top: 12px; }
+  .job-action-list { display: flex; flex-direction: column; gap: 6px; }
+  .job-action-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 10px; background: var(--surface, #fff);
+  }
+  .ja-id {
+    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+    color: var(--text-primary); flex-shrink: 0;
+  }
+  .ja-state {
+    font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+  }
+  .ja-executing { background: rgba(217,119,87,0.08); color: var(--accent, #D97757); }
+  .ja-committed { background: rgba(39,134,74,0.08); color: var(--green, #27864a); }
+  .ja-btn {
+    appearance: none; border: 1px solid var(--accent, #D97757);
+    background: transparent; color: var(--accent, #D97757);
+    font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700;
+    padding: 5px 12px; border-radius: 8px; cursor: pointer;
+    margin-left: auto; transition: all 150ms; white-space: nowrap;
+  }
+  .ja-btn:hover { background: var(--accent, #D97757); color: #fff; }
+  .ja-btn-reveal { border-color: var(--green, #27864a); color: var(--green, #27864a); }
+  .ja-btn-reveal:hover { background: var(--green, #27864a); color: #fff; }
+
+  /* ═══ Phase 5: Reward claim ═══ */
+  .reward-claim-btn {
+    appearance: none; border: 1.5px solid var(--green, #27864a);
+    background: rgba(39,134,74,0.04); color: var(--green, #27864a);
+    font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700;
+    padding: 10px 18px; border-radius: 12px; cursor: pointer;
+    width: 100%; margin-top: 12px; transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reward-claim-btn:hover {
+    background: var(--green, #27864a); color: #fff;
+    box-shadow: 0 4px 16px rgba(39,134,74,0.2);
+    transform: translateY(-1px);
+  }
+
+  /* ═══ Phase 5: Bond release ═══ */
+  .bond-release-section {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid var(--border-subtle, #EDEAE5);
+  }
+  .bond-release-btn {
+    appearance: none; border: 1px solid #c0392b;
+    background: transparent; color: #c0392b;
+    font-size: 0.72rem; font-weight: 600;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    transition: all 150ms;
+  }
+  .bond-release-btn:hover { background: rgba(192,57,43,0.06); }
+  .bond-release-warn {
+    font-size: 0.62rem; color: var(--text-muted, #9a9590);
+    font-style: italic;
   }
 </style>
