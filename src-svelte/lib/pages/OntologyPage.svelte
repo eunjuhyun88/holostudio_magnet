@@ -434,12 +434,20 @@
         <div class="section-body">
           <div class="form-group" role="group" aria-labelledby="lbl-gpu">
             <span class="form-label" id="lbl-gpu">GPU Tier</span>
-            <div class="toggle-group">
-              <button class="toggle-btn" class:active={ontology.resources.gpuTier === 1} on:click={() => ontology.resources.gpuTier = 1}>Tier 1</button>
-              <button class="toggle-btn" class:active={ontology.resources.gpuTier === 2} on:click={() => ontology.resources.gpuTier = 2}>Tier 2</button>
-              <button class="toggle-btn" class:active={ontology.resources.gpuTier === 3} on:click={() => ontology.resources.gpuTier = 3}>Tier 3</button>
+            <div class="toggle-group gpu-tiers">
+              <button class="toggle-btn gpu-tier" class:active={ontology.resources.gpuTier === 1} on:click={() => ontology.resources.gpuTier = 1} title="A10G — ~2 HOOT/hr">
+                Tier 1
+                <span class="gpu-cost">A10G · ~2/hr</span>
+              </button>
+              <button class="toggle-btn gpu-tier" class:active={ontology.resources.gpuTier === 2} on:click={() => ontology.resources.gpuTier = 2} title="A100 — ~8 HOOT/hr">
+                Tier 2
+                <span class="gpu-cost">A100 · ~8/hr</span>
+              </button>
+              <button class="toggle-btn gpu-tier" class:active={ontology.resources.gpuTier === 3} on:click={() => ontology.resources.gpuTier = 3} title="H100 — ~24 HOOT/hr">
+                Tier 3
+                <span class="gpu-cost">H100 · ~24/hr</span>
+              </button>
             </div>
-            <span class="form-hint">Tier 1: A10G · Tier 2: A100 · Tier 3: H100</span>
           </div>
 
           <div class="form-row">
@@ -514,6 +522,7 @@
       class:launching
       disabled={!canLaunch}
       on:click={handleLaunch}
+      title={!canLaunch ? (!nameValid ? 'Research name must be 3+ characters' : enabledBranches.length === 0 ? 'Enable at least 1 branch' : '') : ''}
     >
       {#if launching}
         <span class="spinner"></span>
@@ -636,9 +645,12 @@
   }
 
   /* ═══ Section ═══ */
+  /* UX-O7: scroll-margin for section navigation */
   .section {
     margin-bottom: 32px;
+    scroll-margin-top: 80px;
   }
+  /* UX-O7: sticky section headers */
   .section-header {
     display: flex;
     align-items: baseline;
@@ -646,6 +658,11 @@
     margin-bottom: 16px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+    position: sticky;
+    top: 0;
+    background: var(--bg, #FAF8F5);
+    z-index: 5;
+    padding-top: 8px;
   }
   .section-icon {
     font-size: 1rem;
@@ -776,24 +793,33 @@
     border-color: var(--text-primary, #2D2D2D);
   }
 
-  /* ═══ Slider ═══ */
+  /* ═══ Slider — UX-O4: Enhanced range slider ═══ */
   .slider-row { display: flex; align-items: center; gap: 12px; }
   .range-input {
     flex: 1;
     -webkit-appearance: none;
-    height: 3px;
+    height: 4px;
     border-radius: 2px;
     background: var(--border, #E5E0DA);
     outline: none;
+    transition: background 200ms;
+  }
+  .range-input:hover {
+    background: var(--border-subtle, #d5d0ca);
   }
   .range-input::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 16px; height: 16px;
+    width: 18px; height: 18px;
     border-radius: 50%;
-    background: var(--text-primary, #2D2D2D);
+    background: var(--accent, #D97757);
     border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 4px rgba(217, 119, 87, 0.3);
     cursor: pointer;
+    transition: box-shadow 200ms, transform 200ms;
+  }
+  .range-input:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.15), 0 1px 4px rgba(217, 119, 87, 0.3);
   }
 
   /* ═══ Stats Grid ═══ */
@@ -867,6 +893,7 @@
     line-height: 1.5;
   }
 
+  /* UX-O1: Enhanced CSV drag area with animation */
   .upload-zone {
     border: 2px dashed var(--border, #E5E0DA);
     border-radius: 10px;
@@ -877,10 +904,23 @@
     gap: 8px;
     color: var(--text-muted, #9a9590);
     cursor: pointer;
-    transition: all 150ms;
+    transition: all 200ms ease;
   }
   .upload-zone:hover, .upload-zone.drag-over {
     border-color: var(--accent, #D97757);
+    border-style: solid;
+    background: rgba(217, 119, 87, 0.03);
+  }
+  .upload-zone.drag-over :global(svg) {
+    animation: uploadBounce 500ms ease infinite;
+  }
+  @keyframes uploadBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .upload-zone:hover :global(svg),
+  .upload-zone.drag-over :global(svg) {
+    color: var(--accent, #D97757);
     background: rgba(217,119,87,0.03);
   }
   .upload-main { font-size: 0.82rem; color: var(--text-secondary, #6b6560); }
@@ -1067,5 +1107,37 @@
     .scroll-inner { padding: 12px; }
     .launch-bar { padding: 8px 12px; flex-wrap: wrap; }
     .launch-btn { width: 100%; justify-content: center; }
+  }
+
+  /* UX-O5: GPU tier cost display */
+  .gpu-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .gpu-cost {
+    font-size: 0.56rem;
+    font-weight: 500;
+    color: var(--text-muted, #9a9590);
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 150ms, transform 150ms;
+  }
+  .gpu-tier:hover .gpu-cost,
+  .gpu-tier.active .gpu-cost {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .gpu-tier.active .gpu-cost {
+    color: #fff;
+    opacity: 0.7;
+  }
+
+  /* C-1: prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .upload-zone :global(svg) { animation: none !important; }
+    .spinner { animation: none !important; }
+    .launch-btn.launching { animation: none !important; }
   }
 </style>
