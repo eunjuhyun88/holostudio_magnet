@@ -62,4 +62,5 @@ npm run ctx:restore -- --mode brief
 - Frontend / backend separation and API-first boundaries are mandatory.
 - Branch/worktree split is mandatory when multiple agents are active.
 - Completed scoped work must be merged to the approved integration branch and pushed immediately after validation.
+- **Commit after every meaningful change.** Do not batch multiple modifications into one large commit. Each file change, feature addition, or fix should be committed individually before moving on.
 - Session start now hard-fails if `npm run agent:guard` does not pass.
