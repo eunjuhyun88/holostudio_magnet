@@ -1,20 +1,26 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { DEMO_MODEL } from "../data/modelDetailData.ts";
+  import { wallet } from "../stores/walletStore.ts";
+
+  const COST_PER_CALL = 0.001;
 
   let pgInput = '{\n  "symbol": "ETH",\n  "timeframe": "24h"\n}';
   let pgResult = "";
   let pgLoading = false;
+  let pgCallCost = 0;
   let destroyed = false;
   let playgroundTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function runPlayground() {
     pgLoading = true;
     pgResult = "";
+    pgCallCost = 0;
     if (playgroundTimeout) clearTimeout(playgroundTimeout);
     playgroundTimeout = setTimeout(() => {
       if (destroyed) return;
       pgLoading = false;
+      pgCallCost = COST_PER_CALL;
       pgResult = JSON.stringify({
         prediction: 0.73,
         confidence: 0.89,
@@ -35,7 +41,14 @@
   <div class="pg-col">
     <h3 class="pg-label">Input</h3>
     <textarea class="pg-editor" bind:value={pgInput} rows="8"></textarea>
-    <button class="pg-run" on:click={runPlayground} disabled={pgLoading}>
+    {#if !$wallet.connected}
+      <div class="pg-wallet-warn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>
+        지갑을 연결해야 추론을 실행할 수 있습니다
+      </div>
+    {/if}
+    <div class="pg-cost">예상 비용: {COST_PER_CALL} HOOT per call</div>
+    <button class="pg-run" on:click={runPlayground} disabled={pgLoading || !$wallet.connected}>
       {#if pgLoading}
         <span class="spin-sm"></span> Running...
       {:else}
@@ -49,6 +62,9 @@
   <div class="pg-col">
     <h3 class="pg-label">Output</h3>
     <pre class="pg-result" class:empty={!pgResult}>{pgResult || 'Results will appear here...'}</pre>
+    {#if pgCallCost > 0}
+      <div class="pg-billing">잔액: {$wallet.balance ?? '—'} HOOT · 이번 호출: -{pgCallCost} HOOT</div>
+    {/if}
   </div>
 </div>
 
@@ -119,6 +135,25 @@
     margin: 0; white-space: pre-wrap; overflow: auto;
   }
   .pg-result.empty { color: var(--text-muted, #9a9590); }
+  .pg-wallet-warn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; margin-top: 8px;
+    border-radius: var(--radius-sm, 6px);
+    background: rgba(249, 226, 175, 0.15);
+    border: 1px solid rgba(249, 226, 175, 0.3);
+    font-size: 0.72rem; color: #f9e2af; font-weight: 500;
+  }
+  .pg-cost {
+    font-size: 0.68rem; color: var(--text-muted, #9a9590);
+    margin-top: 6px; font-family: var(--font-mono, monospace);
+  }
+  .pg-billing {
+    font-size: 0.68rem; color: var(--text-muted, #9a9590);
+    margin-top: 6px; font-family: var(--font-mono, monospace);
+    padding: 6px 10px; border-radius: var(--radius-sm, 6px);
+    background: rgba(166, 227, 161, 0.08);
+    border: 1px solid rgba(166, 227, 161, 0.15);
+  }
 
   @media (max-width: 600px) {
     .pg-layout { grid-template-columns: 1fr; }
