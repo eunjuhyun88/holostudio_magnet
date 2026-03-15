@@ -64,15 +64,15 @@
     />
   </div>
 
-  <!-- Studio-specific: model publish CTA (Member only, placeholder) -->
+  <!-- Studio-specific: model publish CTA -->
   <div class="publish-section">
     <div class="publish-hint">
       <span class="publish-icon">&#x1F3F7;</span>
-      <span class="publish-text">모델을 발행하면 다른 사용자들이 사용할 수 있어요</span>
+      <span class="publish-text">모델을 발행하면 다른 사용자들이 사용하고, 사용량에 따라 수익을 받을 수 있어요</span>
     </div>
     <div class="publish-actions">
       <button class="publish-btn" on:click={() => dispatch('deploy', { target: 'publish' })}>
-        모델 발행하기
+        모델 발행하기 &rarr;
       </button>
       <button class="my-models-btn" on:click={handleNewResearch}>
         새 연구 시작하기

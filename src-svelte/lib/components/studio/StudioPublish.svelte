@@ -17,7 +17,7 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { studioStore } from '../../stores/studioStore.ts';
   import { modelPublishStore } from '../../stores/modelPublishStore.ts';
-  import { walletStore } from '../../stores/walletStore.ts';
+  import { wallet } from '../../stores/walletStore.ts';
   import type { BranchInfo, Experiment } from '../../stores/jobStore.ts';
   import PixelIcon from '../PixelIcon.svelte';
 
@@ -190,7 +190,7 @@
           </div>
         </div>
 
-        {#if !$walletStore.connected}
+        {#if !$wallet.connected}
           <div class="wallet-warning">
             <PixelIcon type="protocol" size={14} />
             <span>모델을 발행하려면 지갑 연결이 필요합니다</span>

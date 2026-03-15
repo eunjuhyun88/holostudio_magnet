@@ -22,6 +22,7 @@
   let OntologySetup: any = null;
   let ResearchRunning: any = null;
   let ResearchComplete: any = null;
+  let StudioPublish: any = null;
 
   // Auto-detect phase from jobStore on mount
   onMount(() => {
@@ -46,6 +47,9 @@
   }
   $: if ($studioPhase === 'complete' && !ResearchComplete) {
     import('../components/studio/ResearchComplete.svelte').then(m => { ResearchComplete = m.default; });
+  }
+  $: if (($studioPhase === 'publish' || $studioPhase === 'published') && !StudioPublish) {
+    import('../components/studio/StudioPublish.svelte').then(m => { StudioPublish = m.default; });
   }
 
   // ── Event Handlers ──
@@ -114,6 +118,15 @@
     studioStore.reset();
   }
 
+  function handlePublish() {
+    studioStore.goToPublish();
+  }
+
+  function handlePublished(e: CustomEvent<{ modelId: string }>) {
+    studioStore.confirmPublished(e.detail.modelId);
+    router.navigate('model-detail', { modelId: e.detail.modelId });
+  }
+
   function handleNavigate(e: CustomEvent<{ view: AppView }>) {
     router.navigate(e.detail.view);
   }
@@ -180,10 +193,7 @@
             bestMetric={$jobStore.bestMetric}
             totalExperiments={$jobStore.totalExperiments}
             on:newResearch={handleNewResearch}
-            on:deploy={(e) => {
-              // Deploy → Models > ModelDetail
-              router.navigate('models');
-            }}
+            on:deploy={handlePublish}
             on:retrain={(e) => {
               // Retrain → back to CREATE with existing config
               studioStore.startCreate($studioStore.createTopic);
@@ -195,6 +205,23 @@
           />
         {:else}
           <div class="loading-state">Loading results...</div>
+        {/if}
+
+      {:else if $studioPhase === 'publish' || $studioPhase === 'published'}
+        {#if StudioPublish}
+          <svelte:component
+            this={StudioPublish}
+            topic={$studioStore.createTopic || $jobStore.topic}
+            bestMetric={$jobStore.bestMetric}
+            experiments={$jobStore.experiments}
+            branches={$jobStore.branches}
+            totalExperiments={$jobStore.totalExperiments}
+            on:back={handleBack}
+            on:published={handlePublished}
+            on:newResearch={handleNewResearch}
+          />
+        {:else}
+          <div class="loading-state">Loading publish wizard...</div>
         {/if}
       {/if}
     </div>
