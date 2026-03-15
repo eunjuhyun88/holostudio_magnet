@@ -3,7 +3,9 @@
    * MagnetStudioPage — Main entry point for Magnet Studio.
    *
    * State machine:
-   *   IDLE → CREATE → [SETUP] → RUNNING → COMPLETE → IDLE
+   *   IDLE → STEP1 → STEP2 → [SETUP] → RUNNING → COMPLETE → IDLE
+   *                                                  ↓
+   *                                              PUBLISH → PUBLISHED
    *
    * Absorbs: DashboardPage, AutoresearchPage (partially), OntologyPage
    * Route: /  (studio)
@@ -17,7 +19,8 @@
   import type { AppView } from '../stores/router.ts';
   import { toastStore } from '../stores/toastStore.ts';
   import StudioIdle from '../components/studio/StudioIdle.svelte';
-  import StudioCreate from '../components/studio/StudioCreate.svelte';
+  import StudioStep1 from '../components/studio/StudioStep1.svelte';
+  import StudioStep2 from '../components/studio/StudioStep2.svelte';
   import ConfirmModal from '../components/ConfirmModal.svelte';
 
   // ── Confirmation state ──
@@ -61,26 +64,41 @@
 
   // ── Event Handlers ──
 
+  /** From StudioIdle: user clicked [+ New] or preset */
   function handleStartCreate(e: CustomEvent<{ topic?: string; presetId?: string }>) {
-    studioStore.startCreate(e.detail.topic);
     if (e.detail.presetId) {
+      // Preset selected → go directly to Step2 with preset
+      studioStore.startCreate(e.detail.topic);
       studioStore.setPreset(e.detail.presetId);
+      studioStore.goToStep2(e.detail.topic);
+    } else {
+      // Direct entry → go to Step1
+      studioStore.startCreate(e.detail.topic);
     }
   }
 
+  /** From StudioIdle: advanced setup shortcut */
   function handleGoToSetup() {
     studioStore.goToSetup();
   }
 
-  function handleGoToSetupFromCreate(e: CustomEvent<{ topic: string }>) {
-    studioStore.setTopic(e.detail.topic);
-    studioStore.goToSetup();
-  }
-
+  /** From StudioIdle: resume running research */
   function handleGoToRunning() {
     studioStore.startRunning();
   }
 
+  /** From StudioStep1: user entered topic and hit Continue */
+  function handleStep1Continue(e: CustomEvent<{ topic: string }>) {
+    studioStore.goToStep2(e.detail.topic);
+  }
+
+  /** From StudioStep2: go to advanced setup */
+  function handleGoToSetupFromStep2(e: CustomEvent<{ topic: string }>) {
+    studioStore.setTopic(e.detail.topic);
+    studioStore.goToSetup();
+  }
+
+  /** From StudioStep2: start research */
   function handleStartResearch(e: CustomEvent<{ topic: string; resourceMode: ResourceMode }>) {
     pendingStartEvent = e.detail;
     showStartConfirm = true;
@@ -108,7 +126,6 @@
   }
 
   function handleLaunchFromSetup(e: CustomEvent<{ ontology: any }>) {
-    // Launch from full setup
     const ontology = e.detail.ontology;
     const topic = ontology.name;
     studioStore.setTopic(topic);
@@ -137,7 +154,6 @@
 
   function handleSubmit(e: CustomEvent<{ text: string; parentId: number | null }>) {
     // Submit experiment idea during RUNNING
-    // TODO: wire to real API
   }
 
   function handleZoomIn() {
@@ -176,11 +192,17 @@
           on:navigate={handleNavigate}
         />
 
-      {:else if $studioPhase === 'create'}
-        <StudioCreate
+      {:else if $studioPhase === 'step1'}
+        <StudioStep1
+          on:back={handleBack}
+          on:continue={handleStep1Continue}
+        />
+
+      {:else if $studioPhase === 'step2'}
+        <StudioStep2
           on:back={handleBack}
           on:startResearch={handleStartResearch}
-          on:goToSetup={handleGoToSetupFromCreate}
+          on:goToSetup={handleGoToSetupFromStep2}
         />
 
       {:else if $studioPhase === 'setup'}
@@ -224,13 +246,13 @@
             totalExperiments={$jobStore.totalExperiments}
             on:newResearch={handleNewResearch}
             on:deploy={handlePublish}
-            on:retrain={(e) => {
-              // Retrain → back to CREATE with existing config
+            on:retrain={() => {
               studioStore.startCreate($studioStore.createTopic);
+              studioStore.goToStep2($studioStore.createTopic);
             }}
-            on:improve={(e) => {
-              // Improve → back to CREATE with improvement instructions
+            on:improve={() => {
               studioStore.startCreate($studioStore.createTopic);
+              studioStore.goToStep2($studioStore.createTopic);
             }}
           />
         {:else}
