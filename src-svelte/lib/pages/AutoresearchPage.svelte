@@ -28,6 +28,7 @@
   import ModificationHeatmap from '../components/ModificationHeatmap.svelte';
   import PixelOwl from '../components/PixelOwl.svelte';
   import ResearchTerminal from '../components/ResearchTerminal.svelte';
+  import OnboardingPanel from '../components/research/OnboardingPanel.svelte';
 
   // Reactive state
   $: job = $jobStore;
@@ -189,6 +190,13 @@
       on:newresearch={handleNewResearch}
     />
   </div>
+
+  <!-- ═══ ONBOARDING (idle only) ═══ -->
+  {#if phase === 'idle'}
+    <div class="tile onboard-tile" style="grid-area: onboard">
+      <OnboardingPanel />
+    </div>
+  {/if}
 
   <!-- ═══ HERO BAND ═══ -->
   <div class="tile hero-tile" style="grid-area: hero">
@@ -593,6 +601,37 @@
     gap: 4px;
     overflow: hidden;
     background: var(--page-bg, #FAF9F7);
+    transition: grid-template-columns 400ms ease, grid-template-rows 400ms ease;
+  }
+
+  /* ═══ IDLE LAYOUT ═══ */
+  .research-page.idle {
+    grid-template-columns: 1fr minmax(320px, 400px);
+    grid-template-rows: auto 1fr 36px;
+    grid-template-areas:
+      "prompt   prompt"
+      "onboard  context"
+      "footer   footer";
+  }
+  .research-page.idle .hero-tile,
+  .research-page.idle .converge-tile,
+  .research-page.idle .branches-tile,
+  .research-page.idle .terminal-tile,
+  .research-page.idle .mobile-tabs {
+    display: none;
+  }
+  /* hide titled-tiles (scatter, effect, treemap, lineage, mesh) + stats in idle */
+  .research-page.idle > .tile:not(.prompt-tile):not(.context-tile):not(.onboard-tile):not(.footer-tile) {
+    display: none;
+  }
+  .onboard-tile {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  .research-page:not(.idle) .onboard-tile {
+    display: none;
   }
 
   .tile {
@@ -969,6 +1008,14 @@
       gap: 6px;
       padding: 0 4px 4px;
     }
+    .research-page.idle {
+      grid-template-columns: 1fr minmax(280px, 360px);
+      grid-template-rows: auto 1fr 36px;
+      grid-template-areas:
+        "prompt   prompt"
+        "onboard  context"
+        "footer   footer";
+    }
   }
 
   @media (max-width: 600px) {
@@ -992,6 +1039,15 @@
         "footer";
       gap: 8px;
       padding: 0 6px 14px;
+    }
+    .research-page.idle {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto 1fr 36px;
+      grid-template-areas:
+        "prompt"
+        "context"
+        "onboard"
+        "footer";
     }
     .hero-owl { display: none; }
     .hero-tile {
