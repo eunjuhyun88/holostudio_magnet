@@ -20,8 +20,11 @@
   import { createEventDispatcher } from 'svelte';
   import { dashboardStore } from '../../stores/dashboardStore.ts';
   import { jobStore } from '../../stores/jobStore.ts';
+  import { modelPublishStore } from '../../stores/modelPublishStore.ts';
+  import { hasGpuNode } from '../../stores/nodeStore.ts';
   import type { AppView } from '../../stores/router.ts';
   import PixelIcon from '../PixelIcon.svelte';
+  import GPUOnboardWizard from './GPUOnboardWizard.svelte';
 
   const dispatch = createEventDispatcher<{
     startCreate: { topic?: string; presetId?: string };
@@ -102,7 +105,13 @@
       title: 'GPU 등록',
       description: '내 GPU를 네트워크에 연결하고 컴퓨팅 파워 제공',
       color: 'var(--green, #27864a)',
-      action: () => dispatch('navigate', { view: 'network' }),
+      action: () => {
+        if ($hasGpuNode) {
+          dispatch('navigate', { view: 'network' });
+        } else {
+          showGpuWizard = true;
+        }
+      },
     },
     {
       id: 'model',
@@ -186,6 +195,13 @@
   function selectPreset(card: PresetCard) {
     dispatch('startCreate', { topic: card.title, presetId: card.presetId });
   }
+
+  // ── GPU Onboard Wizard ──
+  let showGpuWizard = false;
+
+  // ── My Models (from modelPublishStore) ──
+  $: myModels = $modelPublishStore.slice(0, 3);
+  $: hasMyModels = myModels.length > 0;
 
   // ── Event log (최근 활동) ──
   $: recentEvents = ($dashboardStore.events ?? []).slice(0, 8);
@@ -298,6 +314,35 @@
       </div>
     {/if}
 
+    <!-- ═══ 내 모델 (My Models from modelPublishStore) ═══ -->
+    {#if hasMyModels}
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">내 모델</h2>
+          <button class="custom-setup-link" on:click={() => dispatch('navigate', { view: 'models' })}>
+            모델 전체 보기 <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="my-models-list">
+          {#each myModels as model (model.id)}
+            <button class="mm-row" on:click={() => dispatch('navigate', { view: 'models' })}>
+              <span class="mm-state" class:mm-active={model.state === 'NETWORK_ACTIVE'} class:mm-draft={model.state === 'DRAFT'}>
+                {model.state === 'NETWORK_ACTIVE' ? '●' : '○'}
+              </span>
+              <span class="mm-name">{model.name}</span>
+              <span class="mm-stat">{model.state === 'NETWORK_ACTIVE' ? 'ACTIVE' : model.state}</span>
+              {#if model.usage && model.usage.totalCalls > 0}
+                <span class="mm-calls">{model.usage.totalCalls.toLocaleString()} calls</span>
+              {/if}
+              {#if model.poolA && model.poolA.creator > 0}
+                <span class="mm-earn">+{model.poolA.creator.toFixed(1)}H</span>
+              {/if}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
     <!-- ═══ Quick Start Actions (diverse flows) ═══ -->
     <div class="section">
       <div class="section-header">
@@ -380,6 +425,14 @@
     </div>
   </div>
 </div>
+
+<!-- GPU Onboard Wizard Overlay -->
+{#if showGpuWizard}
+  <GPUOnboardWizard
+    on:close={() => { showGpuWizard = false; }}
+    on:complete={() => { showGpuWizard = false; dispatch('navigate', { view: 'network' }); }}
+  />
+{/if}
 
 <style>
   .studio-idle {
@@ -662,6 +715,47 @@
     flex-shrink: 0;
   }
   .custom-setup-link:hover { color: var(--accent, #D97757); }
+
+  /* ═══ MY MODELS ═══ */
+  .my-models-list {
+    display: flex; flex-direction: column;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .mm-row {
+    appearance: none; border: none; background: transparent;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
+    cursor: pointer; transition: background 100ms;
+    text-align: left; width: 100%;
+    font-size: 0.72rem;
+  }
+  .mm-row:last-child { border-bottom: none; }
+  .mm-row:hover { background: rgba(0, 0, 0, 0.01); }
+  .mm-state { font-size: 10px; flex-shrink: 0; }
+  .mm-active { color: var(--green, #27864a); }
+  .mm-draft { color: var(--text-muted, #9a9590); }
+  .mm-name {
+    font-weight: 600; color: var(--text-primary, #2D2D2D);
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mm-stat {
+    font-family: var(--font-mono); font-size: 0.52rem; font-weight: 600;
+    color: var(--text-muted, #9a9590);
+    padding: 1px 6px; border-radius: 4px;
+    background: rgba(0,0,0,0.03);
+  }
+  .mm-calls {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    color: var(--text-secondary, #6b6560);
+  }
+  .mm-earn {
+    font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600;
+    color: var(--green, #27864a);
+  }
 
   /* ═══ ACTION TILES (diverse flows) ═══ */
   .action-grid {
