@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 
-export type AppView = 'studio' | 'models' | 'research-lab' | 'network' | 'model-detail' | 'protocol' | 'pipeline';
+export type AppView = 'home' | 'studio' | 'models' | 'research-lab' | 'network' | 'model-detail' | 'protocol' | 'pipeline';
 
 /** Params carried between routes (e.g. topic from Dashboard → Research) */
 export interface RouteParams {
@@ -11,9 +11,10 @@ export interface RouteParams {
 }
 
 const ROUTE_MAP: Record<string, AppView> = {
-  '/': 'studio',
+  '/': 'home',
+  '/home': 'home',
+  '/dashboard': 'home',             // legacy → home
   '/studio': 'studio',
-  '/dashboard': 'studio',          // legacy → studio
   '/models': 'models',
   '/research': 'studio',            // legacy → studio (AutoresearchPage deleted)
   '/research-lab': 'research-lab',
@@ -29,7 +30,8 @@ const ROUTE_MAP: Record<string, AppView> = {
 };
 
 const VIEW_TO_HASH: Record<AppView, string> = {
-  studio: '/',
+  home: '/',
+  studio: '/studio',
   models: '/models',
   'research-lab': '/research-lab',
   network: '/network',
@@ -42,7 +44,7 @@ function getViewFromHash(): AppView {
   const hash = window.location.hash.slice(1) || '/';
   // strip query params for matching
   const path = hash.split('?')[0];
-  return ROUTE_MAP[path] ?? 'studio';
+  return ROUTE_MAP[path] ?? 'home';
 }
 
 function getParamsFromHash(): RouteParams {
