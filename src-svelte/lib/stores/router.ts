@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 
-export type AppView = 'dashboard' | 'models' | 'research' | 'research-lab' | 'network' | 'model-detail' | 'protocol' | 'ontology' | 'pipeline';
+export type AppView = 'studio' | 'dashboard' | 'models' | 'research' | 'research-lab' | 'network' | 'model-detail' | 'protocol' | 'ontology' | 'pipeline';
 
 /** Params carried between routes (e.g. topic from Dashboard → Research) */
 export interface RouteParams {
@@ -11,24 +11,26 @@ export interface RouteParams {
 }
 
 const ROUTE_MAP: Record<string, AppView> = {
-  '/': 'dashboard',
-  '/dashboard': 'dashboard',
+  '/': 'studio',
+  '/studio': 'studio',
+  '/dashboard': 'studio',          // legacy → studio
   '/models': 'models',
-  '/research': 'research',
+  '/research': 'research',         // still accessible, absorbed into studio in Phase 4
   '/research-lab': 'research-lab',
   '/semantic-zoom': 'research-lab',
-  '/autoresearch': 'research', // legacy redirect
-  '/magnet': 'research',       // alias
+  '/autoresearch': 'studio',       // legacy → studio
+  '/magnet': 'studio',             // legacy → studio
   '/network': 'network',
   '/model-detail': 'model-detail',
   '/protocol': 'protocol',
-  '/economics': 'protocol',    // legacy redirect
-  '/ontology': 'ontology',
+  '/economics': 'protocol',        // legacy → protocol
+  '/ontology': 'ontology',         // still accessible, absorbed into studio in Phase 4
   '/pipeline': 'pipeline',
 };
 
 const VIEW_TO_HASH: Record<AppView, string> = {
-  dashboard: '/',
+  studio: '/',
+  dashboard: '/',              // legacy alias → same as studio
   models: '/models',
   research: '/research',
   'research-lab': '/research-lab',
@@ -43,7 +45,7 @@ function getViewFromHash(): AppView {
   const hash = window.location.hash.slice(1) || '/';
   // strip query params for matching
   const path = hash.split('?')[0];
-  return ROUTE_MAP[path] ?? 'dashboard';
+  return ROUTE_MAP[path] ?? 'studio';
 }
 
 function getParamsFromHash(): RouteParams {
