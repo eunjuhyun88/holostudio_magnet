@@ -750,6 +750,7 @@
     color: #ccc;
   }
   .tile-focus-btn {
+    position: relative;
     margin-left: auto;
     width: 24px; height: 24px;
     display: inline-flex; align-items: center; justify-content: center;
@@ -764,6 +765,26 @@
     transform: translateY(-1px);
     border-color: rgba(217,119,87,0.24);
     color: #D97757;
+  }
+  .tile-focus-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(30,25,20,0.88);
+    color: #f5ede8;
+    font: 500 10px/1.2 'Inter', -apple-system, sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 150ms, transform 150ms;
+  }
+  .tile-focus-btn:hover::after {
+    opacity: 1;
+    transform: translateY(0);
   }
   .tile-focus-btn svg {
     width: 13px; height: 13px;
