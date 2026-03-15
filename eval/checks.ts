@@ -2,7 +2,7 @@ import { access } from "node:fs/promises";
 import { constants } from "node:fs";
 import { resolve } from "node:path";
 
-import type { TelemetryEvent, VisualizerModel } from "../src/fixed/types.ts";
+import type { TelemetryEvent, VisualizerModel } from "../src-svelte/lib/utils/types.ts";
 
 export type EvalCheck = {
   id: string;
@@ -26,9 +26,9 @@ export async function checkRequiredFiles(rootDir: string): Promise<EvalCheck[]> 
     "program.md",
     "fixtures/events.ndjson",
     "src/Visualizer.tsx",
-    "src/fixed/types.ts",
-    "src/fixed/telemetry.ts",
-    "src/fixed/fixturePlayer.ts",
+    "src-svelte/lib/utils/types.ts",
+    "src-svelte/lib/utils/telemetry.ts",
+    "src-svelte/lib/utils/fixturePlayer.ts",
     "eval/checks.ts",
     "eval/score.ts",
     "eval/run_eval.ts",

@@ -1,5 +1,5 @@
 import type { EvalCheck } from "./checks.ts";
-import type { TelemetryEvent, VisualizerModel } from "../src/fixed/types.ts";
+import type { TelemetryEvent, VisualizerModel } from "../src-svelte/lib/utils/types.ts";
 
 export type EvalMetrics = {
   buildPass: number;

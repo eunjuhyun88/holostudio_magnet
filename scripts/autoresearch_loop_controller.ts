@@ -27,7 +27,7 @@ import type {
   NodeState,
   TelemetryEvent,
   Worker,
-} from "../src/fixed/types.ts";
+} from "../src-svelte/lib/utils/types.ts";
 
 type ControllerMode = "simulate" | "watch";
 

@@ -2,7 +2,7 @@ import { readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { ExperimentResult, TelemetryEvent } from "../src/fixed/types.ts";
+import type { ExperimentResult, TelemetryEvent } from "../src-svelte/lib/utils/types.ts";
 
 type Coordinate = {
   lat: number;

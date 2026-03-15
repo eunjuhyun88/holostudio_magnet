@@ -2,7 +2,7 @@ import { appendFile, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildModelFromFixtureText, parseNdjson } from "../src/fixed/fixturePlayer.ts";
+import { buildModelFromFixtureText, parseNdjson } from "../src-svelte/lib/utils/fixturePlayer.ts";
 import { checkRequiredFiles, runStructuralChecks } from "./checks.ts";
 import { deriveMetrics } from "./score.ts";
 
