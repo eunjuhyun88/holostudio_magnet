@@ -10,14 +10,14 @@ export type {
   BondTier,
   ActiveBond,
   BurnConversion,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';
 
 import type {
   PpapStage,
   JourneyActor,
   FlowNode,
   ProtocolEvent,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';
 
 export const BOND_TIERS = [
   { name: 'Lite', tier: 1, bondNum: 500, bond: '500', gpu: '1 GPU', jobs: '5 concurrent', accent: 'var(--blue)' },

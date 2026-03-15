@@ -13,7 +13,7 @@ import { normalizeRuntimeApiBase, fetchRuntimeMesh, sendRuntimeCommand, subscrib
 import { mapRuntimeMeshToJob, applyRuntimeControllerToJob } from '../api/meshAdapter.ts';
 import { selectModification, generateExperiment, createTrainingExperiment } from '../api/simulationAdapter.ts';
 
-import type { RuntimeJobCommand } from '../../../packages/contracts/src/index.ts';
+import type { RuntimeJobCommand } from '@mesh/contracts';
 import { capArray } from '../utils/perf.ts';
 
 /* ─── Constants ─── */

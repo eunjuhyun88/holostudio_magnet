@@ -9,9 +9,9 @@ export type {
   ModelUsage,
   PoolADistribution,
   ModelRecord,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';
 
-import type { ModelRecord, ModelState } from '../../../packages/contracts/src/index.ts';
+import type { ModelRecord, ModelState } from '@mesh/contracts';
 
 // ── Simulated model data ──
 

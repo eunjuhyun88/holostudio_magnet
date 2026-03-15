@@ -1,9 +1,9 @@
 import { writable, derived } from 'svelte/store';
 
 // ── Types from shared contracts (re-exported for backward compat) ──
-export type { RewardPool, RewardSource, RewardEntry, RewardSummary } from '../../../packages/contracts/src/index.ts';
+export type { RewardPool, RewardSource, RewardEntry, RewardSummary } from '@mesh/contracts';
 
-import type { RewardEntry } from '../../../packages/contracts/src/index.ts';
+import type { RewardEntry } from '@mesh/contracts';
 
 // ── Simulated reward history ──
 

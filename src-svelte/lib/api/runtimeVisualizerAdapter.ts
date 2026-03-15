@@ -1,4 +1,4 @@
-import type { RuntimeMeshSummary, RuntimeWorkspaceSummary } from '../../../packages/contracts/src/index.ts';
+import type { RuntimeMeshSummary, RuntimeWorkspaceSummary } from '@mesh/contracts';
 import type { Job, Node, TapeEntry, VisualizerModel, Worker } from '../utils/types.ts';
 
 const RESULT_SPACING_MS = 45_000;

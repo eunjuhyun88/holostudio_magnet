@@ -13,7 +13,7 @@ import type {
   ProtocolEvent,
   FlowNode,
   PpapStage,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';
 
 /* ─── URL Normalization ─── */
 

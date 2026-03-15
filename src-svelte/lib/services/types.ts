@@ -15,4 +15,4 @@ export type {
   PortfolioSummary,
   DashboardEvent,
   DashboardData,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';

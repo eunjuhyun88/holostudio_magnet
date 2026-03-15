@@ -2,7 +2,7 @@ import type {
   RuntimeMeshSummary,
   RuntimeWorkspaceResultEntry,
   RuntimeWorkspaceSummary,
-} from '../../../packages/contracts/src/index.ts';
+} from '@mesh/contracts';
 import type { ModCategory } from '../data/modifications.ts';
 import type { Experiment, Branch, AutoresearchJob, ExperimentStatus, VerificationState } from '../stores/jobStore.ts';
 
