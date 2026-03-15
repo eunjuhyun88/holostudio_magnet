@@ -63,4 +63,5 @@ npm run ctx:restore -- --mode brief
 - Branch/worktree split is mandatory when multiple agents are active.
 - Completed scoped work must be merged to the approved integration branch and pushed immediately after validation.
 - **Commit after every meaningful change.** Do not batch multiple modifications into one large commit. Each file change, feature addition, or fix should be committed individually before moving on.
+- **Worktree/브랜치 삭제 전 반드시 확인.** `git worktree remove --force` 또는 `git branch -D` 실행 전에 해당 worktree에 uncommitted 변경이 있는지, 다른 에이전트가 사용 중인지 반드시 확인한다. 확인 없이 강제 삭제 금지.
 - Session start now hard-fails if `npm run agent:guard` does not pass.
