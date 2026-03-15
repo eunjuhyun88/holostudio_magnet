@@ -4,27 +4,24 @@
   import { animateCounter } from '../utils/animate.ts';
   import { fmtDollar, fmtK, fmtInt } from '../utils/format.ts';
   import {
-    EVENT_FEED, CONTRACT_MAP,
-    SIMULATED_BALANCE, MAU_TARGET, TRUST_SCORE_TARGET,
+    EVENT_FEED, CONTRACT_MAP, MAU_TARGET,
     type ContractCall, type ProtocolEvent,
   } from '../data/protocolData.ts';
 
   // Sub-components
   import ContractCallModal from '../components/ContractCallModal.svelte';
-  import BondPanel from '../components/BondPanel.svelte';
   import BurnPanel from '../components/BurnPanel.svelte';
   import JobCreatorPanel from '../components/JobCreatorPanel.svelte';
   import TokenFlowPanel from '../components/TokenFlowPanel.svelte';
   import PPAPPipeline from '../components/PPAPPipeline.svelte';
-  import TrustGaugePanel from '../components/TrustGaugePanel.svelte';
   import YourJourney from '../components/YourJourney.svelte';
-  import { rewardStore, rewardSummary } from '../stores/rewardStore.ts';
+  import { rewardSummary } from '../stores/rewardStore.ts';
   import { router } from '../stores/router.ts';
 
   let visible = false;
 
-  // ── Mobile tab switching (supports deep-link via ?tab=rewards) ──
-  const validTabs = ['operations', 'analytics', 'events', 'rewards'] as const;
+  // ── Mobile tab switching (supports deep-link via ?tab=) ──
+  const validTabs = ['operations', 'analytics', 'events'] as const;
   type MobileTab = typeof validTabs[number];
   function resolveTab(): MobileTab {
     let t: MobileTab = 'operations';
@@ -33,8 +30,7 @@
   }
   let mobileTab: MobileTab = resolveTab();
 
-  // ── Reward data ──
-  $: rewards = $rewardStore;
+  // ── Reward summary (for protocol-wide distribution card) ──
   $: summary = $rewardSummary;
 
   // ── Wallet (from shared store) ──
@@ -51,11 +47,6 @@
   let activeBonds = 0;
   let mau = 0;
   const mauTarget = MAU_TARGET;
-  const simulatedBalance = SIMULATED_BALANCE;
-
-  // ── Trust Score ──
-  let trustScore = 0;
-  const trustScoreTarget = TRUST_SCORE_TARGET;
 
   onMount(() => {
     visible = true;
@@ -69,14 +60,9 @@
       animateCounter(0, 892, 1500, v => mau = v, isDestroyed);
     }, 300);
 
-    const delayTrust = setTimeout(() => {
-      animateCounter(0, trustScoreTarget, 2000, v => trustScore = v, isDestroyed);
-    }, 600);
-
     return () => {
       destroyed = true;
       clearTimeout(delayMetrics);
-      clearTimeout(delayTrust);
     };
   });
 
@@ -213,10 +199,6 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Events
     </button>
-    <button class="mtab-btn" class:mtab-active={mobileTab === 'rewards'} on:click={() => mobileTab = 'rewards'}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Rewards
-    </button>
   </div>
 
   <!-- 3. MAIN DASHBOARD GRID -->
@@ -229,8 +211,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           On-chain Operations
         </div>
-        <BondPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
-        <BurnPanel {simulatedBalance} on:openModal={e => openContractModal(e.detail)} />
+        <BurnPanel simulatedBalance={12450} on:openModal={e => openContractModal(e.detail)} />
         <JobCreatorPanel on:openModal={e => openContractModal(e.detail)} />
       </div>
 
@@ -243,7 +224,26 @@
           </div>
           <TokenFlowPanel />
           <PPAPPipeline />
-          <TrustGaugePanel {trustScore} {mau} {mauTarget} />
+          <!-- Protocol Reward Distribution (aggregate) -->
+          <div class="panel" style="--panel-delay: 2">
+            <div class="panel-header">
+              <h2>Reward Distribution</h2>
+            </div>
+            <div class="proto-reward-grid">
+              <div class="pr-item">
+                <span class="pr-val accent">{summary.poolB.toFixed(2)}</span>
+                <span class="pr-label">Pool B (GPU)</span>
+              </div>
+              <div class="pr-item">
+                <span class="pr-val green">{summary.poolA.toFixed(2)}</span>
+                <span class="pr-label">Pool A (Creator)</span>
+              </div>
+              <div class="pr-item">
+                <span class="pr-val">{summary.total.toFixed(2)}</span>
+                <span class="pr-label">Total Distributed</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class:mtab-hidden={mobileTab !== 'events'} class="mobile-group">
@@ -262,101 +262,6 @@
                 </button>
               {/each}
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- REWARDS TAB (mobile only separate, desktop visible in right-col) -->
-      <div class="rewards-col" class:mtab-hidden={mobileTab !== 'rewards'}>
-        <div class="section-label">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Reward Tracking
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="reward-summary">
-          <div class="rw-card rw-total">
-            <span class="rw-card-label">Total Earned</span>
-            <span class="rw-card-value">{summary.total.toFixed(2)}</span>
-            <span class="rw-card-unit">HOOT</span>
-          </div>
-          <div class="rw-card">
-            <span class="rw-card-label">Today</span>
-            <span class="rw-card-value">{summary.today.toFixed(2)}</span>
-          </div>
-          <div class="rw-card">
-            <span class="rw-card-label">7-Day</span>
-            <span class="rw-card-value">{summary.sevenDay.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <!-- Pool Breakdown -->
-        <div class="panel rw-pool-panel" style="--panel-delay: 2">
-          <div class="panel-header">
-            <h2>Pool Breakdown</h2>
-          </div>
-          <div class="rw-pool-bars">
-            <div class="rw-pool-row">
-              <div class="rw-pool-label">
-                <span class="rw-pool-dot" style="background: var(--accent, #D97757)"></span>
-                Pool B · GPU Compute
-              </div>
-              <div class="rw-pool-bar-track">
-                <div class="rw-pool-bar-fill pool-b" style="width: {summary.poolBPct}%"></div>
-              </div>
-              <span class="rw-pool-val">{summary.poolB.toFixed(2)} <small>({summary.poolBPct}%)</small></span>
-            </div>
-            <div class="rw-pool-row">
-              <div class="rw-pool-label">
-                <span class="rw-pool-dot" style="background: var(--green, #27864a)"></span>
-                Pool A · Creator Revenue
-              </div>
-              <div class="rw-pool-bar-track">
-                <div class="rw-pool-bar-fill pool-a" style="width: {summary.poolAPct}%"></div>
-              </div>
-              <span class="rw-pool-val">{summary.poolA.toFixed(2)} <small>({summary.poolAPct}%)</small></span>
-            </div>
-            {#if summary.challenge > 0}
-              <div class="rw-pool-row">
-                <div class="rw-pool-label">
-                  <span class="rw-pool-dot" style="background: var(--blue, #3B82F6)"></span>
-                  Challenge Rewards
-                </div>
-                <div class="rw-pool-bar-track">
-                  <div class="rw-pool-bar-fill pool-challenge" style="width: {summary.challengePct}%"></div>
-                </div>
-                <span class="rw-pool-val">{summary.challenge.toFixed(2)} <small>({summary.challengePct}%)</small></span>
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Reward History -->
-        <div class="panel rw-history-panel" style="--panel-delay: 3">
-          <div class="panel-header">
-            <h2>Reward History</h2>
-            <span class="rw-count">{rewards.length} entries</span>
-          </div>
-          <div class="rw-history-list">
-            {#each rewards as entry (entry.id)}
-              <div class="rw-entry" class:rw-negative={entry.amount < 0}>
-                <div class="rw-entry-left">
-                  <span class="rw-source-tag" class:pool-b-tag={entry.pool === 'B'} class:pool-a-tag={entry.pool === 'A'}>{entry.pool === 'B' ? 'B' : 'A'}</span>
-                  <div class="rw-entry-info">
-                    <span class="rw-entry-desc">{entry.description}</span>
-                    <span class="rw-entry-meta">
-                      {new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {#if entry.jobId} · {entry.jobId}{/if}
-                      {#if entry.nodeId} · {entry.nodeId}{/if}
-                      {#if entry.modelId} · {entry.modelId}{/if}
-                    </span>
-                  </div>
-                </div>
-                <span class="rw-entry-amount" class:rw-positive={entry.amount > 0} class:rw-neg={entry.amount < 0}>
-                  {entry.amount > 0 ? '+' : ''}{entry.amount.toFixed(2)}
-                </span>
-              </div>
-            {/each}
           </div>
         </div>
       </div>
@@ -700,201 +605,39 @@
     display: contents;
   }
 
-  /* ====== RESPONSIVE ====== */
-  /* ====== REWARDS TAB ====== */
-  .rewards-col {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    grid-column: 1 / -1;
-  }
-
-  .reward-summary {
+  /* ====== PROTOCOL REWARD DISTRIBUTION ====== */
+  .proto-reward-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
   }
-
-  .rw-card {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #E5E0DA);
-    border-radius: var(--radius-lg, 16px);
-    padding: 16px;
+  .pr-item {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 4px;
+    padding: 12px 8px;
+    background: var(--page-bg, #FAF9F7);
+    border-radius: var(--radius-sm, 6px);
   }
-  .rw-card.rw-total {
-    border-color: var(--accent, #D97757);
-    background: linear-gradient(135deg, rgba(217,119,87,0.04), rgba(217,119,87,0.01));
+  .pr-val {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
   }
-  .rw-card-label {
-    font-size: 0.65rem;
+  .pr-val.accent { color: var(--accent, #D97757); }
+  .pr-val.green { color: var(--green, #27864a); }
+  .pr-label {
+    font-size: 0.6rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--text-muted, #9a9590);
   }
-  .rw-card-value {
-    font-family: var(--font-mono);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-  .rw-card-unit {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--accent, #D97757);
-    letter-spacing: 0.04em;
-  }
 
-  .rw-pool-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .rw-pool-row {
-    display: grid;
-    grid-template-columns: 160px 1fr auto;
-    align-items: center;
-    gap: 12px;
-  }
-  .rw-pool-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-secondary, #6b6560);
-    white-space: nowrap;
-  }
-  .rw-pool-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .rw-pool-bar-track {
-    height: 8px;
-    background: var(--border-subtle, #EDEAE5);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .rw-pool-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 800ms var(--ease-out-expo, cubic-bezier(0.16,1,0.3,1));
-  }
-  .rw-pool-bar-fill.pool-b { background: var(--accent, #D97757); }
-  .rw-pool-bar-fill.pool-a { background: var(--green, #27864a); }
-  .rw-pool-bar-fill.pool-challenge { background: var(--blue, #3B82F6); }
-  .rw-pool-val {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
-    min-width: 90px;
-    text-align: right;
-  }
-  .rw-pool-val small {
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  .rw-count {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--text-muted);
-  }
-
-  .rw-history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 420px;
-    overflow-y: auto;
-  }
-  .rw-history-list::-webkit-scrollbar { width: 4px; }
-  .rw-history-list::-webkit-scrollbar-track { background: transparent; }
-  .rw-history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .rw-entry {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm, 6px);
-    transition: background 150ms ease;
-    gap: 12px;
-  }
-  .rw-entry:hover { background: var(--page-bg, #FAF9F7); }
-
-  .rw-entry-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .rw-source-tag {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 700;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: var(--border-subtle, #EDEAE5);
-    color: var(--text-muted);
-  }
-  .rw-source-tag.pool-b-tag {
-    background: rgba(217,119,87,0.12);
-    color: var(--accent, #D97757);
-  }
-  .rw-source-tag.pool-a-tag {
-    background: rgba(39,134,74,0.12);
-    color: var(--green, #27864a);
-  }
-
-  .rw-entry-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-  .rw-entry-desc {
-    font-size: 0.74rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .rw-entry-meta {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    color: var(--text-muted);
-  }
-
-  .rw-entry-amount {
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-  }
-  .rw-entry-amount.rw-positive { color: var(--green, #27864a); }
-  .rw-entry-amount.rw-neg { color: var(--red, #DC2626); }
-
-  .rw-negative { opacity: 0.7; }
-
+  /* ====== RESPONSIVE ====== */
   @media (max-width: 860px) {
     .dash-grid { grid-template-columns: 1fr; }
     .metrics-inner { gap: 0; }
@@ -920,14 +663,6 @@
     .page-title .title-icon { width: 20px; height: 20px; }
     .page-subtitle { font-size: 0.78rem; }
     .page-header-meta { flex-wrap: wrap; }
-
-    /* Rewards col visible on mobile */
-    .rewards-col { display: flex; }
-    .rw-pool-row { grid-template-columns: 1fr; gap: 4px; }
-    .rw-pool-val { text-align: left; }
-    .reward-summary { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .rw-card { padding: 12px; }
-    .rw-card-value { font-size: 1.1rem; }
 
     /* Mobile tabs visible */
     .mobile-tabs {
