@@ -3,6 +3,7 @@
   import { jobStore, completedCount } from "../stores/jobStore.ts";
   import { wallet, WALLET_OPTIONS } from "../stores/walletStore.ts";
   import { unlockedPages } from "../stores/stageStore.ts";
+  import { owlMood } from "../stores/owlMoodStore.ts";
   import PixelOwl from "../components/PixelOwl.svelte";
   import PixelIcon from "../components/PixelIcon.svelte";
   import ConnectionBadge from "../components/ConnectionBadge.svelte";
@@ -21,13 +22,6 @@
   $: currentView = $router;
   $: visibleNavItems = navItems.filter(item => $unlockedPages.includes(item.view));
   $: isAIActive = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
-  $: owlMood = (() => {
-    const p = $jobStore.phase;
-    if (p === 'running') return 'research';
-    if (p === 'setup') return 'build';
-    if (p === 'complete') return 'celebrate';
-    return 'idle';
-  })();
   $: researchProgress = $jobStore.totalExperiments > 0
     ? Math.round(($completedCount / $jobStore.totalExperiments) * 100)
     : 0;
@@ -65,7 +59,7 @@
   <div class="navbar-inner">
     <button class="logo" on:click={() => navTo('dashboard')}>
       <span class="logo-icon" class:ai-active={isAIActive}>
-        <PixelOwl size={0.28} mood={owlMood} />
+        <PixelOwl size={0.28} mood={$owlMood} />
         {#if isAIActive}
           <span class="ai-pulse-ring"></span>
           <span class="ai-pulse-ring r2"></span>
