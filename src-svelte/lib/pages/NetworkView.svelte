@@ -553,13 +553,13 @@
 
 <style>
   .network {
-    min-height: calc(100vh - 52px);
+    height: calc(100vh - 52px);
     display: flex;
     flex-direction: column;
     background: var(--page-bg, #FAF9F7);
     opacity: 0;
     transition: opacity 400ms ease;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   .network.mounted { opacity: 1; }
 
