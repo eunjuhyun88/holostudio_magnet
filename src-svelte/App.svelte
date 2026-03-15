@@ -7,6 +7,7 @@
   import SiteFooter from "./lib/layout/SiteFooter.svelte";
   import SplashScreen from "./lib/components/SplashScreen.svelte";
   import PageSkeleton from "./lib/components/PageSkeleton.svelte";
+  import PixelOwl from "./lib/components/PixelOwl.svelte";
   import "./lib/tokens.css";
 
   let showSplash = true;
@@ -58,7 +59,11 @@
           {:then mod}
             <svelte:component this={mod.default} />
           {:catch}
-            <div class="page-error">Failed to load page</div>
+            <div class="page-error">
+              <div class="page-error-owl"><PixelOwl size={0.35} mood="idle" /></div>
+              <p class="page-error-msg">Failed to load page</p>
+              <p class="page-error-sub">Try refreshing or navigating back.</p>
+            </div>
           {/await}
         {/if}
       </div>
@@ -109,9 +114,23 @@
   }
 
   .page-error {
-    padding: 40px;
+    padding: 60px 40px;
     text-align: center;
-    color: var(--text-muted, #9a9590);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-error-owl { opacity: 0.7; }
+  .page-error-msg {
+    margin: 0;
+    color: var(--text-secondary, #6b6560);
     font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .page-error-sub {
+    margin: 0;
+    color: var(--text-muted, #9a9590);
+    font-size: 0.75rem;
   }
 </style>
