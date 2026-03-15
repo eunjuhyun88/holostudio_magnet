@@ -162,14 +162,24 @@
     return Math.round(model.nodes.length + meshPopulationCeiling * clamp(0.07 + lw * 0.72 + sw * 0.12, 0.07, 0.97));
   })();
   $: renderNodes = buildScaledNodes(model.nodes, model.jobs, meshPopulationDisplayed, meshPopulationCeiling, meshSimulationTime);
-  $: selectedWorker = model.workers.find(w => w.id === selectedWorkerId) ?? null;
-  $: if (selectedWorkerId && !model.workers.some(w => w.id === selectedWorkerId)) {
+  // Use workerMap for O(1) selectedWorker lookup instead of .find()
+  $: selectedWorker = (selectedWorkerId ? workerMap.get(selectedWorkerId) : null) ?? null;
+  $: if (selectedWorkerId && !workerMap.has(selectedWorkerId)) {
     selectedWorkerId = model.workers[0]?.id ?? null;
   }
   $: totalGpu = model.nodes.reduce((s, n) => s + n.gpu, 0);
-  $: activeWorkers = model.workers.filter(w => isWorkerActiveState(w.state)).length;
+  // Single-pass worker state counts instead of 2 separate .filter() calls
+  $: workerStats = (() => {
+    let active = 0, evaluating = 0;
+    for (const w of model.workers) {
+      if (isWorkerActiveState(w.state)) active++;
+      if (w.state === 'evaluating') evaluating++;
+    }
+    return { active, evaluating };
+  })();
+  $: activeWorkers = workerStats.active;
   $: claimedDonors = renderNodes.filter(n => n.jobId).length;
-  $: evaluatingWorkers = model.workers.filter(w => w.state === "evaluating").length;
+  $: evaluatingWorkers = workerStats.evaluating;
   $: activeFlowCount = model.jobs.reduce((s, j) => s + getJobFlowCount(j), 0);
   // Single-pass tape counts instead of 3 separate filters
   $: tapeCounts = (() => {
