@@ -24,6 +24,7 @@
    *   zoomIn: void
    */
   import { createEventDispatcher } from 'svelte';
+  import { fly } from 'svelte/transition';
   import {
     jobStore,
     keepCount, crashCount, completedCount, activeNodeCount,
@@ -63,7 +64,16 @@
     stop: void;
     submit: { text: string; parentId: number | null };
     zoomIn: void;
+    viewResults: void;
   }>();
+
+  // Forced cancellation state
+  let forceCancelled = false;
+
+  // Detect unexpected completion (force cancel)
+  $: if ($jobStore.phase === 'complete' && !forceCancelled) {
+    // Will be handled by parent, but if still mounted → show banner
+  }
 
   // Reactive state from store
   $: job = $jobStore;
@@ -131,6 +141,13 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <div class="research-page running">
+  {#if forceCancelled}
+    <div class="cancel-banner" transition:fly={{ y: -12, duration: 250 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="#f38ba8"/></svg>
+      <span>연구가 강제 중단되었습니다. 지금까지의 결과를 확인하세요.</span>
+      <button class="cancel-banner-btn" on:click={() => dispatch('viewResults')}>결과 보기 →</button>
+    </div>
+  {/if}
   <!-- ═══ PROMPT BAR ═══ -->
   <div class="tile prompt-tile" style="grid-area: prompt">
     <PromptBar
@@ -424,6 +441,40 @@
 {/if}
 
 <style>
+  /* ═══ CANCEL BANNER ═══ */
+  .cancel-banner {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(243, 139, 168, 0.08);
+    border: 1px solid rgba(243, 139, 168, 0.2);
+    border-radius: 8px;
+    margin: 8px 8px 0;
+    font-size: 0.82rem;
+    color: #f38ba8;
+    font-weight: 500;
+  }
+  .cancel-banner span { flex: 1; }
+  .cancel-banner-btn {
+    appearance: none;
+    border: 1px solid rgba(243, 139, 168, 0.3);
+    background: rgba(243, 139, 168, 0.1);
+    color: #f38ba8;
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 150ms;
+  }
+  .cancel-banner-btn:hover {
+    background: rgba(243, 139, 168, 0.2);
+    border-color: #f38ba8;
+  }
+
   /* ═══ GRID LAYOUT ═══ */
   .research-page {
     height: calc(100vh - 48px);
