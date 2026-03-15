@@ -15,12 +15,10 @@
   // Lazy-loaded page components (everything except Dashboard which is the landing page)
   const pageLoaders: Record<string, () => Promise<{ default: any }>> = {
     models: () => import("./lib/pages/ModelsPage.svelte"),
-    research: () => import("./lib/pages/AutoresearchPage.svelte"),
     'research-lab': () => import("./lib/pages/ResearchZoomLabPage.svelte"),
     network: () => import("./lib/pages/NetworkView.svelte"),
     'model-detail': () => import("./lib/pages/ModelDetailPage.svelte"),
     protocol: () => import("./lib/pages/EconomicsPage.svelte"),
-    ontology: () => import("./lib/pages/OntologyPage.svelte"),
     pipeline: () => import("./lib/pages/PipelinePage.svelte"),
   };
 
