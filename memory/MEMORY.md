@@ -119,6 +119,8 @@
   - `AppDock` and `SiteFooter` are compacted for narrow screens
   - `Dashboard` hero and `Network` mesh viewport are tightened on mobile to improve first-screen scanability
   - follow-up mobile polish tightens the full-screen `NavBar` drawer and reduces first-fold padding on Models / Protocol / Pipeline / Research Lab / Ontology
+  - local `main` now includes the follow-up mobile polish via merge commit `84bec38`
+  - the earlier mobile research-flow patch was already present on `main` before that merge
 - **Canonical multi-agent branching guide added**:
   - `docs/AGENT_BRANCHING.md`
   - root routers (`README.md`, `AGENTS.md`, `CLAUDE.md`) now require it for parallel agent work or handoffs

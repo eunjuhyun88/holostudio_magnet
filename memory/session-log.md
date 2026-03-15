@@ -638,6 +638,32 @@ runtime-api가 실제 runtime summary를 읽게 된 뒤, 다음 단계로 `Autor
 
 ---
 
+## 2026-03-15 (cont): mobile-only merge back to main
+
+### Context
+사용자 요청: 모바일 반응형 수정만 현재 `main` 기준으로 안전하게 가져와서 합칠 수 있는지 확인하고, 가능하면 그 경로로 정리
+
+### Completed
+- `codex/mobile-only-main-merge` worktree/branch를 현재 `main`(`c48b826`) 기준으로 생성
+- `feat/next-iteration`의 모바일 커밋만 분리 적용 시도
+  - `f5a9d93 fix: optimize mobile research flows` 는 empty cherry-pick으로 확인되어 현재 `main`에 이미 반영된 상태로 판단
+  - `700fc4b fix: tighten mobile navigation density` 만 신규 적용
+- 모바일-only branch를 로컬 `main`에 merge
+  - merge commit: `84bec38`
+
+### Verification
+- `npm run build` ✓
+- build는 통과했고, 남은 것은 기존 Svelte a11y 경고뿐
+
+### Key Findings
+- `feat/next-iteration` 전체를 통째로 `main`에 넣는 것은 mobile-only merge가 아니었음
+- 실제 mobile-only delta는 `700fc4b` 한 건이었고, 첫 모바일 수정은 이미 `main`에 들어와 있었음
+
+### Pending
+- `main` / `codex/mobile-only-main-merge` push 여부는 사용자 요청 대기
+
+---
+
 ## 2026-03-15 (cont): Mobile UX sweep for Magnet Research and page flow
 
 ### Context
