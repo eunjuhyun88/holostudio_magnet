@@ -37,6 +37,8 @@
   type PublishStep = 1 | 2 | 3;
   let step: PublishStep = 1;
   let publishedModelId: string | null = null;
+  let isPublic = true;
+  let trainingSeed: number | null = 42; // demo default
 
   // ── Derived data ──
   $: keptExperiments = experiments.filter(e => e.status === 'keep').length;
@@ -165,6 +167,26 @@
           </div>
         </div>
 
+        <!-- Public toggle -->
+        <div class="public-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" bind:checked={isPublic} class="toggle-input" />
+            <span class="toggle-track" class:on={isPublic}>
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-text">{isPublic ? '모델 공개' : '비공개'}</span>
+          </label>
+          <span class="toggle-hint">{isPublic ? '모든 사용자가 이 모델에 접근할 수 있습니다' : '본인만 사용 가능합니다'}</span>
+        </div>
+
+        <!-- Seed warning -->
+        {#if trainingSeed === null}
+          <div class="seed-warning">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>
+            학습 시드가 설정되지 않아 재현이 불가능할 수 있습니다
+          </div>
+        {/if}
+
         <!-- Pool A distribution preview -->
         <div class="pool-preview">
           <span class="pool-label">수익 분배 (발행 후)</span>
@@ -270,6 +292,19 @@
             <span>이후 모든 사용에서 Creator Pool 60% 자동 수령</span>
           </div>
         </div>
+
+        <!-- Endpoint URL -->
+        {#if publishedModelId}
+          <div class="endpoint-box">
+            <span class="endpoint-label">API Endpoint</span>
+            <div class="endpoint-row">
+              <code class="endpoint-url">https://api.hoot.network/v1/models/{publishedModelId}/predict</code>
+              <button class="copy-btn" on:click={() => { navigator.clipboard.writeText(`https://api.hoot.network/v1/models/${publishedModelId}/predict`); }} title="복사">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        {/if}
 
         <div class="step-actions">
           <button class="secondary-btn" on:click={handleNewResearch}>새 연구 시작</button>
@@ -447,6 +482,78 @@
   .pl-dot {
     width: 6px; height: 6px; border-radius: 50%;
   }
+
+  /* ── Public toggle ── */
+  .public-toggle {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .toggle-label {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+  }
+  .toggle-input { display: none; }
+  .toggle-track {
+    width: 36px; height: 20px; border-radius: 10px;
+    background: var(--border, #E5E0DA);
+    position: relative; transition: background 200ms;
+    flex-shrink: 0;
+  }
+  .toggle-track.on { background: var(--accent, #D97757); }
+  .toggle-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; transition: transform 200ms;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle-track.on .toggle-thumb { transform: translateX(16px); }
+  .toggle-text {
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+  }
+  .toggle-hint {
+    font-size: 0.68rem; color: var(--text-muted, #9a9590);
+    margin-left: 46px;
+  }
+
+  /* ── Seed warning ── */
+  .seed-warning {
+    width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(249, 226, 175, 0.1);
+    border: 1px solid rgba(249, 226, 175, 0.25);
+    font-size: 0.72rem; color: #b7860e; font-weight: 500;
+  }
+  .seed-warning svg { flex-shrink: 0; }
+
+  /* ── Endpoint URL ── */
+  .endpoint-box {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .endpoint-label {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--text-muted, #9a9590);
+  }
+  .endpoint-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 8px; background: var(--page-bg, #FAF9F7);
+  }
+  .endpoint-url {
+    flex: 1;
+    font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--text-secondary, #6b6560);
+    word-break: break-all;
+  }
+  .copy-btn {
+    appearance: none; border: none; background: none;
+    color: var(--text-muted, #9a9590); cursor: pointer;
+    padding: 4px; border-radius: 4px; display: flex;
+    transition: all 150ms;
+  }
+  .copy-btn:hover { color: var(--accent, #D97757); background: rgba(217,119,87,0.06); }
 
   /* ── Wallet warning ── */
   .wallet-warning {
