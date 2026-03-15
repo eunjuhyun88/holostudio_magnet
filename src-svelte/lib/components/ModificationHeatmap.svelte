@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { zoomable } from '../actions/zoomable.ts';
   import { CATEGORY_LABELS, CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
 
   export let data: Record<string, { total: number; keeps: number; avgMetric: number; metrics: number[] }> = {};
@@ -38,7 +39,7 @@
   onMount(() => { mounted = true; });
 </script>
 
-<div class="heatmap-container" class:mounted>
+<div class="heatmap-container" class:mounted use:zoomable>
   <svg {width} height={actualH} viewBox="0 0 {width} {actualH}" class="heatmap-svg">
     <defs>
       <filter id="hm-bar-glow" x="-10%" y="-30%" width="120%" height="160%">

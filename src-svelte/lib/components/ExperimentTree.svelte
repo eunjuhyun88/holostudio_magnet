@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { zoomable } from '../actions/zoomable.ts';
   import { CATEGORY_SHORT, CATEGORY_COLORS, resolveExperimentCategory } from '../data/modifications.ts';
 
   import type { VerificationState } from '../stores/jobStore.ts';
@@ -126,7 +127,7 @@
   onMount(() => { mounted = true; });
 </script>
 
-<div class="tree-container" class:mounted>
+<div class="tree-container" class:mounted use:zoomable>
   <svg {width} height={plotH} viewBox="0 0 {width} {plotH}" class="tree-svg">
     <defs>
       <filter id="tree-best-glow" x="-60%" y="-60%" width="220%" height="220%">

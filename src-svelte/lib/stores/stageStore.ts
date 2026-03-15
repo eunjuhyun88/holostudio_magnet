@@ -6,10 +6,10 @@ export type DisclosureStage = 1 | 2 | 3 | 4 | 5;
 /** Which pages are visible at each stage */
 const STAGE_PAGES: Record<DisclosureStage, AppView[]> = {
   1: ['dashboard'],
-  2: ['dashboard', 'research'],
-  3: ['dashboard', 'research', 'models', 'model-detail'],
-  4: ['dashboard', 'research', 'models', 'model-detail', 'network'],
-  5: ['dashboard', 'research', 'models', 'model-detail', 'network', 'protocol', 'ontology', 'pipeline'],
+  2: ['dashboard', 'research', 'research-lab'],
+  3: ['dashboard', 'research', 'research-lab', 'models', 'model-detail'],
+  4: ['dashboard', 'research', 'research-lab', 'models', 'model-detail', 'network'],
+  5: ['dashboard', 'research', 'research-lab', 'models', 'model-detail', 'network', 'protocol', 'ontology', 'pipeline'],
 };
 
 /** Read initial stage from localStorage, default to 5 (all pages visible) */

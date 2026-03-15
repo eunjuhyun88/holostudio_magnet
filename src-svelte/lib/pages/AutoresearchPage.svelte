@@ -8,7 +8,7 @@
     branchSummary, improvementDelta, bestBranch, isPaused,
   } from '../stores/jobStore.ts';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
-  import { CATEGORY_COLORS } from '../data/modifications.ts';
+  import { CATEGORY_COLORS, CATEGORY_LABELS, resolveExperimentCategory, type ModCategory } from '../data/modifications.ts';
   import { readRuntimeConfig } from '../api/client.ts';
 
   // Components
@@ -22,6 +22,8 @@
   import ExperimentTreemap from '../components/ExperimentTreemap.svelte';
   import ExperimentTree from '../components/ExperimentTree.svelte';
   import DistributedView from '../components/DistributedView.svelte';
+  import ParamScatterChart from '../components/ParamScatterChart.svelte';
+  import ModificationHeatmap from '../components/ModificationHeatmap.svelte';
   import PixelOwl from '../components/PixelOwl.svelte';
 
   // Reactive state
@@ -33,7 +35,7 @@
   $: paused = $isPaused;
   $: runtimeReadonly = job.sourceMode === 'runtime' && !job.controlsAvailable;
 
-  type FocusView = 'convergence' | 'activity' | 'treemap' | 'context' | 'lineage' | 'mesh';
+  type FocusView = 'convergence' | 'activity' | 'treemap' | 'context' | 'lineage' | 'mesh' | 'scatter' | 'effect';
 
   const FOCUS_META: Record<FocusView, { title: string; hint: string }> = {
     convergence: {
@@ -59,6 +61,14 @@
     mesh: {
       title: 'Mesh Network',
       hint: 'View node activity and swarm convergence together in a full analysis canvas.',
+    },
+    scatter: {
+      title: 'Scatter Plot',
+      hint: 'Compare val_bpb across experiment categories — spot outliers and trends.',
+    },
+    effect: {
+      title: 'Effect (Keep Rate)',
+      hint: 'See which modification strategies have the highest success rate.',
     },
   };
 
@@ -133,6 +143,35 @@
     }).join(' ');
   })();
 
+  // ── Scatter data (for ParamScatterChart) ──
+  $: scatterData = job.experiments
+    .filter(e => e.status !== 'training')
+    .map(e => ({
+      id: e.id,
+      category: resolveExperimentCategory(e.modification),
+      metric: e.metric,
+      status: e.status,
+      branchId: e.branchId,
+    }));
+
+  // ── Effect / Heatmap data (for ModificationHeatmap) ──
+  $: effectData = (() => {
+    const map: Record<string, { total: number; keeps: number; avgMetric: number; metrics: number[] }> = {};
+    for (const e of job.experiments) {
+      if (e.status === 'training') continue;
+      const cat = resolveExperimentCategory(e.modification);
+      if (!map[cat]) map[cat] = { total: 0, keeps: 0, avgMetric: 0, metrics: [] };
+      map[cat].total++;
+      if (e.status === 'keep') map[cat].keeps++;
+      if (e.metric > 0) map[cat].metrics.push(e.metric);
+    }
+    for (const cat of Object.keys(map)) {
+      const m = map[cat].metrics;
+      map[cat].avgMetric = m.length > 0 ? m.reduce((a, b) => a + b, 0) / m.length : 0;
+    }
+    return map;
+  })();
+
   // Handlers
   function handleLaunch(e: CustomEvent<string>) {
     const rc = readRuntimeConfig();
@@ -155,6 +194,12 @@
     console.log('Retrain requested with edited code:', e.detail);
     jobStore.reset();
     jobStore.startJob(job.topic || 'Custom retrain');
+  }
+  function handleImprove(e: CustomEvent<{ instruction: string }>) {
+    console.log('Improve requested:', e.detail.instruction);
+    const prevTopic = job.topic || 'Research';
+    jobStore.reset();
+    jobStore.startJob(`${prevTopic} (improved: ${e.detail.instruction})`);
   }
 
   // Auto-connect on mount
@@ -241,7 +286,7 @@
   </div>
 
   <!-- ═══ CONVERGENCE CHART ═══ -->
-  <div class="tile titled-tile" style="grid-area: converge">
+  <div class="tile titled-tile converge-tile" style="grid-area: converge">
     <div class="tile-header">
       <span class="tile-title">Convergence</span>
       <span class="tile-hint">val_bpb over experiments</span>
@@ -258,7 +303,7 @@
       </button>
     </div>
     {#if job.experiments.length > 0}
-      <ConvergenceChart experiments={job.experiments} bestMetric={job.bestMetric} baselineMetric={job.baselineMetric} width={500} height={72} />
+      <ConvergenceChart experiments={job.experiments} bestMetric={job.bestMetric} baselineMetric={job.baselineMetric} width={960} height={50} />
     {:else}
       <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
     {/if}
@@ -352,21 +397,45 @@
     />
   </div>
 
+  <!-- ═══ SCATTER (val_bpb by category) ═══ -->
+  <div class="tile titled-tile mtab-charts" class:mtab-hidden={mobileTab !== 'charts'} style="grid-area: scatter">
+    <div class="tile-header">
+      <span class="tile-title">Scatter</span>
+      <span class="tile-hint">{scatterData.length} pts</span>
+      <button class="tile-focus-btn" type="button" aria-label="Expand scatter" title="Expand scatter" on:click={() => openFocus('scatter')}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4" /></svg>
+      </button>
+    </div>
+    {#if scatterData.length > 0}
+      <ParamScatterChart data={scatterData} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
+  <!-- ═══ EFFECT (keep rate by category) ═══ -->
+  <div class="tile titled-tile mtab-charts" class:mtab-hidden={mobileTab !== 'charts'} style="grid-area: effect">
+    <div class="tile-header">
+      <span class="tile-title">Effect</span>
+      <span class="tile-hint">keep rate</span>
+      <button class="tile-focus-btn" type="button" aria-label="Expand effect" title="Expand effect" on:click={() => openFocus('effect')}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4" /></svg>
+      </button>
+    </div>
+    {#if Object.keys(effectData).length > 0}
+      <ModificationHeatmap data={effectData} />
+    {:else}
+      <div class="empty-inner"><span class="empty-hint">Waiting for data…</span></div>
+    {/if}
+  </div>
+
   <!-- ═══ TREEMAP (drill-down experiment explorer) ═══ -->
   <div class="tile titled-tile mtab-charts" class:mtab-hidden={mobileTab !== 'charts'} style="grid-area: treemap">
     <div class="tile-header">
       <span class="tile-title">Experiment Map</span>
       <span class="tile-hint">drill down by category</span>
-      <button
-        class="tile-focus-btn"
-        type="button"
-        aria-label="Expand experiment map"
-        title="Expand experiment map"
-        on:click={() => openFocus('treemap')}
-      >
-        <svg viewBox="0 0 20 20" aria-hidden="true">
-          <path d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4" />
-        </svg>
+      <button class="tile-focus-btn" type="button" aria-label="Expand experiment map" title="Expand experiment map" on:click={() => openFocus('treemap')}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4" /></svg>
       </button>
     </div>
     {#if job.experiments.length > 0}
@@ -392,6 +461,7 @@
       on:newresearch={handleNewResearch}
       on:deploy={handleDeploy}
       on:retrain={handleRetrain}
+      on:improve={handleImprove}
       on:expand={() => openFocus('context')}
     />
   </div>
@@ -509,7 +579,16 @@
           on:newresearch={handleNewResearch}
           on:deploy={handleDeploy}
           on:retrain={handleRetrain}
+      on:improve={handleImprove}
         />
+      </div>
+    {:else if focusView === 'scatter'}
+      <div class="focus-stage focus-stage--chart">
+        <ParamScatterChart data={scatterData} width={focusChartWidth} height={focusChartHeight} />
+      </div>
+    {:else if focusView === 'effect'}
+      <div class="focus-stage focus-stage--fill" style={`height:${focusPanelHeight}px`}>
+        <ModificationHeatmap data={effectData} width={focusChartWidth} height={focusPanelHeight} />
       </div>
     {:else if focusView === 'lineage'}
       <div class="focus-stage focus-stage--scroll">
@@ -528,14 +607,14 @@
   .research-page {
     height: calc(100vh - 48px);
     display: grid;
-    grid-template-columns: 150px minmax(120px, 1fr) 1fr 260px;
-    grid-template-rows: auto 68px minmax(120px, 1fr) 1fr 64px;
+    grid-template-columns: 150px minmax(100px, 1fr) 1fr 1fr 260px;
+    grid-template-rows: auto 68px minmax(100px, 1fr) 1fr 64px;
     grid-template-areas:
-      "prompt    prompt    prompt    prompt"
-      "hero      converge  converge  stats"
-      "branches  stream    treemap   context"
-      "branches  lineage   mesh      context"
-      "footer    footer    footer    footer";
+      "prompt    prompt    prompt    prompt    prompt"
+      "hero      converge  converge  converge  stats"
+      "branches  stream    scatter   effect    context"
+      "branches  treemap   lineage   mesh      context"
+      "footer    footer    footer    footer    footer";
     gap: 4px;
     overflow: hidden;
     background: var(--page-bg, #FAF9F7);
@@ -560,6 +639,11 @@
   .context-tile {
     background: var(--surface, #fff);
     padding: 0;
+  }
+  .converge-tile :global(svg.convergence-chart) {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 
   /* ═══ HERO ═══ */

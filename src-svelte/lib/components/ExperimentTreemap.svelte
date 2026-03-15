@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
+  import { zoomable } from '../actions/zoomable.ts';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
   import {
     CATEGORY_LABELS, CATEGORY_SHORT, CATEGORY_COLORS,
@@ -56,7 +57,6 @@
   function buildCatData(exps: Experiment[]): Map<ModCategory, CatEntry> {
     const map = new Map<ModCategory, CatEntry>();
     for (const e of exps) {
-      if (e.status === 'training') continue;
       const cat = resolveExperimentCategory(e.modification);
       if (!map.has(cat)) map.set(cat, { total: 0, keeps: 0, metrics: [] });
       const d = map.get(cat)!;
@@ -155,46 +155,19 @@
     return worst;
   }
 
-  // ── Compute cells for current drill level ──
-  const PAD = 2;
-  let containerW = 1;
-  let containerH = 1;
-  let wrapEl: HTMLDivElement;
-  const BREADCRUMB_H = 28;
-  let resizeTick = 0;
-
-  function measureWrap() {
-    if (!wrapEl) return;
-    const w = wrapEl.offsetWidth;
-    const h = wrapEl.offsetHeight;
-    if (w > 10 && h > 10) {
-      containerW = w;
-      containerH = Math.max(1, h - BREADCRUMB_H);
-    }
-  }
-
-  // Measure on mount + whenever experiments change
-  onMount(() => {
-    measureWrap();
-    const onResize = () => { resizeTick++; measureWrap(); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  });
-
-  // Re-measure when wrapEl appears or experiments update
-  $: if (wrapEl && experiments) {
-    measureWrap();
-  }
+  // ── Fixed virtual coordinate space — SVG scales to fit container ──
+  const PAD = 3;
+  const VW = 500;
+  const VH = 280;
 
   // All deps passed as args so Svelte 4 tracks them properly
-  $: cells = computeCells(catData, containerW, containerH, drillLevel, drillCategory, experiments, bestMetric, resizeTick);
+  $: cells = computeCells(catData, VW, VH, drillLevel, drillCategory, experiments, bestMetric);
 
   function computeCells(
     cd: Map<ModCategory, CatEntry>,
     w: number, h: number,
     level: DrillLevel, cat: ModCategory | null,
     exps: Experiment[], best: number,
-    _tick?: number,
   ): TreemapCell[] {
     if (w <= 0 || h <= 0) return [];
     if (level === 'root') return buildRootCells(cd, w, h);
@@ -262,11 +235,25 @@
     });
   }
 
+  // ── Zoom animation state ──
+  let zoomViewBox = ''; // override viewBox during animation
+  let isZooming = false;
+
+  $: defaultViewBox = `0 0 ${VW} ${VH}`;
+
   // ── Interaction ──
   function handleCellClick(cell: TreemapCell) {
     if (drillLevel === 'root' && cell.category) {
-      drillCategory = cell.category;
-      drillLevel = 'category';
+      // Zoom into the clicked cell
+      isZooming = true;
+      zoomViewBox = `${cell.x} ${cell.y} ${cell.w} ${cell.h}`;
+
+      setTimeout(() => {
+        drillCategory = cell.category!;
+        drillLevel = 'category';
+        zoomViewBox = '';
+        isZooming = false;
+      }, 350);
     } else if (drillLevel === 'category' && cell.experimentId != null) {
       selectedExperimentId.set(cell.experimentId);
       dispatch('select', cell.experimentId);
@@ -285,7 +272,28 @@
   }
 
   function goBack() {
-    if (drillLevel === 'category') {
+    if (drillLevel === 'category' && !isZooming) {
+      // Zoom out: first show zoomed-in state, then transition to full view
+      const cat = drillCategory;
+      if (cat) {
+        // Find where this category would be in the root layout
+        const rootCells = buildRootCells(catData, VW, VH);
+        const targetCell = rootCells.find(c => c.id === cat);
+        if (targetCell) {
+          isZooming = true;
+          // Currently at full view — switch to root but with viewBox zoomed to the cell
+          drillLevel = 'root';
+          drillCategory = null;
+          zoomViewBox = `${targetCell.x} ${targetCell.y} ${targetCell.w} ${targetCell.h}`;
+
+          requestAnimationFrame(() => {
+            // Transition to full viewBox
+            zoomViewBox = '';
+            setTimeout(() => { isZooming = false; }, 350);
+          });
+          return;
+        }
+      }
       drillLevel = 'root';
       drillCategory = null;
     }
@@ -309,13 +317,13 @@
     if (!hoveredCell) return 'display:none';
     const cx = hoveredCell.x + hoveredCell.w / 2;
     const cy = hoveredCell.y;
-    const left = Math.min(cx, containerW - 140);
+    const left = Math.min(cx, VW - 140);
     const top = Math.max(0, cy - 64);
     return `left:${left}px;top:${top}px`;
   })();
 </script>
 
-<div class="treemap-wrap" bind:this={wrapEl}>
+<div class="treemap-wrap" use:zoomable>
   <!-- Breadcrumb -->
   <div class="tm-breadcrumb">
     {#each breadcrumb as crumb, i}
@@ -333,9 +341,10 @@
 
   <!-- Treemap SVG -->
   <svg
-    viewBox="0 0 {containerW} {containerH}"
-    preserveAspectRatio="none"
+    viewBox={zoomViewBox || defaultViewBox}
+    preserveAspectRatio="xMidYMid meet"
     class="tm-svg"
+    class:tm-zooming={isZooming || zoomViewBox}
     on:mouseleave={() => { hoveredCell = null; }}
   >
     {#each cells as cell (cell.id)}
@@ -397,7 +406,7 @@
 
     <!-- Empty state -->
     {#if cells.length === 0}
-      <text x={containerW / 2} y={containerH / 2} text-anchor="middle"
+      <text x={VW / 2} y={VH / 2} text-anchor="middle"
         fill="var(--text-muted, #9a9590)" font-size="11"
         font-family="'Inter', -apple-system, sans-serif"
       >Awaiting experiment data…</text>
@@ -488,6 +497,9 @@
     right: 0;
     bottom: 0;
     display: block;
+  }
+  .tm-zooming {
+    transition: all 350ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .tm-cell {

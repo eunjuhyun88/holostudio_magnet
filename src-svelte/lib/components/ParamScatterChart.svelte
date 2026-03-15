@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { zoomable } from '../actions/zoomable.ts';
   import { CATEGORY_LABELS, CATEGORY_SHORT, CATEGORY_COLORS, type ModCategory } from '../data/modifications.ts';
 
   export let data: { id: number; category: ModCategory; metric: number; status: string; branchId: number }[] = [];
@@ -41,7 +42,7 @@
   onMount(() => { mounted = true; });
 </script>
 
-<div class="scatter-container" class:mounted>
+<div class="scatter-container" class:mounted use:zoomable>
   <svg {width} {height} viewBox="0 0 {width} {height}" class="scatter-svg">
     <defs>
       <filter id="scatter-glow" x="-60%" y="-60%" width="220%" height="220%">

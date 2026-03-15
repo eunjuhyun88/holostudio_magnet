@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { zoomable } from '../actions/zoomable.ts';
   import { resolveExperimentCategory, CATEGORY_COLORS, CATEGORY_LABELS } from '../data/modifications.ts';
   import type { Experiment, VerificationState } from '../stores/jobStore.ts';
 
@@ -167,7 +168,7 @@
   $: totalH = SWARM_TOP + SWARM_H;
 </script>
 
-<div class="distributed-container" class:mounted>
+<div class="distributed-container" class:mounted use:zoomable>
   <svg {width} height={totalH} viewBox="0 0 {width} {totalH}" class="distributed-svg">
     <defs>
       <filter id="dv-active-glow" x="-60%" y="-60%" width="220%" height="220%">

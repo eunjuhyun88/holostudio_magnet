@@ -24,14 +24,17 @@
     newresearch: void;
     deploy: { target: string };
     retrain: { code: string; parentId: number | null };
+    improve: { instruction: string };
     expand: void;
   }>();
 
   let inputText = '';
   let forkText = '';
   let submitText = '';
+  let improveText = '';
   let showDeployOptions = false;
   let showCodeEditor = false;
+  let showImproveInput = false;
   let codeEditorContent = '';
   let inputEl: HTMLTextAreaElement | HTMLInputElement;
 
@@ -487,6 +490,35 @@
             Retrain with Edits
           </button>
           <span class="code-hint">Modify the config and retrain to improve further</span>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Improve & Re-run -->
+    <div class="improve-section">
+      <span class="section-label">Improve & Iterate</span>
+      {#if !showImproveInput}
+        <button class="improve-toggle" on:click={() => { showImproveInput = true; }}>
+          Tell me what to improve...
+        </button>
+      {:else}
+        <textarea
+          class="improve-input"
+          bind:value={improveText}
+          placeholder="e.g., Focus more on regularization, increase learning rate range, add dropout variations..."
+          rows="3"
+        ></textarea>
+        <div class="improve-actions">
+          <button
+            class="improve-btn"
+            disabled={!improveText.trim()}
+            on:click={() => {
+              dispatch('improve', { instruction: improveText.trim() });
+              improveText = '';
+              showImproveInput = false;
+            }}
+          >Re-run with Improvements</button>
+          <button class="improve-cancel" on:click={() => { showImproveInput = false; improveText = ''; }}>Cancel</button>
         </div>
       {/if}
     </div>
@@ -1141,4 +1173,48 @@
   .ctx-panel.expanded .code-editor {
     min-height: 280px;
   }
+
+  /* ── Improve & Iterate ── */
+  .improve-section {
+    padding: 0 14px 8px;
+  }
+  .improve-toggle {
+    width: 100%; padding: 10px 12px;
+    background: rgba(39,134,74,0.06); color: #27864a;
+    border: 1px dashed rgba(39,134,74,0.3); border-radius: 7px;
+    font: 500 11px/1.3 'Inter', sans-serif;
+    cursor: pointer; transition: all 150ms;
+    text-align: left;
+  }
+  .improve-toggle:hover { background: rgba(39,134,74,0.1); border-color: rgba(39,134,74,0.5); }
+  .improve-input {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 10px; margin-top: 4px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 7px; resize: vertical;
+    font: 400 11px/1.5 'Inter', sans-serif;
+    color: #333;
+  }
+  .improve-input:focus { border-color: #27864a; outline: none; }
+  .improve-actions {
+    display: flex; gap: 6px; margin-top: 6px; align-items: center;
+  }
+  .improve-btn {
+    flex: 1; padding: 8px;
+    background: #27864a; color: #fff;
+    border: none; border-radius: 6px;
+    font: 600 11px/1 'Inter', sans-serif;
+    cursor: pointer; transition: background 150ms;
+  }
+  .improve-btn:hover { background: #1f6e3c; }
+  .improve-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .improve-cancel {
+    padding: 8px 12px;
+    background: none; border: 1px solid #e5e5e5;
+    border-radius: 6px; color: #999;
+    font: 500 10px/1 'Inter', sans-serif;
+    cursor: pointer; transition: all 150ms;
+  }
+  .improve-cancel:hover { border-color: #ccc; color: #666; }
 </style>
