@@ -1,7 +1,22 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  /**
+   * PlaygroundTab — Model inference playground with x402 payment.
+   *
+   * Spec: PlatformUX §7-A Playground x402
+   *
+   * Events:
+   *   openModal: ContractCall — parent handles ContractCallModal
+   */
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { DEMO_MODEL } from "../data/modelDetailData.ts";
   import { wallet } from "../stores/walletStore.ts";
+  import type { ContractCall } from '../../../packages/contracts/src/index.ts';
+
+  const dispatch = createEventDispatcher<{
+    openModal: ContractCall;
+  }>();
+
+  export let modelId: string = DEMO_MODEL.id;
 
   const COST_PER_CALL = 0.001;
 
@@ -12,7 +27,8 @@
   let destroyed = false;
   let playgroundTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  function runPlayground() {
+  /** Called by parent after ContractCallModal confirmed */
+  export function executeInference() {
     pgLoading = true;
     pgResult = "";
     pgCallCost = 0;
@@ -25,10 +41,29 @@
         prediction: 0.73,
         confidence: 0.89,
         direction: "up",
-        model: DEMO_MODEL.id,
+        model: modelId,
         latency_ms: 42,
       }, null, 2);
     }, 1200);
+  }
+
+  function runPlayground() {
+    dispatch('openModal', {
+      title: '모델 추론 실행',
+      contract: '0x7B2e...A1f8  HootInference.sol',
+      fn: 'executeInference',
+      params: [
+        { name: 'modelId', type: 'string', value: modelId },
+        { name: 'input', type: 'bytes', value: pgInput.slice(0, 60) + '...' },
+      ],
+      fee: `${COST_PER_CALL} HOOT`,
+      gas: '~45,000',
+      note: 'x402 결제 — 호출당 0.001 HOOT이 차감됩니다.',
+      accentColor: 'var(--accent)',
+      paymentEnabled: true,
+      hootAmount: String(COST_PER_CALL),
+      usdcAmount: String(Math.round(COST_PER_CALL * 1.25 * 10000) / 10000),
+    });
   }
 
   onDestroy(() => {

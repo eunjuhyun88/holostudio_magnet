@@ -6,13 +6,16 @@
   import { loadModel } from "../services/modelService.ts";
   import { modelPublishStore } from "../stores/modelPublishStore.ts";
   import { studioStore } from "../stores/studioStore.ts";
+  import { wallet } from "../stores/walletStore.ts";
   import ModelCardTab from "../components/ModelCardTab.svelte";
   import ExperimentsTab from "../components/ExperimentsTab.svelte";
   import BenchmarkTab from "../components/BenchmarkTab.svelte";
   import PlaygroundTab from "../components/PlaygroundTab.svelte";
   import ApiTab from "../components/ApiTab.svelte";
   import ModelSidebar from "../components/ModelSidebar.svelte";
+  import ContractCallModal from "../components/ContractCallModal.svelte";
   import type { ModelRecord } from '../../../packages/contracts/src/index.ts';
+  import type { ContractCall } from '../../../packages/contracts/src/protocol.ts';
 
   let activeTab: 'card' | 'playground' | 'api' | 'experiments' | 'benchmark' | 'usage' = 'card';
   let loading = true;
@@ -119,6 +122,77 @@
   $: vtrGrade = dynamicModel?.vtr?.grade ?? null;
   $: isQuarantined = vtrGrade === 'QUARANTINED' || vtrGrade === 'FAILED';
   $: isPendingVTR = vtrGrade === 'PENDING';
+
+  // ── ContractCallModal state ──
+  let modalOpen = false;
+  let modalCall: ContractCall | null = null;
+  let modalStep: 'review' | 'pending' | 'confirmed' | 'error' = 'review';
+  let pendingAction: 'inference' | 'apikey' | 'vtr-resubmit' | null = null;
+
+  $: walletConnected = $wallet.connected;
+  $: walletAddress = $wallet.address;
+
+  // Component refs
+  let playgroundRef: PlaygroundTab;
+  let apiTabRef: ApiTab;
+
+  // ── ContractCallModal handlers ──
+  function handleOpenModal(e: CustomEvent<ContractCall>, action: 'inference' | 'apikey' | 'vtr-resubmit') {
+    modalCall = e.detail;
+    modalStep = 'review';
+    modalOpen = true;
+    pendingAction = action;
+  }
+
+  function handleModalConfirm() {
+    modalStep = 'pending';
+    setTimeout(() => {
+      modalStep = 'confirmed';
+      // Execute actual action after confirmed
+      setTimeout(() => {
+        if (pendingAction === 'inference') {
+          playgroundRef?.executeInference();
+        } else if (pendingAction === 'apikey') {
+          apiTabRef?.onApiKeyIssued();
+        } else if (pendingAction === 'vtr-resubmit') {
+          // Simulate VTR resubmission — update model state
+          if (dynamicModel && dynamicModel.vtr) {
+            dynamicModel.vtr.grade = 'PENDING' as any;
+            dynamicModel = dynamicModel; // trigger reactivity
+          }
+        }
+        handleModalClose();
+      }, 800);
+    }, 2200);
+  }
+
+  function handleModalClose() {
+    modalOpen = false;
+    modalCall = null;
+    modalStep = 'review';
+    pendingAction = null;
+  }
+
+  // ── VTR Resubmission ──
+  function handleVTRResubmit() {
+    const fakeCall: ContractCall = {
+      title: 'VTR 재제출',
+      contract: '0x3A8b...9D2c  HootVTR.sol',
+      fn: 'resubmitVTR',
+      params: [
+        { name: 'modelId', type: 'string', value: m.id },
+        { name: 'updatedHash', type: 'bytes32', value: '0x' + Math.random().toString(16).slice(2, 18) + '...' },
+      ],
+      fee: '0 HOOT',
+      gas: '~180,000',
+      note: 'VTR 재검증이 시작됩니다. 검증에 평균 2-5분 소요됩니다.',
+      accentColor: 'var(--accent)',
+    };
+    modalCall = fakeCall;
+    modalStep = 'review';
+    modalOpen = true;
+    pendingAction = 'vtr-resubmit';
+  }
 </script>
 
 <div class="detail">
@@ -127,6 +201,7 @@
     <div class="vtr-banner quarantined">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" fill="currentColor"/></svg>
       <span>이 모델은 VTR 검증에 실패하여 격리 상태입니다. 추론 호출이 비활성화됩니다.</span>
+      <button class="vtr-resubmit-btn" on:click={handleVTRResubmit}>재제출</button>
     </div>
   {:else if isPendingVTR}
     <div class="vtr-banner pending">
@@ -352,9 +427,17 @@
             {/if}
           </div>
         {:else if activeTab === 'playground'}
-          <PlaygroundTab />
+          <PlaygroundTab
+            bind:this={playgroundRef}
+            modelId={m.id}
+            on:openModal={(e) => handleOpenModal(e, 'inference')}
+          />
         {:else if activeTab === 'api'}
-          <ApiTab modelSlug={m.id} />
+          <ApiTab
+            bind:this={apiTabRef}
+            modelSlug={m.id}
+            on:openModal={(e) => handleOpenModal(e, 'apikey')}
+          />
         {/if}
       </div>
       {/key}
@@ -364,6 +447,18 @@
     <ModelSidebar {m} {sparkPath} {sparkArea} on:switchTab={handleSwitchTab} />
   </div>
   {/if}
+
+  <!-- ContractCallModal for on-chain transactions -->
+  <ContractCallModal
+    {modalOpen}
+    {modalCall}
+    {modalStep}
+    {walletConnected}
+    {walletAddress}
+    on:close={handleModalClose}
+    on:confirm={handleModalConfirm}
+    on:connectWallet={() => { wallet.connect('MetaMask'); }}
+  />
 </div>
 
 <style>
@@ -380,6 +475,25 @@
     border-radius: 10px; font-size: 0.82rem; font-weight: 500;
   }
   .vtr-banner svg { flex-shrink: 0; }
+  .vtr-resubmit-btn {
+    appearance: none;
+    border: 1.5px solid currentColor;
+    background: rgba(255,255,255,0.6);
+    color: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 100px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: all 150ms;
+    white-space: nowrap;
+  }
+  .vtr-resubmit-btn:hover {
+    background: currentColor;
+    color: #fff;
+  }
   .vtr-banner.quarantined {
     background: rgba(243, 139, 168, 0.08);
     border: 1px solid rgba(243, 139, 168, 0.2);
