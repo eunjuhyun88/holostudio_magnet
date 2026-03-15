@@ -11,7 +11,6 @@
   export let value: string | number = '';
   export let subtitle: string = '';
   export let accentColor: string = 'var(--accent, #D97757)';
-  export let href: string | undefined = undefined;
 
   // Click handler — dispatched by parent via on:click
 </script>
