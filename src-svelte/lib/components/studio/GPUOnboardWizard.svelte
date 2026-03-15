@@ -14,6 +14,8 @@
   import { createEventDispatcher } from 'svelte';
   import { wallet } from '../../stores/walletStore.ts';
   import { nodeStore } from '../../stores/nodeStore.ts';
+  import type { ContractCall } from '../../data/protocolData.ts';
+  import ContractCallModal from '../ContractCallModal.svelte';
 
   const dispatch = createEventDispatcher<{
     close: void;
@@ -26,6 +28,13 @@
   let detecting = false;
   let detected = false;
   let registering = false;
+
+  // ── ContractCallModal state ──
+  let modalOpen = false;
+  let modalCall: ContractCall | null = null;
+  let modalStep: 'review' | 'pending' | 'confirmed' | 'error' = 'review';
+  $: walletConnected = $wallet.connected;
+  $: walletAddress = $wallet.address;
 
   // PoAW verification state
   interface PoAWStep { label: string; done: boolean; active: boolean; }
@@ -65,19 +74,53 @@
   $: currentTier = TIERS.find(t => t.id === selectedTier)!;
 
   function registerNode() {
-    registering = true;
+    const tier = TIERS.find(t => t.id === selectedTier)!;
+    // Open ContractCallModal for NodeRegistered
+    modalCall = {
+      title: 'GPU 노드 등록',
+      contract: '0x3E8b...5A2f  HootNodes.sol',
+      fn: 'registerNode',
+      params: [
+        { name: 'gpuModel', type: 'string', value: detectedGPU.model },
+        { name: 'vram', type: 'uint16', value: `${detectedGPU.vram} GB` },
+        { name: 'tier', type: 'uint8', value: `T${selectedTier} (${tier.name})` },
+      ],
+      fee: `${tier.bond.toLocaleString()} HOOT (Bond 락업)`,
+      gas: '~150,000',
+      note: 'Bond는 노드 운영 중 락업됩니다. 해제 시 90일 잠금 기간이 적용됩니다.',
+      accentColor: tier.color,
+      requiresApproval: true,
+    };
+    modalStep = 'review';
+    modalOpen = true;
+  }
+
+  function handleModalConfirm() {
+    modalStep = 'pending';
     const tier = TIERS.find(t => t.id === selectedTier)!;
     setTimeout(() => {
+      modalStep = 'confirmed';
+      // After confirmed, actually register the node
       nodeStore.registerNode({
         gpuModel: detectedGPU.model,
         vramGb: detectedGPU.vram,
         tier: selectedTier,
         bondAmount: tier.bond,
       });
-      registering = false;
-      step = 3;
-      runPoAWVerification();
-    }, 2000);
+      setTimeout(() => {
+        modalOpen = false;
+        modalCall = null;
+        modalStep = 'review';
+        step = 3;
+        runPoAWVerification();
+      }, 800);
+    }, 2200);
+  }
+
+  function handleModalClose() {
+    modalOpen = false;
+    modalCall = null;
+    modalStep = 'review';
   }
 
   async function runPoAWVerification() {
@@ -217,7 +260,7 @@
           {#if registering}
             <span class="btn-spinner"></span> 등록 중...
           {:else}
-            Approve & Bond →
+            등록 및 Bond →
           {/if}
         </button>
       </div>
@@ -287,6 +330,17 @@
     {/if}
   </div>
 </div>
+
+<ContractCallModal
+  {modalOpen}
+  {modalCall}
+  {modalStep}
+  {walletConnected}
+  {walletAddress}
+  on:close={handleModalClose}
+  on:confirm={handleModalConfirm}
+  on:connectWallet={() => { wallet.connect('MetaMask'); }}
+/>
 
 <style>
   .wizard-overlay {
