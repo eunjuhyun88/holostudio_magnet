@@ -19,6 +19,7 @@
     estimateBudgetHoot,
   } from "../data/ontologyData.ts";
   import OntologyBranchCard from "../components/OntologyBranchCard.svelte";
+  import PixelOwl from "../components/PixelOwl.svelte";
 
   // ─── State ───────────────────────────────────────
   let ontology: ResearchOntology = createEmptyOntology();
@@ -176,6 +177,9 @@
       {#if ontology.forkedFrom}
         <span class="fork-badge">forked from {ontology.forkedFrom.name}</span>
       {/if}
+    </div>
+    <div class="header-owl" class:ready={canLaunch}>
+      <PixelOwl size={0.32} mood={canLaunch ? 'build' : 'idle'} />
     </div>
   </div>
 
@@ -572,6 +576,15 @@
     border-bottom: 1px solid var(--border, #E5E0DA);
     background: var(--surface, #fff);
     flex-shrink: 0;
+  }
+  .header-owl {
+    margin-left: auto;
+    opacity: 0.6;
+    transition: opacity 300ms ease, filter 300ms ease;
+  }
+  .header-owl.ready {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(217,119,87,0.25));
   }
   .back-btn {
     appearance: none;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { ContractCall } from '../data/protocolData.ts';
+  import PixelOwl from './PixelOwl.svelte';
 
   export let modalCall: ContractCall | null;
   export let modalOpen: boolean;
@@ -90,7 +91,7 @@
         </div>
 
         <div class="modal-pending">
-          <div class="spinner"></div>
+          <div class="modal-pending-owl"><PixelOwl size={0.55} mood="build" /></div>
           <h3>Transaction Pending</h3>
           <p class="modal-mono">Waiting for block confirmation...</p>
           <div class="pending-hash">

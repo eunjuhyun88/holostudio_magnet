@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Lightweight skeleton placeholder shown while lazy-loaded pages are loading.
-  // Uses CSS shimmer animation for visual feedback.
+  import PixelOwl from './PixelOwl.svelte';
 </script>
 
 <div class="page-skeleton" aria-busy="true" aria-label="Loading page content">
+  <div class="sk-owl"><PixelOwl size={0.45} mood="sleep" /></div>
   <div class="sk-header">
     <div class="sk-bar sk-title"></div>
     <div class="sk-bar sk-subtitle"></div>
@@ -16,6 +16,13 @@
 </div>
 
 <style>
+  .sk-owl {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    opacity: 0.55;
+  }
+
   .page-skeleton {
     padding: 40px 32px;
     max-width: 1200px;
