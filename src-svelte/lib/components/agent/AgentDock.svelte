@@ -288,8 +288,6 @@
     z-index: var(--z-splash, 9999);
     pointer-events: auto;
     padding: 8px 14px 6px;
-    position: relative;
-    overflow: hidden;
     transition: box-shadow 200ms ease, border-color 200ms ease;
   }
   .agent-dock.focused {
