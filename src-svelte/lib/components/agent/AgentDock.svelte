@@ -1,25 +1,53 @@
 <script lang="ts">
+  import { slide } from 'svelte/transition';
   import { router } from "../../stores/router.ts";
   import { agentStore, agentSheetOpen, agentLoading, agentInputFocused } from "../../stores/agentStore.ts";
   import { dashboardStore } from "../../stores/dashboardStore.ts";
   import { wallet } from "../../stores/walletStore.ts";
   import { widgetStore, allWidgets } from "../../stores/widgetStore.ts";
+  import { jobStore } from "../../stores/jobStore.ts";
+  import { dockStore, dockContext, dockExpansion } from "../../stores/dockStore.ts";
   import { CATEGORY_COLORS, type WidgetId } from "../../data/widgetDefaults.ts";
   import PixelIcon from "../PixelIcon.svelte";
   import AgentSheet from "./AgentSheet.svelte";
+  import DockProgressStrip from "./DockProgressStrip.svelte";
+  import DockExpansionBody from "./DockExpansionBody.svelte";
   import type { AppView } from "../../stores/router.ts";
 
   let inputValue = '';
   let inputEl: HTMLInputElement;
   let widgetMenuOpen = false;
 
-  // ── Status items with LABELS (matches spec wireframe) ──
+  // ── Expansion state ──
+  $: isExpanded = $dockExpansion === 'expanded';
+
+  // ── Context-aware placeholder ──
+  $: contextPlaceholder = (() => {
+    if ($dockContext === 'running') return `${$jobStore.topic || 'Research'} — ${$jobStore.progress}% 진행 중`;
+    if ($dockContext === 'complete') return '개선 지시를 입력하거나 /help';
+    return '연구 토픽을 입력하세요...  ⌘K';
+  })();
+
+  // ── Running ETA for status ──
+  $: runningEta = (() => {
+    if ($dockContext !== 'running') return '';
+    const p = $jobStore.progress;
+    if (p >= 95) return '< 1m';
+    const remaining = Math.round((100 - p) / 15);
+    return `~${Math.max(remaining, 1)}m`;
+  })();
+
+  // ── Status items — RESEARCH now dynamic ──
   $: statusItems = [
     {
       icon: 'research' as const,
-      value: `${$dashboardStore.runningCount} running`,
+      value: $dockContext === 'running'
+        ? `${$jobStore.progress}% ETA ${runningEta}`
+        : $dockContext === 'complete'
+        ? 'complete ✓'
+        : `${$dashboardStore.runningCount} running`,
       label: 'RESEARCH',
-      color: 'var(--accent, #D97757)',
+      color: $dockContext === 'complete' ? 'var(--green, #27864a)' : 'var(--accent, #D97757)',
       view: 'studio' as AppView,
     },
     {
@@ -45,20 +73,41 @@
     },
   ];
 
-  // ── Send handler ──
+  // ── Send handler — routes /commands to dockStore ──
   function handleSubmit() {
     if (!inputValue.trim()) return;
-    agentStore.send(inputValue);
-    inputValue = '';
+    const input = inputValue.trim();
+
+    if (input.startsWith('/')) {
+      // Slash command → dockStore handles
+      dockStore.handleCommand(input);
+      inputValue = '';
+    } else {
+      // Topic → expand dock launcher
+      dockStore.expand(input, 'new');
+      inputValue = '';
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent) {
+    // ⌘+Enter → Launch from dock (skip confirmation)
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      if (isExpanded && $dockContext === 'idle') {
+        dockStore.launch();
+      }
+      return;
+    }
+    // Enter → Submit input
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
+    // Escape → Collapse expansion or close sheet or blur
     if (e.key === 'Escape') {
-      if ($agentSheetOpen) {
+      if (isExpanded) {
+        dockStore.collapse();
+      } else if ($agentSheetOpen) {
         agentStore.closeSheet();
       } else {
         inputEl?.blur();
@@ -88,6 +137,10 @@
     const target = e.target as HTMLElement;
     if (!target.closest('.agent-dock')) {
       widgetMenuOpen = false;
+      // Collapse dock if clicking outside
+      if (isExpanded) {
+        dockStore.collapse();
+      }
     }
   }
 
@@ -106,7 +159,15 @@
 <AgentSheet />
 
 <!-- Agent Dock (always at bottom, always with input — spec §1.2) -->
-<div class="agent-dock" class:sheet-open={$agentSheetOpen} class:focused={$agentInputFocused}>
+<div
+  class="agent-dock"
+  class:sheet-open={$agentSheetOpen}
+  class:focused={$agentInputFocused}
+  class:dock-expanded={isExpanded}
+>
+  <!-- Progress strip (2px, running only) -->
+  <DockProgressStrip />
+
   <!-- Row 1: Agent Input (always visible per spec D4) -->
   <div class="dock-input-row">
     <span class="dock-owl">
@@ -120,21 +181,40 @@
       on:blur={handleBlur}
       type="text"
       class="dock-input"
-      placeholder="무엇이든 물어보세요...  ⌘K"
+      placeholder={contextPlaceholder}
       autocomplete="off"
     />
-    <button
-      class="dock-send"
-      class:dock-send-active={inputValue.trim().length > 0}
-      on:click={handleSubmit}
-      disabled={!inputValue.trim()}
-      title="Send"
-    >
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-        <path d="M2 14l12-6L2 2v4.8L10 8 2 9.2z" fill="currentColor"/>
-      </svg>
-    </button>
+    {#if isExpanded}
+      <button
+        class="dock-collapse-btn"
+        on:click={() => dockStore.collapse()}
+        title="Collapse (Esc)"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    {:else}
+      <button
+        class="dock-send"
+        class:dock-send-active={inputValue.trim().length > 0}
+        on:click={handleSubmit}
+        disabled={!inputValue.trim()}
+        title="Send"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M2 14l12-6L2 2v4.8L10 8 2 9.2z" fill="currentColor"/>
+        </svg>
+      </button>
+    {/if}
   </div>
+
+  <!-- Expansion Body (Spotlight-style, between input and status) -->
+  {#if isExpanded}
+    <div class="dock-expand-body" transition:slide={{ duration: 280 }}>
+      <DockExpansionBody />
+    </div>
+  {/if}
 
   <!-- Row 2: Labeled status icons (spec wireframe: RESEARCH 2 running · MODELS 3 models · ...) -->
   <div class="dock-status-row">
@@ -208,11 +288,17 @@
     z-index: var(--z-splash, 9999);
     pointer-events: auto;
     padding: 8px 14px 6px;
+    position: relative;
+    overflow: hidden;
     transition: box-shadow 200ms ease, border-color 200ms ease;
   }
   .agent-dock.focused {
     border-color: var(--accent, #D97757);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 0 0 2px rgba(217, 119, 87, 0.2);
+  }
+  .agent-dock.dock-expanded {
+    border-color: var(--accent, #D97757);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(217, 119, 87, 0.15);
   }
   .agent-dock.sheet-open {
     border-radius: 0 0 18px 18px;
@@ -274,6 +360,33 @@
   .dock-send:disabled {
     cursor: default;
     opacity: 0.4;
+  }
+
+  /* ═══ COLLAPSE BUTTON ═══ */
+  .dock-collapse-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    padding: 5px;
+    cursor: pointer;
+    color: var(--accent, #D97757);
+    transition: all 140ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .dock-collapse-btn:hover {
+    background: rgba(217, 119, 87, 0.08);
+  }
+
+  /* ═══ EXPANSION BODY ═══ */
+  .dock-expand-body {
+    overflow: hidden;
+    border-top: 1px solid var(--border-subtle, #EDEAE5);
+    margin-top: 6px;
+    padding: 10px 2px 4px;
   }
 
   /* ═══ STATUS ROW (with labels) ═══ */
