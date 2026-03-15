@@ -342,13 +342,13 @@ function createDashboardStore() {
         apiBase: runtimeConfig.apiBase ?? get(apiBaseStore),
         runtimeRoot: runtimeConfig.runtimeRoot,
       });
-      router.navigate('research', jobId ? { topic, jobId } : { topic });
+      router.navigate('studio', jobId ? { topic, jobId } : { topic });
       void refreshRuntimeSnapshot();
       return;
     }
 
     jobStore.startJob(topic);
-    router.navigate('research', { topic });
+    router.navigate('studio', { topic });
   }
 
   return {
