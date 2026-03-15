@@ -4,6 +4,7 @@
   import { unlockedPages } from "./lib/stores/stageStore.ts";
   import { fly, fade } from "svelte/transition";
   import NavBar from "./lib/layout/NavBar.svelte";
+  import HomePage from "./lib/pages/HomePage.svelte";
   import MagnetStudioPage from "./lib/pages/MagnetStudioPage.svelte";
   import SiteFooter from "./lib/layout/SiteFooter.svelte";
   import SplashScreen from "./lib/components/SplashScreen.svelte";
@@ -34,16 +35,17 @@
     pipeline: () => import("./lib/pages/PipelinePage.svelte"),
   };
 
-  // Stage guard: redirect to studio if page is locked
-  $: if (!$unlockedPages.includes($router) && $router !== 'studio') {
+  // Stage guard: redirect to home if page is locked
+  $: if (!$unlockedPages.includes($router) && $router !== 'home' && $router !== 'studio') {
     toastStore.info('이 페이지는 아직 잠겨 있습니다. 연구를 먼저 완료해주세요.');
-    router.navigate('studio');
+    router.navigate('home');
   }
 
   // Page transition key — increments on route change
   $: routeKey = $router;
+  $: isHome = $router === 'home';
   $: isStudio = $router === 'studio';
-  $: pagePromise = !isStudio ? pageLoaders[$router]?.() : null;
+  $: pagePromise = (!isHome && !isStudio) ? pageLoaders[$router]?.() : null;
 </script>
 
 <svelte:head>
@@ -63,7 +65,9 @@
   <main class="app-main">
     {#key routeKey}
       <div class="page-transition" in:fly={{ y: 12, duration: 280, delay: 60 }} out:fade={{ duration: 150 }}>
-        {#if isStudio}
+        {#if isHome}
+          <HomePage />
+        {:else if isStudio}
           <MagnetStudioPage />
         {:else if pagePromise}
           {#await pagePromise}
@@ -77,7 +81,7 @@
       </div>
     {/key}
   </main>
-  {#if !isStudio}
+  {#if !isHome && !isStudio}
     <SiteFooter />
   {/if}
   <AgentDock />

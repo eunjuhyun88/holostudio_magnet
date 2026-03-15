@@ -7,18 +7,19 @@
   import PixelIcon from "../components/PixelIcon.svelte";
   import ConnectionBadge from "../components/ConnectionBadge.svelte";
 
-  type PixelIconType = "sparkle" | "grid" | "chart" | "globe" | "protocol" | "ontology";
+  type PixelIconType = "sparkle" | "grid" | "chart" | "globe" | "protocol" | "ontology" | "research";
 
   const navItems: { view: AppView; label: string; icon: PixelIconType }[] = [
-    { view: "studio", label: "Magnet Studio", icon: "sparkle" },
+    { view: "home", label: "Home", icon: "sparkle" },
+    { view: "studio", label: "Studio", icon: "research" },
     { view: "models", label: "Models", icon: "grid" },
     { view: "network", label: "Network", icon: "globe" },
     { view: "protocol", label: "Protocol", icon: "protocol" },
   ];
 
   $: currentView = $router;
-  // studio is always visible; other tabs follow stage gate
-  $: visibleNavItems = navItems.filter(item => item.view === 'studio' || $unlockedPages.includes(item.view));
+  // home and studio are always visible; other tabs follow stage gate
+  $: visibleNavItems = navItems.filter(item => item.view === 'home' || item.view === 'studio' || $unlockedPages.includes(item.view));
   $: isAIActive = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
   $: owlMood = (() => {
     const p = $jobStore.phase;
@@ -62,7 +63,7 @@
 
 <header class="navbar" class:menu-open={mobileMenuOpen}>
   <div class="navbar-inner">
-    <button class="logo" on:click={() => navTo('studio')}>
+    <button class="logo" on:click={() => navTo('home')}>
       <span class="logo-icon" class:ai-active={isAIActive}>
         <PixelOwl size={0.28} mood={owlMood} />
         {#if isAIActive}
