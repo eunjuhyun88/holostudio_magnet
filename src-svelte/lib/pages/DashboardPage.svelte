@@ -17,6 +17,7 @@
   import EcosystemWidget from "../components/widgets/EcosystemWidget.svelte";
   import { visibleWidgets } from "../stores/widgetStore.ts";
   import { wallet, WALLET_OPTIONS } from "../stores/walletStore.ts";
+  import PixelOwl from "../components/PixelOwl.svelte";
   import { dashboardStore } from "../stores/dashboardStore.ts";
   import { router, type AppView } from "../stores/router.ts";
   import type { WidgetId } from "../data/widgetDefaults.ts";
@@ -117,6 +118,7 @@
       <!-- Wallet CTA (logged out only) -->
       {#if !$dashboardStore.isLoggedIn}
         <div class="wallet-cta">
+          <div class="wallet-cta-owl"><PixelOwl size={0.38} mood="idle" /></div>
           <span class="wallet-cta-label">Connect wallet to unlock full dashboard</span>
           <div class="wallet-cta-btns">
             {#each WALLET_OPTIONS as w}
@@ -404,6 +406,7 @@
     padding: 16px 20px;
     box-shadow: var(--shadow-sm, 0 1px 4px rgba(0,0,0,0.04));
   }
+  .wallet-cta-owl { margin-bottom: 4px; }
   .wallet-cta-label {
     font-family: var(--font-mono);
     font-size: 0.56rem;
