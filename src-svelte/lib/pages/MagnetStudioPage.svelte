@@ -15,8 +15,15 @@
   import { studioStore, studioPhase } from '../stores/studioStore.ts';
   import type { ResourceMode } from '../stores/studioStore.ts';
   import type { AppView } from '../stores/router.ts';
+  import { toastStore } from '../stores/toastStore.ts';
   import StudioIdle from '../components/studio/StudioIdle.svelte';
   import StudioCreate from '../components/studio/StudioCreate.svelte';
+  import ConfirmModal from '../components/ConfirmModal.svelte';
+
+  // ── Confirmation state ──
+  let showStopConfirm = false;
+  let showStartConfirm = false;
+  let pendingStartEvent: { topic: string; resourceMode: ResourceMode } | null = null;
 
   // Lazy-loaded heavy components
   let OntologySetup: any = null;
@@ -75,8 +82,14 @@
   }
 
   function handleStartResearch(e: CustomEvent<{ topic: string; resourceMode: ResourceMode }>) {
-    // Quick start: create job and go to RUNNING
-    const { topic, resourceMode } = e.detail;
+    pendingStartEvent = e.detail;
+    showStartConfirm = true;
+  }
+
+  function confirmStartResearch() {
+    showStartConfirm = false;
+    if (!pendingStartEvent) return;
+    const { topic, resourceMode } = pendingStartEvent;
     studioStore.setTopic(topic);
     studioStore.setResourceMode(resourceMode);
 
@@ -85,6 +98,13 @@
     const avgIters = 25;
     jobStore.startJob(topic, branchCount, avgIters);
     studioStore.startRunning();
+    toastStore.success('연구가 시작되었습니다');
+    pendingStartEvent = null;
+  }
+
+  function cancelStartResearch() {
+    showStartConfirm = false;
+    pendingStartEvent = null;
   }
 
   function handleLaunchFromSetup(e: CustomEvent<{ ontology: any }>) {
@@ -101,8 +121,18 @@
   }
 
   function handleStop() {
+    showStopConfirm = true;
+  }
+
+  function confirmStop() {
+    showStopConfirm = false;
     jobStore.set({ ...jobStore, phase: 'idle' } as any);
     studioStore.reset();
+    toastStore.warning('연구가 중단되었습니다');
+  }
+
+  function cancelStop() {
+    showStopConfirm = false;
   }
 
   function handleSubmit(e: CustomEvent<{ text: string; parentId: number | null }>) {
@@ -226,6 +256,27 @@
       {/if}
     </div>
   {/key}
+
+  <ConfirmModal
+    open={showStopConfirm}
+    title="연구를 중단하시겠습니까?"
+    message="진행 중인 실험이 모두 취소됩니다. 지금까지의 데이터는 보존되지 않습니다."
+    confirmLabel="중단"
+    cancelLabel="계속 진행"
+    variant="danger"
+    on:confirm={confirmStop}
+    on:cancel={cancelStop}
+  />
+
+  <ConfirmModal
+    open={showStartConfirm}
+    title="연구를 시작하시겠습니까?"
+    message={pendingStartEvent ? `${pendingStartEvent.topic} — ${pendingStartEvent.resourceMode} 모드` : ''}
+    confirmLabel="시작"
+    cancelLabel="취소"
+    on:confirm={confirmStartResearch}
+    on:cancel={cancelStartResearch}
+  />
 </div>
 
 <style>
