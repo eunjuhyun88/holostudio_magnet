@@ -1,11 +1,48 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { router } from "../stores/router.ts";
+  import { wallet } from "../stores/walletStore.ts";
+  import { modelPublishStore } from "../stores/modelPublishStore.ts";
+  import { loadModels } from "../services/modelService.ts";
   import { fmtNumber } from "../utils/format.ts";
+  import type { ModelRecord } from '../../../packages/contracts/src/index.ts';
 
   let searchQuery = "";
   let debouncedQuery = "";
   let activeFilter = "all";
+  let sortBy: 'metric' | 'usage' | 'newest' = 'usage';
   let _searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // ── Dynamic model loading ──
+  let allModels: ModelRecord[] = [];
+  let loading = true;
+
+  onMount(async () => {
+    const [serviceModels] = await Promise.all([loadModels()]);
+    allModels = serviceModels;
+    loading = false;
+  });
+
+  // Merge published models from user
+  $: publishedModels = $modelPublishStore;
+  $: mergedModels = mergeModels(allModels, publishedModels);
+
+  function mergeModels(service: ModelRecord[], published: ModelRecord[]): ModelRecord[] {
+    const ids = new Set(service.map(m => m.id));
+    const extras = published.filter(p => !ids.has(p.id));
+    return [...service, ...extras];
+  }
+
+  // ── Section splits ──
+  $: myCreatedModels = $wallet.connected ? mergedModels.filter(m =>
+    publishedModels.some(p => p.id === m.id)
+  ) : [];
+
+  $: myUsedModels = $wallet.connected ? mergedModels.filter(m =>
+    m.usage.totalCalls > 0 && !publishedModels.some(p => p.id === m.id)
+  ) : [];
+
+  $: trendingModels = mergedModels;
 
   function onSearchInput(e: Event) {
     searchQuery = (e.target as HTMLInputElement).value;
@@ -22,152 +59,69 @@
     { id: "anomaly", label: "Anomaly Detection" },
   ];
 
-  // Demo model data — richer
-  const models = [
-    {
-      id: "model-um69vho1",
-      name: "Crypto Market 24h Prediction",
-      slug: "hoot/crypto-market-24h",
-      topic: "Ethereum price prediction",
-      type: "Transformer",
-      framework: "PyTorch",
-      category: "prediction",
-      metric: "val_bpb",
-      metricValue: 1.231,
-      metricLabel: "1.231 bpb",
-      experiments: 147,
-      kept: 48,
-      rows: 479,
-      features: 18,
-      downloads: 1243,
-      likes: 38,
-      updated: "2 days ago",
-      date: "2026-03-12",
-      tags: ["crypto", "price-prediction", "transformer"],
-      status: "published",
-    },
-    {
-      id: "model-xk82qp3",
-      name: "DeFi Risk Classifier",
-      slug: "hoot/defi-risk-v2",
-      topic: "DeFi protocol risk analysis",
-      type: "XGBoost",
-      framework: "Scikit-learn",
-      category: "classification",
-      metric: "bal_acc",
-      metricValue: 0.847,
-      metricLabel: "84.7% acc",
-      experiments: 92,
-      kept: 31,
-      rows: 2140,
-      features: 42,
-      downloads: 876,
-      likes: 24,
-      updated: "5 days ago",
-      date: "2026-03-09",
-      tags: ["defi", "risk", "classification"],
-      status: "published",
-    },
-    {
-      id: "model-jn47ws9",
-      name: "Token Sentiment Analyzer",
-      slug: "hoot/token-sentiment",
-      topic: "Social sentiment for crypto tokens",
-      type: "BERT-tiny",
-      framework: "Transformers",
-      category: "nlp",
-      metric: "f1",
-      metricValue: 0.912,
-      metricLabel: "91.2% F1",
-      experiments: 203,
-      kept: 67,
-      rows: 15200,
-      features: 1,
-      downloads: 3420,
-      likes: 91,
-      updated: "1 day ago",
-      date: "2026-03-13",
-      tags: ["sentiment", "nlp", "social"],
-      status: "published",
-    },
-    {
-      id: "model-ab12cd3",
-      name: "MEV Detection Engine",
-      slug: "hoot/mev-detector",
-      topic: "Maximal extractable value detection",
-      type: "LightGBM",
-      framework: "LightGBM",
-      category: "anomaly",
-      metric: "auc_roc",
-      metricValue: 0.968,
-      metricLabel: "96.8% AUC",
-      experiments: 58,
-      kept: 19,
-      rows: 890,
-      features: 24,
-      downloads: 412,
-      likes: 15,
-      updated: "1 week ago",
-      date: "2026-03-07",
-      tags: ["mev", "detection", "anomaly"],
-      status: "published",
-    },
-    {
-      id: "model-ef45gh6",
-      name: "Gas Fee Forecaster",
-      slug: "hoot/gas-forecast",
-      topic: "Ethereum gas fee prediction",
-      type: "LSTM",
-      framework: "PyTorch",
-      category: "timeseries",
-      metric: "mae",
-      metricValue: 2.31,
-      metricLabel: "2.31 MAE",
-      experiments: 120,
-      kept: 41,
-      rows: 52000,
-      features: 8,
-      downloads: 2180,
-      likes: 56,
-      updated: "3 days ago",
-      date: "2026-03-11",
-      tags: ["gas", "forecasting", "time-series"],
-      status: "published",
-    },
-    {
-      id: "model-ij78kl9",
-      name: "Whale Wallet Tracker",
-      slug: "hoot/whale-tracker",
-      topic: "Large wallet movement classification",
-      type: "Random Forest",
-      framework: "Scikit-learn",
-      category: "classification",
-      metric: "precision",
-      metricValue: 0.923,
-      metricLabel: "92.3% prec",
-      experiments: 76,
-      kept: 25,
-      rows: 3400,
-      features: 31,
-      downloads: 645,
-      likes: 22,
-      updated: "4 days ago",
-      date: "2026-03-10",
-      tags: ["whale", "wallet", "tracking"],
-      status: "published",
-    },
-  ];
+  // ── Sort + filter ──
+  function sortModels(models: ModelRecord[], sort: typeof sortBy): ModelRecord[] {
+    return [...models].sort((a, b) => {
+      switch (sort) {
+        case 'metric': return a.metrics.best - b.metrics.best;
+        case 'usage': return b.usage.totalCalls - a.usage.totalCalls;
+        case 'newest': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        default: return 0;
+      }
+    });
+  }
 
-  // Pre-compute lowercase strings to avoid repeated .toLowerCase() on each filter pass
-  const modelsIndexed = models.map(m => ({
-    ...m,
-    _nameLower: m.name.toLowerCase(),
-    _topicLower: m.topic.toLowerCase(),
-  }));
+  // Build display-friendly data from ModelRecord
+  function modelToCard(m: ModelRecord) {
+    const slugParts = m.slug.split('-');
+    const category = inferCategory(m.name);
+    return {
+      ...m,
+      displaySlug: `hoot/${m.slug}`,
+      category,
+      metricLabel: `${m.metrics.best.toFixed(3)}`,
+      metricName: 'best',
+      _nameLower: m.name.toLowerCase(),
+      _slugLower: m.slug.toLowerCase(),
+    };
+  }
 
-  $: filteredModels = modelsIndexed.filter(m => {
+  function inferCategory(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('predict') || n.includes('forecast')) return 'prediction';
+    if (n.includes('classif') || n.includes('risk') || n.includes('detect')) return 'classification';
+    if (n.includes('sentiment') || n.includes('nlp') || n.includes('text')) return 'nlp';
+    if (n.includes('time') || n.includes('series') || n.includes('gas')) return 'timeseries';
+    if (n.includes('anomaly') || n.includes('mev') || n.includes('fraud')) return 'anomaly';
+    return 'prediction';
+  }
+
+  function formatState(state: string): { label: string; color: string } {
+    switch (state) {
+      case 'NETWORK_ACTIVE': return { label: '● ACTIVE', color: '#27864a' };
+      case 'PRIVATE_ACTIVE': return { label: '◐ PRIVATE', color: '#2980b9' };
+      case 'DRAFT': return { label: '○ DRAFT', color: '#9a9590' };
+      case 'MINTED': return { label: '◑ MINTED', color: '#b7860e' };
+      case 'DEPRECATED': return { label: '✕ DEPRECATED', color: '#c0392b' };
+      default: return { label: state, color: '#9a9590' };
+    }
+  }
+
+  function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 1) return 'just now';
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return `${Math.floor(days / 7)}w ago`;
+  }
+
+  $: displayModels = sortModels(trendingModels, sortBy).map(modelToCard);
+
+  $: filteredModels = displayModels.filter(m => {
     const q = debouncedQuery.toLowerCase();
-    const matchSearch = !q || m._nameLower.includes(q) || m._topicLower.includes(q);
+    const matchSearch = !q || m._nameLower.includes(q) || m._slugLower.includes(q);
     const matchFilter = activeFilter === 'all' || m.category === activeFilter;
     return matchSearch && matchFilter;
   });
@@ -208,21 +162,28 @@
     </button>
   </div>
 
-  <!-- Search + Filters -->
+  <!-- Search + Filters + Sort -->
   <div class="toolbar">
-    <div class="search-bar">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="search-icon">
-        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
-        <path d="m21 21-4.3-4.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <input
-        type="text"
-        class="search-input"
-        placeholder="Search models..."
-        value={searchQuery}
-        on:input={onSearchInput}
-      />
-      <span class="search-count">{filteredModels.length}</span>
+    <div class="search-row">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="search-icon">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="m21 21-4.3-4.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search models..."
+          value={searchQuery}
+          on:input={onSearchInput}
+        />
+        <span class="search-count">{filteredModels.length}</span>
+      </div>
+      <select class="sort-select" bind:value={sortBy}>
+        <option value="usage">Most Used</option>
+        <option value="metric">Best Metric</option>
+        <option value="newest">Newest</option>
+      </select>
     </div>
     <div class="filter-chips" role="tablist" aria-label="Model filters">
       {#each filters as f}
@@ -237,71 +198,121 @@
     </div>
   </div>
 
-  <!-- Model Grid -->
-  <div class="model-grid">
-    {#each filteredModels as model, i (model.id)}
-      <button class="model-card" style:--i={i} on:click={() => router.navigate('model-detail', { modelId: model.id })} on:mousemove={handleCardMouse}>
-        <!-- Card Header -->
-        <div class="card-top">
-          <div class="card-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-              <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <span class="card-framework">{model.framework}</span>
-        </div>
+  <!-- My Created Models (Builder Member) -->
+  {#if myCreatedModels.length > 0}
+    <div class="section-block">
+      <h2 class="section-title">
+        <span class="section-icon">🧪</span>
+        내가 만든 모델
+        <span class="section-count">{myCreatedModels.length}</span>
+      </h2>
+      <div class="my-model-list">
+        {#each myCreatedModels as m}
+          {@const st = formatState(m.state)}
+          <button class="my-model-row" on:click={() => router.navigate('model-detail', { modelId: m.id })}>
+            <span class="mmr-name">{m.name}</span>
+            <span class="mmr-state" style:color={st.color}>{st.label}</span>
+            <span class="mmr-calls">{fmtNumber(m.usage.totalCalls)} calls</span>
+            <span class="mmr-revenue">+{m.poolA.creator.toFixed(2)} H</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
-        <!-- Name + Slug -->
-        <h3 class="card-name">{model.name}</h3>
-        <span class="card-slug">{model.slug}</span>
+  <!-- My Used Models (Member) -->
+  {#if myUsedModels.length > 0}
+    <div class="section-block">
+      <h2 class="section-title">
+        <span class="section-icon">📦</span>
+        내가 사용 중
+        <span class="section-count">{myUsedModels.length}</span>
+      </h2>
+      <div class="my-model-list">
+        {#each myUsedModels as m}
+          {@const st = formatState(m.state)}
+          <button class="my-model-row" on:click={() => router.navigate('model-detail', { modelId: m.id })}>
+            <span class="mmr-name">{m.name}</span>
+            <span class="mmr-state" style:color={st.color}>{st.label}</span>
+            <span class="mmr-calls">{fmtNumber(m.usage.totalCalls)} calls</span>
+            <span class="mmr-cost">-{m.usage.totalRevenue.toFixed(2)} H</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
-        <!-- Metric Highlight -->
-        <div class="card-metric">
-          <span class="metric-value">{model.metricLabel}</span>
-          <span class="metric-label">{model.metric}</span>
-        </div>
-
-        <!-- Tags -->
-        <div class="card-tags">
-          <span class="tag type">{model.type}</span>
-          {#each model.tags.slice(0, 2) as tag}
-            <span class="tag">{tag}</span>
-          {/each}
-        </div>
-
-        <!-- Footer Stats -->
-        <div class="card-footer">
-          <div class="card-stats">
-            <span class="card-stat">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Trending / All Models Grid -->
+  {#if loading}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <span>Loading models...</span>
+    </div>
+  {:else}
+    <div class="section-block">
+      <h2 class="section-title">
+        <span class="section-icon">🔥</span>
+        Trending
+      </h2>
+    </div>
+    <div class="model-grid">
+      {#each filteredModels as model, i (model.id)}
+        {@const st = formatState(model.state)}
+        <button class="model-card" style:--i={i} on:click={() => router.navigate('model-detail', { modelId: model.id })} on:mousemove={handleCardMouse}>
+          <!-- Card Header -->
+          <div class="card-top">
+            <div class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              {fmtNumber(model.downloads)}
-            </span>
-            <span class="card-stat">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {model.likes}
-            </span>
+            </div>
+            <span class="card-state-badge" style:color={st.color} style:border-color={st.color}>{st.label}</span>
           </div>
-          <span class="card-date">{model.updated}</span>
-        </div>
 
-        <!-- Training badge -->
-        <div class="card-training">
-          <span class="training-info">{model.experiments} experiments &middot; {model.kept} kept</span>
-        </div>
-      </button>
-    {/each}
-  </div>
+          <!-- Name + Slug -->
+          <h3 class="card-name">{model.name}</h3>
+          <span class="card-slug">{model.displaySlug}</span>
+
+          <!-- Metric Highlight -->
+          <div class="card-metric">
+            <span class="metric-value">{model.metricLabel}</span>
+            <span class="metric-label">best</span>
+          </div>
+
+          <!-- Footer Stats -->
+          <div class="card-footer">
+            <div class="card-stats">
+              <span class="card-stat">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {fmtNumber(model.usage.totalCalls)} calls
+              </span>
+              <span class="card-stat">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                {model.metrics.experiments} exp
+              </span>
+            </div>
+            <span class="card-date">{timeAgo(model.updatedAt)}</span>
+          </div>
+
+          <!-- Revenue badge (if earning) -->
+          {#if model.usage.totalRevenue > 0}
+            <div class="card-revenue">
+              +{model.usage.totalRevenue.toFixed(2)} HOOT earned
+            </div>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Empty State -->
-  {#if filteredModels.length === 0}
+  {#if !loading && filteredModels.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
@@ -826,10 +837,116 @@
     .card-tags { display: none; }
   }
 
+  /* ── Sort select ── */
+  .search-row {
+    display: flex; gap: 10px; align-items: stretch;
+  }
+  .sort-select {
+    appearance: none;
+    border: 1px solid var(--border, #E5E0DA);
+    background: var(--surface, #fff);
+    border-radius: var(--radius-md, 10px);
+    padding: 8px 30px 8px 12px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--text-secondary, #6b6560);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239a9590' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    flex-shrink: 0;
+  }
+  .sort-select:focus { outline: none; border-color: var(--accent, #D97757); }
+
+  /* ── Section blocks (My Models, My Used, Trending) ── */
+  .section-block {
+    margin-bottom: var(--space-3, 12px);
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.82rem; font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    margin: 0 0 8px;
+  }
+  .section-icon { font-size: 14px; }
+  .section-count {
+    font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600;
+    color: var(--text-muted, #9a9590);
+    background: var(--border-subtle, #EDEAE5);
+    padding: 1px 6px; border-radius: 8px;
+  }
+
+  .my-model-list {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: var(--space-5, 20px);
+  }
+  .my-model-row {
+    appearance: none; border: 1px solid var(--border-subtle, #EDEAE5);
+    background: var(--surface, #fff); padding: 10px 14px;
+    border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    transition: all 150ms; text-align: left;
+  }
+  .my-model-row:hover {
+    border-color: var(--accent, #D97757);
+    background: rgba(217, 119, 87, 0.02);
+  }
+  .mmr-name {
+    flex: 1; font-size: 0.8rem; font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+  }
+  .mmr-state {
+    font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700;
+  }
+  .mmr-calls {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--text-muted, #9a9590);
+  }
+  .mmr-revenue {
+    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+    color: var(--green, #27864a);
+  }
+  .mmr-cost {
+    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+    color: var(--accent, #D97757);
+  }
+
+  /* ── Model card state badge ── */
+  .card-state-badge {
+    font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 6px;
+    border: 1px solid;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Revenue badge on card ── */
+  .card-revenue {
+    font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600;
+    color: var(--green, #27864a);
+    background: rgba(39, 134, 74, 0.06);
+    padding: 4px 10px; border-radius: 6px;
+    text-align: center;
+  }
+
+  /* ── Loading state ── */
+  .loading-state {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 60px 0;
+    color: var(--text-muted, #9a9590); font-size: 0.82rem;
+  }
+  .loading-spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border, #E5E0DA);
+    border-top-color: var(--accent, #D97757);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* C-1: prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     .model-card, .page-header, .toolbar, .empty-state { animation: none !important; }
     .empty-icon { animation: none !important; }
     .model-card::before { transition: none; }
+    .loading-spinner { animation: none !important; }
   }
 </style>
