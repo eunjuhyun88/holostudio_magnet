@@ -119,6 +119,42 @@
   // ── Event Feed ──
   const eventFeed = EVENT_FEED;
 
+  // ── Bundle Registration State ──
+  let showBundleModal = false;
+  let bundlePpapIds = '';
+  let bundleDomain = '';
+  let bundlePrice = '';
+
+  function openBundleModal() {
+    bundlePpapIds = '';
+    bundleDomain = '';
+    bundlePrice = '';
+    showBundleModal = true;
+  }
+
+  function closeBundleModal() {
+    showBundleModal = false;
+  }
+
+  function submitBundleRegistration() {
+    if (!bundlePpapIds.trim() || !bundleDomain.trim() || !bundlePrice.trim()) return;
+    showBundleModal = false;
+    openContractModal({
+      title: 'Bundle 등록',
+      contract: '0x5E1f...8C2d  HootBundle.sol',
+      fn: 'listBundleAsset',
+      params: [
+        { name: 'ppapIds', type: 'uint256[]', value: bundlePpapIds.trim() },
+        { name: 'domain', type: 'string', value: bundleDomain.trim() },
+        { name: 'price', type: 'uint256', value: `${bundlePrice.trim()} HOOT` },
+      ],
+      fee: '0 HOOT',
+      gas: '~200,000',
+      note: 'Bundle이 마켓플레이스에 등록됩니다. PPAP 데이터가 검증된 상태여야 합니다.',
+      accentColor: 'var(--accent)',
+    });
+  }
+
   function openEventModal(evt: ProtocolEvent) {
     openContractModal({
       title: evt.fn + '()',
@@ -247,6 +283,26 @@
         <JobCreatorPanel on:openModal={e => openContractModal(e.detail)} />
         {#if walletConnected}
           <PPAPContributePanel />
+
+          <!-- Bundle Registration Panel -->
+          <div class="panel bundle-panel" style="--panel-delay: 3">
+            <div class="panel-header">
+              <h2>Bundle 등록</h2>
+              <span class="bundle-badge">BundleAssetListed</span>
+            </div>
+            <p class="bundle-desc">
+              PPAP 검증 데이터를 Bundle로 묶어 마켓플레이스에 등록하세요.
+              다른 연구자가 구매하여 학습에 활용할 수 있습니다.
+            </p>
+            <button class="bundle-cta" on:click={openBundleModal}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="12" y1="22.08" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Bundle 등록하기
+            </button>
+          </div>
         {/if}
       </div>
       {/if}
@@ -318,6 +374,45 @@
 
   <!-- YOUR JOURNEY -->
   <YourJourney />
+
+  <!-- BUNDLE REGISTRATION MODAL -->
+  {#if showBundleModal}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="bundle-overlay" on:click|self={closeBundleModal} transition:fade={{ duration: 150 }}>
+      <div class="bundle-modal" transition:fly={{ y: 16, duration: 250 }}>
+        <h3 class="bm-title">Bundle 등록</h3>
+        <p class="bm-desc">PPAP 데이터를 Bundle로 묶어 마켓플레이스에 등록합니다.</p>
+
+        <div class="bm-field">
+          <label class="bm-label" for="bm-ppap">PPAP Batch IDs</label>
+          <input id="bm-ppap" class="bm-input" type="text" bind:value={bundlePpapIds}
+            placeholder="PPAP-0039, PPAP-0040, ..." />
+          <span class="bm-hint">쉼표로 구분하여 입력</span>
+        </div>
+
+        <div class="bm-field">
+          <label class="bm-label" for="bm-domain">도메인</label>
+          <input id="bm-domain" class="bm-input" type="text" bind:value={bundleDomain}
+            placeholder="eth-price-feed" />
+        </div>
+
+        <div class="bm-field">
+          <label class="bm-label" for="bm-price">가격 (HOOT)</label>
+          <input id="bm-price" class="bm-input" type="number" min="0" step="1" bind:value={bundlePrice}
+            placeholder="50" />
+        </div>
+
+        <div class="bm-actions">
+          <button class="bm-cancel" on:click={closeBundleModal}>취소</button>
+          <button class="bm-submit"
+            on:click={submitBundleRegistration}
+            disabled={!bundlePpapIds.trim() || !bundleDomain.trim() || !bundlePrice.trim()}>
+            등록 진행
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- CONTRACT CALL MODAL -->
   <ContractCallModal
@@ -727,6 +822,156 @@
   .my-activity-inner {
     max-width: 1400px;
     margin: 0 auto;
+  }
+
+  /* ====== BUNDLE PANEL ====== */
+  .bundle-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #6b6560);
+    line-height: 1.5;
+    margin: 0 0 16px;
+  }
+  .bundle-badge {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(217,119,87,0.1);
+    color: var(--accent, #D97757);
+  }
+  .bundle-cta {
+    appearance: none;
+    border: 1.5px solid var(--accent, #D97757);
+    background: rgba(217,119,87,0.04);
+    color: var(--accent, #D97757);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 100px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    transition: all 150ms;
+  }
+  .bundle-cta:hover {
+    background: var(--accent, #D97757);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(217,119,87,0.25);
+  }
+
+  /* ====== BUNDLE MODAL ====== */
+  .bundle-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal, 100);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .bundle-modal {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border, #E5E0DA);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(217,119,87,0.08);
+  }
+  .bm-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    margin: 0 0 4px;
+  }
+  .bm-desc {
+    font-size: 0.76rem;
+    color: var(--text-secondary, #6b6560);
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+  .bm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .bm-label {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #9a9590);
+  }
+  .bm-input {
+    appearance: none;
+    border: 1px solid var(--border, #E5E0DA);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    color: var(--text-primary, #2D2D2D);
+    background: var(--surface, #fff);
+    outline: none;
+    transition: border-color 150ms;
+  }
+  .bm-input:focus {
+    border-color: var(--accent, #D97757);
+  }
+  .bm-hint {
+    font-size: 0.62rem;
+    color: var(--text-muted, #9a9590);
+  }
+  .bm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .bm-cancel {
+    appearance: none;
+    border: 1px solid var(--border, #E5E0DA);
+    background: var(--surface, #fff);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .bm-cancel:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .bm-submit {
+    appearance: none;
+    border: none;
+    background: var(--accent, #D97757);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .bm-submit:hover:not(:disabled) {
+    background: var(--accent-hover, #C4644A);
+    box-shadow: 0 0 16px rgba(217,119,87,0.25);
+  }
+  .bm-submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* ====== RESPONSIVE ====== */
