@@ -49,6 +49,7 @@ export interface AutoresearchJob {
   controlsAvailable: boolean;
   runtimeApiBase: string | null;
   runtimeRoot: string | null;
+  runtimeJobId: string | null;
   runtimeStatus: 'offline' | 'connecting' | 'streaming' | 'error';
   runtimeError: string | null;
 }
@@ -88,6 +89,7 @@ export function createEmptyJob(): AutoresearchJob {
     controlsAvailable: true,
     runtimeApiBase: null,
     runtimeRoot: null,
+    runtimeJobId: null,
     runtimeStatus: 'offline',
     runtimeError: null,
   };

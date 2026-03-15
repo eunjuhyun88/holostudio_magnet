@@ -6,13 +6,13 @@ import {
   resolveExperimentCategory,
   type ModCategory,
 } from '../data/modifications.ts';
-import { jobStore } from './jobStore.ts';
 import { humanizeModification, formatLogTime } from './jobTypes.ts';
 import type { Experiment, BranchInfo } from './jobTypes.ts';
+import { jobState } from './jobState.ts';
 
 /* ─── Single-pass counts ─── */
 
-const jobCounts = derived(jobStore, $j => {
+const jobCounts = derived(jobState, $j => {
   let keeps = 0, discards = 0, crashes = 0, training = 0;
   let vPending = 0, vCommitted = 0, vRevealed = 0, vVerified = 0, vSpotChecked = 0;
   const nodeIds = new Set<string>();
@@ -45,7 +45,7 @@ export const activeNodeCount = derived(jobCounts, $c => $c.activeNodeCount);
 /** Commit-Reveal verification pipeline counts */
 export const verificationCounts = derived(jobCounts, $c => $c.verification);
 
-export const metricHistory = derived(jobStore, $j => {
+export const metricHistory = derived(jobState, $j => {
   const filtered = $j.experiments.filter(e => e.status === 'keep' || e.status === 'discard');
   const reversed: { x: number; y: number; status: string }[] = [];
   for (let i = filtered.length - 1; i >= 0; i--) {
@@ -60,7 +60,7 @@ export const qualityScore = derived(jobCounts, $c => {
   return Math.round(($c.keeps / $c.completed) * 100);
 });
 
-export const statusMessage = derived([jobStore, jobCounts], ([$j, $c]) => {
+export const statusMessage = derived([jobState, jobCounts], ([$j, $c]) => {
   switch ($j.phase) {
     case 'idle': return '';
     case 'setup': return $j.setupMessage || 'Setting up research pipeline...';
@@ -74,7 +74,7 @@ export const statusMessage = derived([jobStore, jobCounts], ([$j, $c]) => {
   }
 });
 
-export const latestFinding = derived(jobStore, $j => {
+export const latestFinding = derived(jobState, $j => {
   const lastKeep = $j.experiments.find(e => e.status === 'keep');
   if (!lastKeep) return null;
   return {
@@ -85,7 +85,7 @@ export const latestFinding = derived(jobStore, $j => {
   };
 });
 
-export const eventLog = derived(jobStore, $j => {
+export const eventLog = derived(jobState, $j => {
   const evts: { time: string; type: string; message: string }[] = [];
   if ($j.startedAt) {
     evts.push({ time: formatLogTime($j.startedAt), type: 'SYSTEM', message: 'autoresearch init' });
@@ -103,7 +103,7 @@ export const eventLog = derived(jobStore, $j => {
   return evts;
 });
 
-export const recentExperiments = derived(jobStore, $j => {
+export const recentExperiments = derived(jobState, $j => {
   const result: Experiment[] = [];
   for (const e of $j.experiments) {
     if (e.status !== 'training') {
@@ -114,14 +114,14 @@ export const recentExperiments = derived(jobStore, $j => {
   return result;
 });
 
-export const trainingExperiment = derived(jobStore, $j =>
+export const trainingExperiment = derived(jobState, $j =>
   $j.experiments.find(e => e.status === 'training') ?? null
 );
 
 /* ─── Visualization derived stores ─── */
 
 /** Scatter plot data: category × metric */
-export const scatterData = derived(jobStore, $j => {
+export const scatterData = derived(jobState, $j => {
   return $j.experiments
     .filter(e => e.status === 'keep' || e.status === 'discard')
     .map(e => ({
@@ -135,7 +135,7 @@ export const scatterData = derived(jobStore, $j => {
 });
 
 /** Heatmap data: per-category success rates */
-export const heatmapData = derived(jobStore, $j => {
+export const heatmapData = derived(jobState, $j => {
   const cats = Object.keys(CATEGORY_LABELS) as ModCategory[];
   const grid: Record<string, { total: number; keeps: number; avgMetric: number; metrics: number[] }> = {};
   for (const cat of cats) {
@@ -158,7 +158,7 @@ export const heatmapData = derived(jobStore, $j => {
 });
 
 /** Experiment tree/DAG data */
-export const experimentTree = derived(jobStore, $j => {
+export const experimentTree = derived(jobState, $j => {
   return $j.experiments
     .filter(e => e.status !== 'training')
     .map(e => ({
@@ -175,7 +175,7 @@ export const experimentTree = derived(jobStore, $j => {
 });
 
 /** Branch summary — groups experiments by modification category */
-export const branchSummary = derived(jobStore, $j => {
+export const branchSummary = derived(jobState, $j => {
   const map = new Map<ModCategory, { total: number; keeps: number; crashes: number; best: number; active: boolean }>();
 
   for (const e of $j.experiments) {
@@ -215,7 +215,7 @@ export const branchSummary = derived(jobStore, $j => {
 
 /* ─── Intervention derived stores ─── */
 
-export const improvementDelta = derived(jobStore, $j => {
+export const improvementDelta = derived(jobState, $j => {
   if ($j.baselineMetric === Infinity || $j.bestMetric === Infinity) return null;
   const pct = (($j.baselineMetric - $j.bestMetric) / $j.baselineMetric) * 100;
   return {
@@ -226,7 +226,7 @@ export const improvementDelta = derived(jobStore, $j => {
   };
 });
 
-export const bestBranch = derived(jobStore, $j => {
+export const bestBranch = derived(jobState, $j => {
   if ($j.bestMetric === Infinity) return null;
   const bestExp = $j.experiments.find(e => e.status === 'keep' && e.metric === $j.bestMetric);
   if (!bestExp) return null;
@@ -240,12 +240,12 @@ export const bestBranch = derived(jobStore, $j => {
   };
 });
 
-export const isPaused = derived(jobStore, $j => $j.paused);
+export const isPaused = derived(jobState, $j => $j.paused);
 
 /* ─── Page-level derived stores ─── */
 
 /** Average duration of completed experiments */
-export const avgDuration = derived(jobStore, $j => {
+export const avgDuration = derived(jobState, $j => {
   let sum = 0, count = 0;
   for (const e of $j.experiments) {
     if (e.status !== 'training' && e.duration > 0) { sum += e.duration; count++; }
@@ -254,7 +254,7 @@ export const avgDuration = derived(jobStore, $j => {
 });
 
 /** Total GPU time formatted */
-export const totalGpuTime = derived(jobStore, $j => {
+export const totalGpuTime = derived(jobState, $j => {
   let secs = 0;
   for (const e of $j.experiments) { secs += e.duration * e.tier; }
   if (secs >= 3600) return `${(secs / 3600).toFixed(1)}h`;
@@ -264,7 +264,7 @@ export const totalGpuTime = derived(jobStore, $j => {
 
 /** Best-so-far frontier (monotonically decreasing keep metrics) — memoized by length+last */
 let _prevFrontier: number[] = [];
-export const bestFrontier = derived(jobStore, $j => {
+export const bestFrontier = derived(jobState, $j => {
   const frontier: number[] = [];
   let best = Infinity;
   for (let i = $j.experiments.length - 1; i >= 0; i--) {
