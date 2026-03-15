@@ -10,7 +10,7 @@
   function onSearchInput(e: Event) {
     searchQuery = (e.target as HTMLInputElement).value;
     clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(() => { debouncedQuery = searchQuery; }, 120);
+    _searchTimer = setTimeout(() => { debouncedQuery = searchQuery; }, 300);
   }
 
   const filters = [
