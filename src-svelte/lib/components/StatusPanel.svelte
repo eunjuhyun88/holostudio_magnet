@@ -7,7 +7,7 @@
   export let doneCount = 0;
 
   function goToOntology() {
-    router.navigate("ontology");
+    router.navigate("studio");
   }
 </script>
 

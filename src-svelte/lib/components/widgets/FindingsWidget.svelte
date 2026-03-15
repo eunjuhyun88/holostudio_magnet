@@ -9,7 +9,7 @@
 
 <div class="fw">
   {#each withFindings as job}
-    <button class="fw-row" on:click={() => router.navigate("research", { topic: job.topic, jobId: job.id })}>
+    <button class="fw-row" on:click={() => router.navigate("studio", { topic: job.topic, jobId: job.id })}>
       <span class="fw-name">{job.topic}</span>
       <span class="fw-val">{job.findings}</span>
     </button>
