@@ -3,7 +3,7 @@ import { jobStore } from './jobStore.ts';
 
 // ── Types ──
 
-export type StudioPhase = 'idle' | 'create' | 'setup' | 'running' | 'complete';
+export type StudioPhase = 'idle' | 'create' | 'setup' | 'running' | 'complete' | 'publish' | 'published';
 
 export type ResourceMode = 'demo' | 'local' | 'network' | 'hybrid';
 
@@ -19,6 +19,8 @@ interface StudioState {
   forkSource: string | null;
   /** If user navigated away and came back, remember last phase */
   lastActivePhase: StudioPhase | null;
+  /** Model ID after successful publish */
+  publishedModelId: string | null;
 }
 
 // ── Initial State ──
@@ -30,6 +32,7 @@ const initialState: StudioState = {
   resourceMode: 'demo',
   forkSource: null,
   lastActivePhase: null,
+  publishedModelId: null,
 };
 
 // ── Store ──
@@ -92,6 +95,16 @@ function createStudioStore() {
       update(s => ({ ...s, phase: 'complete', lastActivePhase: s.phase }));
     },
 
+    /** Transition: COMPLETE → PUBLISH */
+    goToPublish() {
+      update(s => ({ ...s, phase: 'publish', lastActivePhase: s.phase }));
+    },
+
+    /** Transition: PUBLISH → PUBLISHED (model minted) */
+    confirmPublished(modelId: string) {
+      update(s => ({ ...s, phase: 'published', publishedModelId: modelId, lastActivePhase: s.phase }));
+    },
+
     /** Reset to IDLE (from any state) */
     reset() {
       set({ ...initialState });
@@ -109,6 +122,10 @@ function createStudioStore() {
             // Can't go back from running — must stop first
             return s;
           case 'complete':
+            return { ...s, phase: 'idle', lastActivePhase: s.phase };
+          case 'publish':
+            return { ...s, phase: 'complete', lastActivePhase: s.phase };
+          case 'published':
             return { ...s, phase: 'idle', lastActivePhase: s.phase };
           default:
             return s;
