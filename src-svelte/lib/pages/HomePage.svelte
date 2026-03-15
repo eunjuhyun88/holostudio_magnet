@@ -109,8 +109,7 @@
   // ── GPU Wizard ──
   let showGpuWizard = false;
 
-  // ── Network card expanded (for action chips) ──
-  let networkExpanded = false;
+  // (Network card now navigates directly — no expand state needed)
 
   // ── Activity ──
   $: recentEvents = ($dashboardStore.events ?? []).slice(0, 6);
@@ -204,40 +203,19 @@
     </button>
 
     <!-- ⚡ GPU Network -->
-    <div class="portal-card-wrap">
-      <button class="portal-card" on:click={() => { networkExpanded = !networkExpanded; }}>
-        <span class="pc-icon pc-icon-network">
-          <PixelIcon type="globe" size={18} />
+    <button class="portal-card" on:click={networkCardClick}>
+      <span class="pc-icon pc-icon-network">
+        <PixelIcon type="globe" size={18} />
+      </span>
+      <div class="pc-body">
+        <span class="pc-name">GPU Network</span>
+        <span class="pc-state" class:pc-state-warn={hasNode && !myNode.online}>
+          {networkCardText}
         </span>
-        <div class="pc-body">
-          <span class="pc-name">GPU Network</span>
-          <span class="pc-state" class:pc-state-warn={hasNode && !myNode.online}>
-            {networkCardText}
-          </span>
-          <span class="pc-detail">학습 노드 · 추론 노드 · PoAW 블록 기여</span>
-        </div>
-        <span class="pc-arrow">{networkExpanded ? '↓' : '→'}</span>
-      </button>
-      {#if networkExpanded}
-        <div class="pc-expand">
-          <button class="pc-chip" on:click={() => router.navigate('network')}>
-            <PixelIcon type="globe" size={11} />
-            네트워크 맵
-          </button>
-          {#if !hasNode}
-            <button class="pc-chip pc-chip-accent" on:click={() => { showGpuWizard = true; }}>
-              <PixelIcon type="sparkle" size={11} />
-              노드 등록
-            </button>
-          {:else}
-            <button class="pc-chip" on:click={() => router.navigate('protocol')}>
-              <PixelIcon type="chart" size={11} />
-              보상 확인
-            </button>
-          {/if}
-        </div>
-      {/if}
-    </div>
+        <span class="pc-detail">학습 노드 · 추론 노드 · PoAW 블록 기여</span>
+      </div>
+      <span class="pc-arrow">→</span>
+    </button>
 
     <!-- 📊 Protocol -->
     <button class="portal-card" on:click={protocolCardClick}>
@@ -500,15 +478,6 @@
   }
 
   /* ═══ PORTAL CARDS ═══ */
-  .portal-card-wrap {
-    border: 1px solid var(--border-subtle, #EDEAE5);
-    border-radius: 14px;
-    background: var(--surface, #fff);
-    overflow: hidden;
-    transition: border-color 200ms, box-shadow 200ms;
-  }
-  .portal-card-wrap:hover { border-color: rgba(0,0,0,0.08); }
-
   .portal-card {
     appearance: none;
     border: 1px solid var(--border-subtle, #EDEAE5);
@@ -529,13 +498,6 @@
     transform: translateY(-1px);
   }
   .portal-card:active { transform: scale(0.995); }
-
-  .portal-card-wrap .portal-card {
-    border: none; border-radius: 0;
-  }
-  .portal-card-wrap .portal-card:hover {
-    box-shadow: none; transform: none;
-  }
 
   /* Icon circles */
   .pc-icon {
@@ -570,36 +532,6 @@
     margin-top: 8px; transition: color 140ms;
   }
   .portal-card:hover .pc-arrow { color: var(--accent); }
-
-  /* Expand chips */
-  .pc-expand {
-    display: flex; gap: 8px;
-    padding: 0 18px 14px;
-    animation: fadeIn 180ms ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-  .pc-chip {
-    appearance: none;
-    border: 1px solid var(--border, #E5E0DA);
-    background: var(--bg-warm, #FAF9F7);
-    border-radius: 8px;
-    padding: 7px 14px;
-    font-size: 0.6rem; font-weight: 600;
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex; align-items: center; gap: 5px;
-    transition: all 150ms;
-  }
-  .pc-chip:hover {
-    border-color: var(--accent);
-    background: rgba(217,119,87,0.04);
-    color: var(--accent);
-  }
-  .pc-chip-accent {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
 
   /* ═══ FLYWHEEL ═══ */
   .flywheel {
@@ -718,7 +650,6 @@
     .brand-title { font-size: 1.4rem; }
     .portal-card { padding: 14px 14px; gap: 12px; }
     .pc-icon { width: 32px; height: 32px; border-radius: 8px; }
-    .pc-expand { padding: 0 14px 12px; flex-wrap: wrap; }
     .pulse-bar { gap: 10px; padding: 8px 14px; }
     .pulse-val { font-size: 0.76rem; }
     .live-banner { padding: 12px 14px; gap: 8px; }
