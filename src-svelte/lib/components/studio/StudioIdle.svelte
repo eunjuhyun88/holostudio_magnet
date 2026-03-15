@@ -22,6 +22,7 @@
   import { jobStore } from '../../stores/jobStore.ts';
   import { modelPublishStore } from '../../stores/modelPublishStore.ts';
   import { hasGpuNode } from '../../stores/nodeStore.ts';
+  import { wallet, WALLET_OPTIONS } from '../../stores/walletStore.ts';
   import type { AppView } from '../../stores/router.ts';
   import PixelIcon from '../PixelIcon.svelte';
   import GPUOnboardWizard from './GPUOnboardWizard.svelte';
@@ -33,8 +34,21 @@
     navigate: { view: AppView };
   }>();
 
+  // ── Guest state ──
+  let guestSearchTopic = '';
+  const wallets = WALLET_OPTIONS;
+
+  function handleGuestSearch() {
+    if (!guestSearchTopic.trim()) return;
+    dispatch('startCreate', { topic: guestSearchTopic.trim() });
+  }
+
+  function handleGuestKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') handleGuestSearch();
+  }
+
   // ── Derived state ──
-  $: isLoggedIn = $dashboardStore.isLoggedIn;
+  $: isLoggedIn = $wallet.connected;
   $: runningCount = $dashboardStore.runningCount;
   $: hasRunningResearch = runningCount > 0;
   $: jobPhase = $jobStore.phase;
@@ -222,6 +236,8 @@
 <svelte:window on:click={handleWindowClick} />
 
 <div class="studio-idle">
+  {#if isLoggedIn}
+  <!-- ═══ MEMBER VIEW ═══ -->
   <!-- ═══ HEADER: Title + Stats + [+ New] ═══ -->
   <div class="idle-header">
     <div class="header-top">
@@ -424,6 +440,95 @@
       </div>
     </div>
   </div>
+
+  {:else}
+  <!-- ═══ GUEST VIEW ═══ -->
+  <div class="guest-view">
+    <!-- Hero Search -->
+    <div class="guest-hero">
+      <h1 class="guest-title">무엇을 연구하고 싶으세요?</h1>
+      <p class="guest-subtitle">AI가 자동으로 데이터 수집, 모델 학습, 최적화를 수행합니다</p>
+      <div class="guest-search">
+        <input
+          class="guest-search-input"
+          type="text"
+          placeholder="예: 암호화폐 시장 예측, DeFi 리스크 분류..."
+          bind:value={guestSearchTopic}
+          on:keydown={handleGuestKeydown}
+        />
+        <button class="guest-search-btn" on:click={handleGuestSearch}>
+          시작하기 →
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Step Explanation -->
+    <div class="guest-steps">
+      <div class="step-card">
+        <span class="step-num">1</span>
+        <h3 class="step-title">토픽 입력</h3>
+        <p class="step-desc">연구하고 싶은 주제를 입력하면 AI가 최적의 연구 설계를 제안합니다</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">2</span>
+        <h3 class="step-title">AI가 자동 탐색</h3>
+        <p class="step-desc">분산 GPU 네트워크에서 자동으로 데이터 수집과 모델 학습이 진행됩니다</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">3</span>
+        <h3 class="step-title">모델 완성</h3>
+        <p class="step-desc">최적화된 모델을 배포하고 API 엔드포인트로 수익을 창출하세요</p>
+      </div>
+    </div>
+
+    <!-- Wallet CTA -->
+    <div class="guest-wallet">
+      <h2 class="gw-title">지갑을 연결하고 시작하세요</h2>
+      <p class="gw-desc">연구 실행, 모델 배포, GPU 기여에는 지갑 연결이 필요합니다</p>
+      <div class="gw-buttons">
+        {#each wallets as w}
+          <button class="gw-btn" on:click={() => wallet.connect(w.name)}>
+            <span class="gw-icon">{w.icon}</span>
+            <span class="gw-name">{w.name}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Community Research (public presets) -->
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">공개 연구</h2>
+          <span class="section-sub">커뮤니티에서 진행 중인 연구를 살펴보세요</span>
+        </div>
+      </div>
+      <div class="presets-grid">
+        {#each presetCards as card (card.id)}
+          <button class="preset-card" on:click={() => selectPreset(card)}>
+            <div class="pc-top">
+              <span class="pc-icon">{card.icon}</span>
+              <span class="pc-diff" style:color={difficultyColors[card.difficulty]}>
+                <span class="pc-diff-dot" style:background={difficultyColors[card.difficulty]}></span>
+                {card.difficulty}
+              </span>
+            </div>
+            <h3 class="pc-title">{card.title}</h3>
+            <p class="pc-desc">{card.description}</p>
+            <div class="pc-bottom">
+              <span class="pc-time">{card.time}</span>
+              <div class="pc-tags">
+                {#each card.tags as tag}
+                  <span class="pc-tag">{tag}</span>
+                {/each}
+              </div>
+            </div>
+          </button>
+        {/each}
+      </div>
+    </div>
+  </div>
+  {/if}
 </div>
 
 <!-- GPU Onboard Wizard Overlay -->
@@ -977,6 +1082,183 @@
     font-size: 0.68rem;
   }
 
+  /* ═══ GUEST VIEW ═══ */
+  .guest-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 40px 32px 80px;
+    overflow-y: auto;
+  }
+  .guest-hero {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 0 16px;
+  }
+  .guest-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    margin: 0;
+    line-height: 1.3;
+  }
+  .guest-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary, #6b6560);
+    margin: 0;
+    max-width: 420px;
+  }
+  .guest-search {
+    display: flex;
+    gap: 0;
+    margin-top: 8px;
+    width: 100%;
+    max-width: 520px;
+    border: 1.5px solid var(--border, #E5E0DA);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+  .guest-search:focus-within {
+    border-color: var(--accent, #D97757);
+    box-shadow: 0 4px 20px rgba(217, 119, 87, 0.1);
+  }
+  .guest-search-input {
+    flex: 1;
+    appearance: none;
+    border: none;
+    outline: none;
+    padding: 14px 18px;
+    font-size: 0.82rem;
+    background: var(--surface, #fff);
+    color: var(--text-primary, #2D2D2D);
+    font-family: inherit;
+  }
+  .guest-search-input::placeholder {
+    color: var(--text-muted, #9a9590);
+  }
+  .guest-search-btn {
+    appearance: none;
+    border: none;
+    background: var(--accent, #D97757);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 14px 24px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 150ms;
+  }
+  .guest-search-btn:hover {
+    background: color-mix(in srgb, var(--accent, #D97757) 88%, black);
+  }
+
+  /* ── 3-Step Explanation ── */
+  .guest-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .step-card {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-subtle, #EDEAE5);
+    border-radius: 14px;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    transition: all 200ms;
+  }
+  .step-card:hover {
+    border-color: rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent, #D97757) 10%, transparent);
+    color: var(--accent, #D97757);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  .step-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    margin: 0;
+  }
+  .step-desc {
+    font-size: 0.68rem;
+    color: var(--text-secondary, #6b6560);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ── Wallet CTA ── */
+  .guest-wallet {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 28px 24px;
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #E5E0DA);
+    border-radius: 16px;
+  }
+  .gw-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary, #2D2D2D);
+    margin: 0;
+  }
+  .gw-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #6b6560);
+    margin: 0;
+    max-width: 380px;
+  }
+  .gw-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .gw-btn {
+    appearance: none;
+    border: 1px solid var(--border, #E5E0DA);
+    background: var(--bg-warm, #FAF9F7);
+    border-radius: 12px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+    transition: all 180ms;
+  }
+  .gw-btn:hover {
+    border-color: var(--accent, #D97757);
+    box-shadow: 0 3px 12px rgba(217, 119, 87, 0.1);
+    transform: translateY(-1px);
+  }
+  .gw-icon { font-size: 1.2rem; }
+  .gw-name { white-space: nowrap; }
+
   /* ═══ RESPONSIVE ═══ */
   @media (max-width: 640px) {
     .idle-header {
@@ -994,6 +1276,12 @@
     .stats-bar { gap: 4px; }
     .stats-val { font-size: 0.72rem; }
     .new-dropdown { right: auto; left: 0; }
+    /* Guest responsive */
+    .guest-view { padding: 24px 16px 60px; gap: 24px; }
+    .guest-title { font-size: 1.5rem; }
+    .guest-steps { grid-template-columns: 1fr; }
+    .gw-buttons { flex-direction: column; width: 100%; max-width: 260px; }
+    .gw-btn { justify-content: center; }
   }
 
   @media (max-width: 420px) {
