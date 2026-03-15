@@ -38,6 +38,7 @@
   import DistributedView from '../DistributedView.svelte';
   import ParamScatterChart from '../ParamScatterChart.svelte';
   import ModificationHeatmap from '../ModificationHeatmap.svelte';
+  import PlaygroundTab from '../PlaygroundTab.svelte';
 
   export let branches: BranchInfo[] = [];
   export let experiments: Experiment[] = [];
@@ -59,9 +60,10 @@
   $: completed = $completedCount;
 
   // Focus modal
-  type FocusView = 'convergence' | 'activity' | 'treemap' | 'context' | 'lineage' | 'scatter' | 'effect' | 'mesh';
+  type FocusView = 'convergence' | 'activity' | 'treemap' | 'context' | 'lineage' | 'scatter' | 'effect' | 'mesh' | 'playground';
 
   const FOCUS_TABS: { id: FocusView; label: string }[] = [
+    { id: 'playground', label: 'Test' },
     { id: 'convergence', label: 'Convergence' },
     { id: 'activity', label: 'Activity' },
     { id: 'treemap', label: 'Map' },
@@ -73,6 +75,7 @@
   ];
 
   const FOCUS_META: Record<FocusView, { title: string; hint: string }> = {
+    playground: { title: 'Model Playground', hint: 'Test your model with sample inputs before publishing.' },
     convergence: { title: 'Convergence Timeline', hint: 'Review the full metric trajectory.' },
     activity: { title: 'Activity Feed', hint: 'Review all experiments.' },
     treemap: { title: 'Experiment Map', hint: 'Drill into categories.' },
@@ -128,6 +131,10 @@
       </div>
     </div>
     <div class="cb-actions">
+      <button class="cb-btn test" on:click={() => openFocus('playground')}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+        모델 테스트
+      </button>
       <button class="cb-btn publish" on:click={() => dispatch('deploy', { target: 'publish' })}>
         모델 발행 →
       </button>
@@ -325,14 +332,18 @@
     on:tabchange={(e) => { focusView = e.detail; }}
   >
     {#key focusView}
-      {#if focusView === 'convergence'}
+      {#if focusView === 'playground'}
+        <div class="focus-stage focus-stage--panel" style="height:{focusPanelHeight}px; padding: 24px;">
+          <PlaygroundTab />
+        </div>
+      {:else if focusView === 'convergence'}
         <div class="focus-stage focus-stage--chart"><ConvergenceChart experiments={job.experiments} bestMetric={job.bestMetric} baselineMetric={job.baselineMetric} width={focusChartWidth} height={focusChartHeight} /></div>
       {:else if focusView === 'activity'}
         <div class="focus-stage focus-stage--panel" style="height:{focusPanelHeight}px"><ActivityStream experiments={$jobStore.experiments} bestMetric={job.bestMetric} expanded /></div>
       {:else if focusView === 'treemap'}
         <div class="focus-stage focus-stage--fill" style="height:{focusPanelHeight}px"><ExperimentTreemap experiments={job.experiments} bestMetric={job.bestMetric} /></div>
       {:else if focusView === 'context'}
-        <div class="focus-stage focus-stage--panel focus-stage--detail" style="height:{focusPanelHeight}px"><ContextPanel bestMetric={job.bestMetric} phase="complete" topic={job.topic} progress={100} sessionId={job.experiments.length > 0 ? job.experiments[0].nodeId.slice(-6) : ''} branches={$branchSummary} experiments={$jobStore.experiments} totalExperiments={totalExp} expanded on:newresearch={() => dispatch('newResearch')} on:deploy={handleDeploy} on:retrain={handleRetrain} on:improve={handleImprove} /></div>
+        <div class="focus-stage focus-stage--panel focus-stage--detail" style="height:{focusPanelHeight}px"><ContextPanel bestMetric={job.bestMetric} phase="complete" topic={job.topic} progress={100} sessionId={job.experiments.length > 0 ? job.experiments[0].nodeId.slice(-6) : ''} branches={$branchSummary} experiments={$jobStore.experiments} totalExperiments={totalExp} expanded on:retrain={handleRetrain} on:improve={handleImprove} /></div>
       {:else if focusView === 'scatter'}
         <div class="focus-stage focus-stage--chart"><ParamScatterChart data={$scatterData} width={focusChartWidth} height={focusChartHeight} /></div>
       {:else if focusView === 'effect'}
@@ -410,6 +421,14 @@
     padding: 8px 16px; border-radius: 8px;
     cursor: pointer; transition: all 150ms; border: none;
   }
+  .cb-btn.test {
+    background: var(--surface, #fff); color: var(--text-primary, #2D2D2D);
+    border: 1px solid var(--border, #E5E0DA);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .cb-btn.test:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); box-shadow: 0 1px 6px rgba(217,119,87,0.12); }
+  .cb-btn.test svg { transition: transform 200ms; }
+  .cb-btn.test:hover svg { transform: scale(1.15); }
   .cb-btn.publish { background: var(--accent, #D97757); color: #fff; }
   .cb-btn.publish:hover { background: #C4644A; box-shadow: 0 2px 8px rgba(217,119,87,0.2); }
   .cb-btn.secondary { background: transparent; border: 1px solid var(--border, #E5E0DA); color: var(--text-secondary, #6b6560); }
