@@ -2,6 +2,17 @@ import type {
   RuntimeMeshSummary,
   RuntimeJobCommand,
   RuntimeMeshEvent,
+  ModelRecord,
+  RewardEntry,
+  RewardSummary,
+  DashboardData,
+  DashboardEvent,
+  ActiveBond,
+  BondTier,
+  BurnConversion,
+  ProtocolEvent,
+  FlowNode,
+  PpapStage,
 } from '../../../packages/contracts/src/index.ts';
 
 /* ─── URL Normalization ─── */
@@ -123,4 +134,64 @@ export async function sendRuntimeCommand(options: {
   }
 
   return (payload?.controller ?? null) as RuntimeMeshSummary['controller'];
+}
+
+/* ─── Domain API Client ─── */
+
+async function fetchJson<T>(apiBase: string, path: string): Promise<T> {
+  const base = normalizeRuntimeApiBase(apiBase);
+  const response = await fetch(`${base}${path}`);
+  if (!response.ok) {
+    throw new Error(`API request failed: ${path} (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
+
+// Models
+export async function fetchModels(apiBase: string): Promise<ModelRecord[]> {
+  return fetchJson<ModelRecord[]>(apiBase, '/api/models');
+}
+
+export async function fetchModel(apiBase: string, modelId: string): Promise<ModelRecord> {
+  return fetchJson<ModelRecord>(apiBase, `/api/models/${encodeURIComponent(modelId)}`);
+}
+
+// Protocol
+export async function fetchProtocolSummary(apiBase: string) {
+  return fetchJson<{
+    bondTiers: BondTier[];
+    activeBonds: ActiveBond[];
+    burnConversions: BurnConversion[];
+    ppapStages: PpapStage[];
+    flowNodes: FlowNode[];
+    balance: number;
+    mauTarget: number;
+    trustScoreTarget: number;
+  }>(apiBase, '/api/protocol/summary');
+}
+
+export async function fetchProtocolBonds(apiBase: string): Promise<ActiveBond[]> {
+  return fetchJson<ActiveBond[]>(apiBase, '/api/protocol/bonds');
+}
+
+export async function fetchProtocolEvents(apiBase: string): Promise<ProtocolEvent[]> {
+  return fetchJson<ProtocolEvent[]>(apiBase, '/api/protocol/events');
+}
+
+// Rewards
+export async function fetchRewards(apiBase: string): Promise<RewardEntry[]> {
+  return fetchJson<RewardEntry[]>(apiBase, '/api/rewards');
+}
+
+export async function fetchRewardSummary(apiBase: string): Promise<RewardSummary> {
+  return fetchJson<RewardSummary>(apiBase, '/api/rewards/summary');
+}
+
+// Dashboard
+export async function fetchDashboardSummary(apiBase: string): Promise<DashboardData> {
+  return fetchJson<DashboardData>(apiBase, '/api/dashboard/summary');
+}
+
+export async function fetchDashboardEvents(apiBase: string): Promise<DashboardEvent[]> {
+  return fetchJson<DashboardEvent[]>(apiBase, '/api/dashboard/events');
 }
