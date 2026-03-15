@@ -5,7 +5,6 @@
   import { modelPublishStore } from "../stores/modelPublishStore.ts";
   import { loadModels } from "../services/modelService.ts";
   import { fmtNumber } from "../utils/format.ts";
-  import CrossLinkBar from "../components/CrossLinkBar.svelte";
   import type { ModelRecord } from '../../../packages/contracts/src/index.ts';
 
   let searchQuery = "";
@@ -139,11 +138,6 @@
 </script>
 
 <div class="models">
-  <CrossLinkBar links={[
-    { label: 'Studio', view: 'studio' },
-    { label: 'Network', view: 'network' },
-    { label: 'Protocol', view: 'protocol' },
-  ]} />
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-left">

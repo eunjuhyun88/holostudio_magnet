@@ -19,7 +19,6 @@
   import StudioIdle from '../components/studio/StudioIdle.svelte';
   import StudioCreate from '../components/studio/StudioCreate.svelte';
   import ConfirmModal from '../components/ConfirmModal.svelte';
-  import CrossLinkBar from '../components/CrossLinkBar.svelte';
 
   // ── Confirmation state ──
   let showStopConfirm = false;
@@ -167,11 +166,6 @@
 </script>
 
 <div class="studio-page">
-  <CrossLinkBar links={[
-    { label: 'Models', view: 'models' },
-    { label: 'Network', view: 'network' },
-    { label: 'Protocol', view: 'protocol' },
-  ]} />
   {#key phaseKey}
     <div class="phase-container" in:fly={{ y: 12, duration: 250, delay: 60 }} out:fade={{ duration: 120 }}>
       {#if $studioPhase === 'idle'}

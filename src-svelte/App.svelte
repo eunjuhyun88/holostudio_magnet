@@ -10,6 +10,7 @@
   import PageSkeleton from "./lib/components/PageSkeleton.svelte";
   import AgentDock from "./lib/components/agent/AgentDock.svelte";
   import ToastContainer from "./lib/components/ToastContainer.svelte";
+  import InfoBar from "./lib/components/InfoBar.svelte";
   import { toastStore } from "./lib/stores/toastStore.ts";
   import { nodeStore } from "./lib/stores/nodeStore.ts";
   import { ppapStore } from "./lib/stores/ppapStore.ts";
@@ -34,14 +35,14 @@
   };
 
   // Stage guard: redirect to studio if page is locked
-  $: if (!$unlockedPages.includes($router) && $router !== 'studio' && $router !== 'dashboard') {
+  $: if (!$unlockedPages.includes($router) && $router !== 'studio') {
     toastStore.info('이 페이지는 아직 잠겨 있습니다. 연구를 먼저 완료해주세요.');
     router.navigate('studio');
   }
 
   // Page transition key — increments on route change
   $: routeKey = $router;
-  $: isStudio = $router === 'studio' || $router === 'dashboard';
+  $: isStudio = $router === 'studio';
   $: pagePromise = !isStudio ? pageLoaders[$router]?.() : null;
 </script>
 
@@ -58,6 +59,7 @@
 
 <div class="app-shell" data-theme="light">
   <NavBar />
+  <InfoBar />
   <main class="app-main">
     {#key routeKey}
       <div class="page-transition" in:fly={{ y: 12, duration: 280, delay: 60 }} out:fade={{ duration: 150 }}>

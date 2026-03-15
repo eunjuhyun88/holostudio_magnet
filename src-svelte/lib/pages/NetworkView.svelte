@@ -23,7 +23,6 @@
   import { mapRuntimeMeshToVisualizer } from "../api/runtimeVisualizerAdapter.ts";
   import type { TelemetryEvent, VisualizerModel, Worker, Job } from "../utils/types.ts";
   import ExperimentTape from "../components/ExperimentTape.svelte";
-  import CrossLinkBar from "../components/CrossLinkBar.svelte";
   import MeshCanvas from "../components/MeshCanvas.svelte";
   import NodeCard from "../components/NodeCard.svelte";
   import WorkerBoard from "../components/WorkerBoard.svelte";
@@ -406,11 +405,6 @@
 </script>
 
 <div class="network" class:mounted>
-  <CrossLinkBar links={[
-    { label: 'Studio', view: 'studio' },
-    { label: 'Models', view: 'models' },
-    { label: 'Protocol', view: 'protocol' },
-  ]} />
   <NetworkHUD
     nodeCount={renderNodes.length}
     {recentNodeJoinDelta}

@@ -81,7 +81,7 @@
       {#each visibleNavItems as item}
         <button
           class="nav-item"
-          class:active={currentView === item.view || (item.view === 'studio' && currentView === 'dashboard')}
+          class:active={currentView === item.view}
           on:click={() => navTo(item.view)}
         >
           <span class="nav-icon">

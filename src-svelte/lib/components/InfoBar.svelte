@@ -1,48 +1,47 @@
 <script lang="ts">
-  import type { SystemMetrics } from "../data/dashboardFixture.ts";
+  /**
+   * InfoBar — Global status strip below NavBar.
+   * Self-contained: reads from stores directly (no props needed).
+   * Shows: Network status (nodes, GPU, CPU, MEM, VRAM, active/idle) + Protocol (TVL, Burned, Bonds, Trust, MAU)
+   */
+  import { dashboardStore } from '../stores/dashboardStore.ts';
+  import { wallet } from '../stores/walletStore.ts';
 
-  export let system: SystemMetrics;
-  export let activeWorkers = 4;
-  export let idleWorkers = 4;
-  export let tvl = "$12.4M";
-  export let burned = "847K";
-  export let bonds = "2,341";
-  export let trustScore = 847;
-  export let mauPercent = 62;
+  // Network metrics
+  $: nodes = $dashboardStore.networkSummary?.nodes ?? 8;
+  $: gpuCount = $dashboardStore.networkSummary?.gpuCount ?? 4;
+  $: activeWorkers = $dashboardStore.networkSummary?.activeWorkers ?? 4;
+  $: idleWorkers = $dashboardStore.networkSummary?.idleWorkers ?? 4;
+  $: cpuPct = $dashboardStore.liveSystem?.cpuUsage ?? 42;
+  $: memUsed = $dashboardStore.liveSystem?.memUsedGb ?? 24;
+  $: memTotal = $dashboardStore.liveSystem?.memTotalGb ?? 128;
+  $: vramUsed = $dashboardStore.liveSystem?.vramUsedGb ?? 32;
+  $: vramTotal = $dashboardStore.liveSystem?.vramTotalGb ?? 96;
+  $: memLabel = `${memUsed}/${memTotal}G`;
+  $: vramLabel = `${vramUsed}/${vramTotal}G`;
 
-  $: cpuPct = system.cpuUsage;
-  $: memLabel = `${system.memUsedGb}/${system.memTotalGb}G`;
-  $: vramLabel = `${system.vramUsedGb}/${system.vramTotalGb}G`;
+  // Protocol metrics
+  $: tvl = $dashboardStore.protocolSummary?.tvl ?? '$12.4M';
+  $: burned = $dashboardStore.protocolSummary?.burned ?? '847K';
+  $: bonds = $dashboardStore.protocolSummary?.bonds ?? '2,341';
+  $: trustScore = $dashboardStore.protocolSummary?.trustScore ?? 847;
+  $: mauPercent = $dashboardStore.protocolSummary?.mauPercent ?? 62;
+
+  // Wallet-based HOOT balance
+  $: hootBalance = $wallet.connected ? ($wallet.balance ?? '—') : null;
 </script>
 
 <div class="ib">
   <!-- Network section -->
   <div class="ib-section ib-section--network">
-    <span class="ib-section-label">Network</span>
     <span class="ib-dot"></span>
-    <span class="ib-live">Live</span>
+    <span class="ib-live">Online</span>
     <div class="ib-cell">
-      <span class="ib-val">{system.nodes}</span>
+      <span class="ib-val">{nodes}</span>
       <span class="ib-key">Nodes</span>
     </div>
     <div class="ib-cell">
-      <span class="ib-val">{Math.ceil(system.nodes / 2)}×</span>
-      <span class="ib-key">GPU</span>
-    </div>
-    <div class="ib-cell">
-      <span class="ib-val" class:ib-warn={cpuPct > 80}>{cpuPct}%</span>
-      <span class="ib-key">CPU</span>
-    </div>
-    <div class="ib-cell">
-      <span class="ib-val">{memLabel}</span>
-      <span class="ib-key">MEM</span>
-    </div>
-    <div class="ib-cell">
-      <span class="ib-val ib-gold">{vramLabel}</span>
-      <span class="ib-key">VRAM</span>
-    </div>
-    <div class="ib-cell">
-      <span class="ib-val ib-green">{activeWorkers}</span>
+      <span class="ib-val">{activeWorkers}</span>
       <span class="ib-key">Active</span>
     </div>
     <div class="ib-cell">
@@ -55,7 +54,6 @@
 
   <!-- Protocol section -->
   <div class="ib-section ib-section--protocol">
-    <span class="ib-section-label">Protocol</span>
     <div class="ib-cell">
       <span class="ib-val ib-accent">{tvl}</span>
       <span class="ib-key">TVL</span>
@@ -72,14 +70,17 @@
       <span class="ib-val ib-green">{trustScore}</span>
       <span class="ib-key">Trust</span>
     </div>
-    <div class="ib-cell ib-mau-cell">
-      <span class="ib-val">{mauPercent}%</span>
-      <span class="ib-key">MAU</span>
-      <div class="ib-mau-bar">
-        <div class="ib-mau-fill" style:width="{mauPercent}%"></div>
+  </div>
+
+  {#if hootBalance}
+    <span class="ib-divider"></span>
+    <div class="ib-section ib-section--balance">
+      <div class="ib-cell">
+        <span class="ib-val ib-gold">{hootBalance}</span>
+        <span class="ib-key">HOOT</span>
       </div>
     </div>
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -87,10 +88,10 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 24px;
+    padding: 6px 24px;
     background: var(--surface-elevated, #fff);
     border-bottom: 1px solid var(--border-subtle, #EDEAE5);
-    min-height: 38px;
+    min-height: 32px;
     overflow-x: auto;
     overflow-y: hidden;
     flex-shrink: 0;
@@ -100,13 +101,13 @@
   .ib-section {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     flex-shrink: 0;
   }
 
   .ib-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--green, #27864a);
     box-shadow: 0 0 6px rgba(39, 134, 74, 0.5);
@@ -120,7 +121,7 @@
 
   .ib-live {
     font-family: var(--font-mono, "JetBrains Mono", monospace);
-    font-size: 0.64rem;
+    font-size: 0.58rem;
     font-weight: 700;
     color: var(--green, #27864a);
     text-transform: uppercase;
@@ -138,7 +139,7 @@
 
   .ib-val {
     font-family: var(--font-mono, "JetBrains Mono", monospace);
-    font-size: 0.88rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--text-primary, #2C2824);
     font-variant-numeric: tabular-nums;
@@ -152,50 +153,19 @@
 
   .ib-key {
     font-family: var(--font-mono, "JetBrains Mono", monospace);
-    font-size: 0.58rem;
+    font-size: 0.52rem;
     font-weight: 600;
     color: var(--text-muted, #9a9590);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
-  .ib-section-label {
-    font-family: var(--font-mono, "JetBrains Mono", monospace);
-    font-size: 0.5rem;
-    font-weight: 700;
-    color: var(--text-muted, #9a9590);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    opacity: 0.6;
-    flex-shrink: 0;
-  }
-
   .ib-divider {
     width: 1px;
-    height: 20px;
+    height: 16px;
     border-radius: 1px;
     background: var(--border, #E5E0DA);
     flex-shrink: 0;
-  }
-
-  .ib-mau-cell {
-    gap: 4px;
-  }
-
-  .ib-mau-bar {
-    width: 48px;
-    height: 4px;
-    border-radius: 3px;
-    background: rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .ib-mau-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: var(--green, #27864a);
-    transition: width 600ms ease;
   }
 
   /* ── Responsive ── */
@@ -204,13 +174,13 @@
       gap: 8px;
       padding: 4px 12px;
     }
-    .ib-section { gap: 10px; }
+    .ib-section { gap: 8px; }
   }
 
   @media (max-width: 600px) {
     .ib {
       gap: 8px;
-      padding: 6px 12px;
+      padding: 4px 12px;
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
