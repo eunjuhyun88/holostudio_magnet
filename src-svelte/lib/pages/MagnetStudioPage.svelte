@@ -16,9 +16,7 @@
   import { jobStore } from '../stores/jobStore.ts';
   import { studioStore, studioPhase } from '../stores/studioStore.ts';
   import type { ResourceMode } from '../stores/studioStore.ts';
-  import type { AppView } from '../stores/router.ts';
   import { toastStore } from '../stores/toastStore.ts';
-  import StudioIdle from '../components/studio/StudioIdle.svelte';
   import StudioStep1 from '../components/studio/StudioStep1.svelte';
   import StudioStep2 from '../components/studio/StudioStep2.svelte';
   import ConfirmModal from '../components/ConfirmModal.svelte';
@@ -37,6 +35,11 @@
   // Auto-detect phase from jobStore on mount
   onMount(() => {
     studioStore.syncFromJobStore();
+
+    // If idle (user navigated to /studio directly), auto-advance to step1
+    if ($studioPhase === 'idle') {
+      studioStore.startCreate();
+    }
 
     // Watch for job completion
     const unsub = jobStore.subscribe(($job) => {
@@ -63,29 +66,6 @@
   }
 
   // ── Event Handlers ──
-
-  /** From StudioIdle: user clicked [+ New] or preset */
-  function handleStartCreate(e: CustomEvent<{ topic?: string; presetId?: string }>) {
-    if (e.detail.presetId) {
-      // Preset selected → go directly to Step2 with preset
-      studioStore.startCreate(e.detail.topic);
-      studioStore.setPreset(e.detail.presetId);
-      studioStore.goToStep2(e.detail.topic);
-    } else {
-      // Direct entry → go to Step1
-      studioStore.startCreate(e.detail.topic);
-    }
-  }
-
-  /** From StudioIdle: advanced setup shortcut */
-  function handleGoToSetup() {
-    studioStore.goToSetup();
-  }
-
-  /** From StudioIdle: resume running research */
-  function handleGoToRunning() {
-    studioStore.startRunning();
-  }
 
   /** From StudioStep1: user entered topic and hit Continue */
   function handleStep1Continue(e: CustomEvent<{ topic: string }>) {
@@ -134,6 +114,12 @@
   }
 
   function handleBack() {
+    // If going back from step1, navigate to Home
+    if ($studioPhase === 'step1') {
+      studioStore.reset();
+      router.navigate('home');
+      return;
+    }
     studioStore.goBack();
   }
 
@@ -162,6 +148,7 @@
 
   function handleNewResearch() {
     studioStore.reset();
+    router.navigate('home');
   }
 
   function handlePublish() {
@@ -173,10 +160,6 @@
     router.navigate('model-detail', { modelId: e.detail.modelId });
   }
 
-  function handleNavigate(e: CustomEvent<{ view: AppView }>) {
-    router.navigate(e.detail.view);
-  }
-
   // Phase transition key for animations
   $: phaseKey = $studioPhase;
 </script>
@@ -184,15 +167,7 @@
 <div class="studio-page">
   {#key phaseKey}
     <div class="phase-container" in:fly={{ y: 12, duration: 250, delay: 60 }} out:fade={{ duration: 120 }}>
-      {#if $studioPhase === 'idle'}
-        <StudioIdle
-          on:startCreate={handleStartCreate}
-          on:goToSetup={handleGoToSetup}
-          on:goToRunning={handleGoToRunning}
-          on:navigate={handleNavigate}
-        />
-
-      {:else if $studioPhase === 'step1'}
+      {#if $studioPhase === 'step1' || $studioPhase === 'idle'}
         <StudioStep1
           on:back={handleBack}
           on:continue={handleStep1Continue}
