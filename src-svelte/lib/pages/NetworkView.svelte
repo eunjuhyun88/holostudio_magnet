@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { get } from "svelte/store";
+  import { fly, fade } from "svelte/transition";
   import { debounce } from "../utils/perf.ts";
 
   import {
@@ -113,11 +114,10 @@
 
   let liveCleanup: (() => void) | null = null;
   let runtimeCleanup: (() => void) | null = null;
-  let fixtureInterval: number | null = null;
-  let meshClockInterval: number | null = null;
-  let meshPopulationInterval: number | null = null;
+  let rafHandle: number | null = null;
   let joinDeltaTimeout: number | null = null;
   let mounted = false;
+  let dwellCount = 0;
 
   let activeTab: "gpu" | "jobs" | "bond-trust" | "swarms" | "feed" = "gpu";
 
@@ -283,26 +283,40 @@
     const handleResize = debounce(() => { viewportWidth = window.innerWidth; }, 300);
     window.addEventListener("resize", handleResize);
 
-    let dwellCount = 0;
-    fixtureInterval = window.setInterval(() => {
-      if (telemetryMode !== "fixture" || playback.length <= 1) return;
-      if (frameIndex < 0) { frameIndex = 0; return; }
-      if (frameIndex >= playback.length - 1) {
-        dwellCount += 1;
-        if (dwellCount >= 3) { dwellCount = 0; frameIndex = 0; }
-        return;
+    // UX-N1: Single RAF loop replaces 3 separate setIntervals
+    let lastFixtureT = performance.now();
+    let lastClockT = lastFixtureT;
+    let lastPopT = lastFixtureT;
+    function tick(now: number) {
+      // Fixture frame advancement (~2800ms)
+      if (now - lastFixtureT >= 2800) {
+        lastFixtureT = now;
+        if (telemetryMode === "fixture" && playback.length > 1) {
+          if (frameIndex < 0) { frameIndex = 0; }
+          else if (frameIndex >= playback.length - 1) {
+            dwellCount += 1;
+            if (dwellCount >= 3) { dwellCount = 0; frameIndex = 0; }
+          } else { frameIndex += 1; }
+        }
       }
-      frameIndex += 1;
-    }, 2800);
-
-    meshClockInterval = window.setInterval(() => { meshSimulationTime += 0.5; }, 500);
-    meshPopulationInterval = window.setInterval(() => {
-      const floor = model.nodes.length;
-      const cur = Math.max(meshPopulationDisplayed, floor);
-      if (cur === meshPopulationTarget) return;
-      const step = Math.max(4, Math.ceil(Math.abs(meshPopulationTarget - cur) * 0.03));
-      meshPopulationDisplayed = cur < meshPopulationTarget ? Math.min(meshPopulationTarget, cur + step) : Math.max(meshPopulationTarget, cur - step);
-    }, 300);
+      // Simulation clock (~500ms)
+      if (now - lastClockT >= 500) {
+        lastClockT = now;
+        meshSimulationTime += 0.5;
+      }
+      // Population smoothing (~300ms)
+      if (now - lastPopT >= 300) {
+        lastPopT = now;
+        const floor = model.nodes.length;
+        const cur = Math.max(meshPopulationDisplayed, floor);
+        if (cur !== meshPopulationTarget) {
+          const step = Math.max(4, Math.ceil(Math.abs(meshPopulationTarget - cur) * 0.03));
+          meshPopulationDisplayed = cur < meshPopulationTarget ? Math.min(meshPopulationTarget, cur + step) : Math.max(meshPopulationTarget, cur - step);
+        }
+      }
+      rafHandle = requestAnimationFrame(tick);
+    }
+    rafHandle = requestAnimationFrame(tick);
 
     if (telemetryUrl) {
       const conn = connectTelemetryStream({
@@ -326,9 +340,7 @@
       bondTrustDestroyed = true;
       clearTimeout(delayBondTrust);
       window.removeEventListener("resize", handleResize);
-      if (fixtureInterval !== null) clearInterval(fixtureInterval);
-      if (meshClockInterval !== null) clearInterval(meshClockInterval);
-      if (meshPopulationInterval !== null) clearInterval(meshPopulationInterval);
+      if (rafHandle !== null) cancelAnimationFrame(rafHandle);
       if (joinDeltaTimeout !== null) clearTimeout(joinDeltaTimeout);
       liveCleanup?.();
       runtimeCleanup?.();
@@ -381,7 +393,7 @@
   }
 </script>
 
-<div class="network" class:mounted data-theme="light">
+<div class="network" class:mounted>
   <NetworkHUD
     nodeCount={renderNodes.length}
     {recentNodeJoinDelta}
@@ -414,25 +426,27 @@
     </div>
 
     <div class="side-panel">
-      <div class="panel-tabs">
-        <button class="ptab" class:active={activeTab === 'gpu'} on:click={() => activeTab = 'gpu'}>
+      <div class="panel-tabs" role="tablist" aria-label="Network panels">
+        <button class="ptab" class:active={activeTab === 'gpu'} on:click={() => activeTab = 'gpu'} role="tab" aria-selected={activeTab === 'gpu'}>
           My GPU
         </button>
-        <button class="ptab" class:active={activeTab === 'bond-trust'} on:click={() => activeTab = 'bond-trust'}>
+        <button class="ptab" class:active={activeTab === 'bond-trust'} on:click={() => activeTab = 'bond-trust'} role="tab" aria-selected={activeTab === 'bond-trust'}>
           Bond &amp; Trust
         </button>
-        <button class="ptab" class:active={activeTab === 'jobs'} on:click={() => activeTab = 'jobs'}>
+        <button class="ptab" class:active={activeTab === 'jobs'} on:click={() => activeTab = 'jobs'} role="tab" aria-selected={activeTab === 'jobs'}>
           Jobs <span class="tbadge" class:tbadge-green={liveJobs.length > 0}>{liveJobs.length}</span>
         </button>
-        <button class="ptab" class:active={activeTab === 'swarms'} on:click={() => activeTab = 'swarms'}>
+        <button class="ptab" class:active={activeTab === 'swarms'} on:click={() => activeTab = 'swarms'} role="tab" aria-selected={activeTab === 'swarms'}>
           Swarms <span class="tbadge">{model.jobs.length}</span>
         </button>
-        <button class="ptab" class:active={activeTab === 'feed'} on:click={() => activeTab = 'feed'}>
+        <button class="ptab" class:active={activeTab === 'feed'} on:click={() => activeTab = 'feed'} role="tab" aria-selected={activeTab === 'feed'}>
           Feed <span class="tbadge">{model.tape.length}</span>
         </button>
       </div>
 
       <div class="panel-body">
+        {#key activeTab}
+        <div class="tab-content" in:fly={{ x: 12, duration: 200, delay: 40 }} out:fade={{ duration: 80 }}>
         {#if activeTab === 'gpu'}
           <div class="psection gpu-hero">
             {#if myNode}
@@ -548,6 +562,8 @@
             <ExperimentTape tape={model.tape} compact={true} />
           </div>
         {/if}
+        </div>
+        {/key}
       </div>
     </div>
   </div>
@@ -666,6 +682,11 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+    position: relative;
+  }
+  /* UX-N3: Tab content transition wrapper */
+  .tab-content {
+    min-height: 100%;
   }
   .panel-body::-webkit-scrollbar { width: 4px; }
   .panel-body::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }

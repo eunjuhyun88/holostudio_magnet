@@ -19,7 +19,10 @@
   type JobType = 'training' | 'inference';
   let jobTypeFilter: JobType | 'all' = 'all';
 
-  function deriveJobMeta(job: EnrichedJob) {
+  // UX-J1: Cache deriveJobMeta by job.id (hash is deterministic, only rewardEst changes)
+  const metaCache = new Map<string, ReturnType<typeof computeJobMeta>>();
+
+  function computeJobMeta(job: EnrichedJob) {
     const h = Math.abs(hashStr(job.id));
     const minTier = h % 3 === 0 ? 1 : h % 3 === 1 ? 2 : 3;
     const tierLabels = ['', 'Lite (500H)', 'Standard (2,000H)', 'Enterprise (10,000H)'];
@@ -32,6 +35,14 @@
     return { minTier, tierLabel: tierLabels[minTier], deadlineH, poolBGpu, poolBTreasury, jobType: jType, topic };
   }
 
+  function deriveJobMeta(job: EnrichedJob) {
+    const cached = metaCache.get(job.id);
+    if (cached && cached.poolBGpu === +(job.rewardEst * 0.95).toFixed(2)) return cached;
+    const meta = computeJobMeta(job);
+    metaCache.set(job.id, meta);
+    return meta;
+  }
+
   function hashStr(s: string): number {
     let h = 0;
     for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
@@ -40,6 +51,19 @@
 
   $: filteredQueued = jobTypeFilter === 'all' ? queuedJobs : queuedJobs.filter(j => deriveJobMeta(j).jobType === jobTypeFilter);
   $: filteredRunning = jobTypeFilter === 'all' ? runningJobs : runningJobs.filter(j => deriveJobMeta(j).jobType === jobTypeFilter);
+
+  // UX-J3: Compute type counts for filter badges (single pass)
+  $: typeCounts = (() => {
+    let training = 0, inference = 0;
+    const allJobs = [...queuedJobs, ...runningJobs, ...doneJobs];
+    for (const j of allJobs) {
+      if (deriveJobMeta(j).jobType === 'training') training++;
+      else inference++;
+    }
+    return { training, inference };
+  })();
+  $: trainingCount = typeCounts.training;
+  $: inferenceCount = typeCounts.inference;
 
   export let queuedJobs: EnrichedJob[] = [];
   export let runningJobs: EnrichedJob[] = [];
@@ -99,11 +123,11 @@
   </div>
 {/if}
 
-<!-- Job Type Filter -->
-<div class="psection rj-filter-bar">
-  <button class="rj-filter-btn" class:active={jobTypeFilter === 'all'} on:click={() => jobTypeFilter = 'all'}>All</button>
-  <button class="rj-filter-btn" class:active={jobTypeFilter === 'training'} on:click={() => jobTypeFilter = 'training'}>Training</button>
-  <button class="rj-filter-btn" class:active={jobTypeFilter === 'inference'} on:click={() => jobTypeFilter = 'inference'}>Inference</button>
+<!-- Job Type Filter (UX-J3: count badges) -->
+<div class="psection rj-filter-bar" role="tablist" aria-label="Job type filter">
+  <button class="rj-filter-btn" class:active={jobTypeFilter === 'all'} on:click={() => jobTypeFilter = 'all'} role="tab" aria-selected={jobTypeFilter === 'all'}>All <span class="rj-filter-count">{totalJobCount}</span></button>
+  <button class="rj-filter-btn" class:active={jobTypeFilter === 'training'} on:click={() => jobTypeFilter = 'training'} role="tab" aria-selected={jobTypeFilter === 'training'}>Training <span class="rj-filter-count">{trainingCount}</span></button>
+  <button class="rj-filter-btn" class:active={jobTypeFilter === 'inference'} on:click={() => jobTypeFilter = 'inference'} role="tab" aria-selected={jobTypeFilter === 'inference'}>Inference <span class="rj-filter-count">{inferenceCount}</span></button>
 </div>
 
 <!-- Queued — available for claim -->
@@ -180,7 +204,7 @@
           <span class="mono rj-payout">~{job.rewardEst} HOOT</span>
         </div>
         {#if job.progress > 0}
-          <div class="rj-progress-bar">
+          <div class="rj-progress-bar" role="progressbar" aria-valuenow={job.progress} aria-valuemin={0} aria-valuemax={100} aria-label="Job progress {job.progress}%">
             <div class="rj-progress-fill" style:width="{job.progress}%"></div>
           </div>
         {/if}
@@ -617,6 +641,18 @@
     background: var(--accent, #D97757);
     border-color: var(--accent, #D97757);
     color: #fff;
+  }
+  /* UX-J3: Filter count badges */
+  .rj-filter-count {
+    font-size: 0.56rem;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: var(--radius-pill, 100px);
+    background: rgba(0, 0, 0, 0.06);
+    font-variant-numeric: tabular-nums;
+  }
+  .rj-filter-btn.active .rj-filter-count {
+    background: rgba(255, 255, 255, 0.25);
   }
 
   /* Job type tags */
