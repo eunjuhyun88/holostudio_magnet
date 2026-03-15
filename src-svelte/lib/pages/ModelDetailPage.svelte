@@ -37,7 +37,7 @@
 <div class="detail">
   <!-- UX-MD2: Accessible breadcrumb -->
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <button class="bc-link" on:click={() => router.navigate('dashboard')}>Dashboard</button>
+    <button class="bc-link" on:click={() => router.navigate('studio')}>Magnet Studio</button>
     <span class="bc-sep">/</span>
     <button class="bc-link" on:click={() => router.navigate('models')}>Models</button>
     <span class="bc-sep">/</span>
