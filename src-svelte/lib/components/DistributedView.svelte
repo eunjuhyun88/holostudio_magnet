@@ -149,9 +149,12 @@
   // Animation tick for training particles
   let tick = 0;
   let animFrame: number;
+  let isVisible = true;
+  let observer: IntersectionObserver;
+  let containerEl: HTMLElement;
 
   function animate() {
-    tick++;
+    if (isVisible) tick++;
     animFrame = requestAnimationFrame(animate);
   }
 
@@ -159,16 +162,19 @@
   onMount(() => {
     mounted = true;
     animate();
+    observer = new IntersectionObserver(([entry]) => { isVisible = entry.isIntersecting; }, { threshold: 0 });
+    if (containerEl) observer.observe(containerEl);
   });
 
   onDestroy(() => {
     if (animFrame) cancelAnimationFrame(animFrame);
+    observer?.disconnect();
   });
 
   $: totalH = SWARM_TOP + SWARM_H;
 </script>
 
-<div class="distributed-container" class:mounted use:zoomable>
+<div class="distributed-container" class:mounted use:zoomable bind:this={containerEl}>
   <svg {width} height={totalH} viewBox="0 0 {width} {totalH}" class="distributed-svg">
     <defs>
       <filter id="dv-active-glow" x="-60%" y="-60%" width="220%" height="220%">
