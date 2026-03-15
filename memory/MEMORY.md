@@ -181,6 +181,9 @@
   - `src-svelte/lib/api/runtimeVisualizerAdapter.ts` maps `RuntimeMeshSummary` into `VisualizerModel`
   - `NetworkView.svelte` now supports `runtime` mode in parallel with `fixture` and `live`
   - `NetworkHUD.svelte` exposes a dedicated Runtime toggle
+- **Main runtime adapter guard fixed**:
+  - `src-svelte/lib/api/runtimeVisualizerAdapter.ts` no longer dereferences a missing previous result row during tape delta shaping
+  - this removes a first-paint runtime crash path that could silently drop `Network` back out of working Runtime mode
 - **Current root-tree audit caveat (2026-03-15)**:
   - the active root worktree is currently dirty on protected `main`, so `agent:guard` intentionally blocks continued agent work there
   - staged refactor changes are mixed across runtime, frontend, docs, and supervisor scaffolding instead of one scoped lane

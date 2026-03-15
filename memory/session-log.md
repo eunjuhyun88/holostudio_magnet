@@ -638,6 +638,25 @@ runtime-api가 실제 runtime summary를 읽게 된 뒤, 다음 단계로 `Autor
 
 ---
 
+## 2026-03-15 (cont): Main Network runtime guard fix
+
+### Context
+사용자 요청: 메인 기준으로 `Network` runtime mode가 실제로 안전하게 동작하도록 다시 확인하고, 남아 있는 crash bug를 수정
+
+### Completed
+- `src-svelte/lib/api/runtimeVisualizerAdapter.ts`
+  - `buildTape()`의 delta guard를 `previous?.valBpb != null && result.valBpb != null`로 수정
+  - 첫 결과 row에서 `previous`가 `null`이어도 runtime adapter가 crash하지 않도록 고침
+
+### Verification
+- `node --experimental-strip-types` runtime mesh → visualizer adapter smoke ✓
+  - `ready: true`
+  - `workspaces: 1`
+  - `tape: 12`
+- note: isolated worktree에는 로컬 의존성이 없어 `npm run build`는 merge 후 root checkout에서 재검증
+
+---
+
 ## 2026-03-15 (cont): mobile-only merge back to main
 
 ### Context

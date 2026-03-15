@@ -86,7 +86,7 @@ function buildTape(workspaces: RuntimeWorkspaceSummary[], workers: Worker[]): Ta
     workspace.results.forEach((result, index) => {
       if (!result.status) return;
       const previous = index > 0 ? workspace.results[index - 1] : null;
-      const delta = previous?.valBpb !== null && result.valBpb !== null
+      const delta = previous?.valBpb != null && result.valBpb != null
         ? +(previous.valBpb - result.valBpb).toFixed(4)
         : worker?.metricDelta;
 
