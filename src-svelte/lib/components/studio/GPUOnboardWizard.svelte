@@ -53,6 +53,8 @@
     step = 2;
   }
 
+  $: currentTier = TIERS.find(t => t.id === selectedTier)!;
+
   function registerNode() {
     registering = true;
     const tier = TIERS.find(t => t.id === selectedTier)!;
@@ -164,16 +166,15 @@
           {/each}
         </div>
 
-        {@const tier = TIERS.find(t => t.id === selectedTier)!}
         <div class="tier-detail">
-          <span class="td-desc">{tier.desc}</span>
-          <span class="td-mult">보상 배수: <strong>{tier.multiplier}</strong></span>
+          <span class="td-desc">{currentTier.desc}</span>
+          <span class="td-mult">보상 배수: <strong>{currentTier.multiplier}</strong></span>
         </div>
 
         <div class="bond-summary">
           <div class="bs-row">
             <span>본딩 금액</span>
-            <span class="bs-val">{tier.bond.toLocaleString()} HOOT</span>
+            <span class="bs-val">{currentTier.bond.toLocaleString()} HOOT</span>
           </div>
           <div class="bs-row">
             <span>잔액</span>
