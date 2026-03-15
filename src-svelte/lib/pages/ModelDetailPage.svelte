@@ -72,6 +72,7 @@
               </svg>
               {m.likes}
             </button>
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="action-dropdown" on:mouseleave={closeDropdown}>
               <button class="action-btn primary" on:click={toggleDropdown} aria-haspopup="true" aria-expanded={dropdownOpen}>
                 Use this model

@@ -8,7 +8,7 @@
   export let branches: BranchInfo[] = [];
   export let experiments: Experiment[] = [];
   export let bestMetric: number = Infinity;
-  export let totalExperiments: number = 0;
+  export const totalExperiments: number = 0;
   export let expandable = false;
 
   const dispatch = createEventDispatcher<{

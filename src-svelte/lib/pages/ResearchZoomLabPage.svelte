@@ -517,6 +517,7 @@
       </div>
 
       <div class="lab-surface-wrap">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="lab-surface"
           class:zoom-in={zoomDirection === 'in'}
