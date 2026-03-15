@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { selectedExperimentId } from '../stores/selectionStore.ts';
   import { resolveExperimentCategory, CATEGORY_COLORS, CATEGORY_LABELS } from '../data/modifications.ts';
-  import type { Experiment } from '../stores/jobStore.ts';
+  import { jobStore, type Experiment } from '../stores/jobStore.ts';
 
   export let experiments: Experiment[] = [];
   export let bestMetric: number = Infinity;
@@ -14,8 +14,13 @@
 
   const PAD = { top: 10, right: 16, bottom: 18, left: 38 };
 
+  // Use store directly for reactivity (props don't re-trigger in {#if} blocks)
+  $: allExperiments = $jobStore.experiments.length > 0 ? $jobStore.experiments : experiments;
+  $: effectiveBestMetric = $jobStore.bestMetric < Infinity ? $jobStore.bestMetric : bestMetric;
+  $: effectiveBaselineMetric = $jobStore.baselineMetric < Infinity ? $jobStore.baselineMetric : baselineMetric;
+
   // Build chronological completed experiments
-  $: completed = [...experiments]
+  $: completed = [...allExperiments]
     .filter(e => e.status !== 'training')
     .reverse();
 
@@ -84,8 +89,8 @@
   })();
 
   // Baseline Y position
-  $: baselineY = baselineMetric < Infinity && baselineMetric > 0
-    ? PAD.top + ((yMax - baselineMetric) / yRange) * plotH
+  $: baselineY = effectiveBaselineMetric < Infinity && effectiveBaselineMetric > 0
+    ? PAD.top + ((yMax - effectiveBaselineMetric) / yRange) * plotH
     : -1;
 
   // Hover state
@@ -100,7 +105,7 @@
   }
 
   function dotRadius(e: Experiment): number {
-    if (e.metric === bestMetric && e.status === 'keep') return 4.5;
+    if (e.metric === effectiveBestMetric && e.status === 'keep') return 4.5;
     if (e.status === 'keep') return 3;
     if (e.status === 'crash') return 2;
     return 1.8;
@@ -163,8 +168,8 @@
       fill={dotColor(p.exp)}
       class="data-point"
       class:selected={$selectedExperimentId === p.exp.id}
-      class:is-best={p.exp.metric === bestMetric && p.exp.status === 'keep'}
-      filter={p.exp.metric === bestMetric && p.exp.status === 'keep' ? 'url(#cv-best-glow)' : undefined}
+      class:is-best={p.exp.metric === effectiveBestMetric && p.exp.status === 'keep'}
+      filter={p.exp.metric === effectiveBestMetric && p.exp.status === 'keep' ? 'url(#cv-best-glow)' : undefined}
       on:click={() => handleClick(p.exp.id)}
       on:keydown={(event) => handleKeydown(event, p.exp.id)}
       on:mouseenter={() => { hoveredPoint = p; }}

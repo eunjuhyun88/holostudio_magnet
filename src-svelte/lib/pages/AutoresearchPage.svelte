@@ -614,7 +614,7 @@
     height: calc(100vh - 48px);
     display: grid;
     grid-template-columns: minmax(160px, 200px) minmax(100px, 1fr) 1fr 1fr 280px;
-    grid-template-rows: auto minmax(100px, 140px) minmax(80px, 1fr) 1fr 36px;
+    grid-template-rows: auto 80px minmax(80px, 1fr) 1fr 36px;
     grid-template-areas:
       "prompt    prompt    prompt    prompt    prompt"
       "hero      converge  converge  converge  stats"
