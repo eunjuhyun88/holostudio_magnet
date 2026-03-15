@@ -3,7 +3,15 @@
   import { fmtNumber } from "../utils/format.ts";
 
   let searchQuery = "";
+  let debouncedQuery = "";
   let activeFilter = "all";
+  let _searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function onSearchInput(e: Event) {
+    searchQuery = (e.target as HTMLInputElement).value;
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => { debouncedQuery = searchQuery; }, 120);
+  }
 
   const filters = [
     { id: "all", label: "All Models" },
@@ -150,10 +158,16 @@
     },
   ];
 
-  // fmtNumber imported from utils/format.ts
+  // Pre-compute lowercase strings to avoid repeated .toLowerCase() on each filter pass
+  const modelsIndexed = models.map(m => ({
+    ...m,
+    _nameLower: m.name.toLowerCase(),
+    _topicLower: m.topic.toLowerCase(),
+  }));
 
-  $: filteredModels = models.filter(m => {
-    const matchSearch = !searchQuery || m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.topic.toLowerCase().includes(searchQuery.toLowerCase());
+  $: filteredModels = modelsIndexed.filter(m => {
+    const q = debouncedQuery.toLowerCase();
+    const matchSearch = !q || m._nameLower.includes(q) || m._topicLower.includes(q);
     const matchFilter = activeFilter === 'all' || m.category === activeFilter;
     return matchSearch && matchFilter;
   });
@@ -195,7 +209,8 @@
         type="text"
         class="search-input"
         placeholder="Search models..."
-        bind:value={searchQuery}
+        value={searchQuery}
+        on:input={onSearchInput}
       />
       <span class="search-count">{filteredModels.length}</span>
     </div>
