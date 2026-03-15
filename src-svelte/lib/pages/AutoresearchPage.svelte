@@ -103,18 +103,25 @@
     return 'idle' as const;
   })();
 
-  // Progress + ETA
+  // Progress + ETA (cached — only recalculated when inputs change)
   $: totalExp = job.totalExperiments || 60;
   $: completed = $completedCount;
   $: progress = totalExp > 0 ? Math.round((completed / totalExp) * 100) : 0;
+
+  let _etaCache = { completed: -1, elapsed: -1, total: -1, result: '—' };
   $: eta = (() => {
-    if (completed === 0 || job.elapsedSeconds === 0) return '—';
-    const rate = completed / job.elapsedSeconds;
-    const remaining = Math.max(0, totalExp - completed);
-    const secs = Math.round(remaining / rate);
-    if (secs >= 3600) return `${Math.floor(secs / 3600)}h${Math.floor((secs % 3600) / 60)}m`;
-    if (secs >= 60) return `${Math.floor(secs / 60)}m`;
-    return `${secs}s`;
+    const c = _etaCache;
+    if (c.completed === completed && c.elapsed === job.elapsedSeconds && c.total === totalExp) return c.result;
+    if (completed === 0 || job.elapsedSeconds === 0) { c.result = '—'; }
+    else if (completed >= totalExp) { c.result = '0s'; }
+    else {
+      const secs = Math.round((totalExp - completed) / (completed / job.elapsedSeconds));
+      c.result = secs >= 3600 ? `${Math.floor(secs / 3600)}h${Math.floor((secs % 3600) / 60)}m`
+               : secs >= 60 ? `${Math.floor(secs / 60)}m`
+               : `${secs}s`;
+    }
+    c.completed = completed; c.elapsed = job.elapsedSeconds; c.total = totalExp;
+    return c.result;
   })();
 
   // Footer + sparkline + chart data: now from store-derived values
