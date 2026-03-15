@@ -114,9 +114,27 @@
     DEPRECATED: { bg: 'rgba(192,57,43,0.1)', text: '#c0392b', label: 'DEPRECATED' },
   };
   $: stateBadge = STATE_COLORS[modelState] ?? STATE_COLORS.DRAFT;
+
+  // VTR quarantine detection
+  $: vtrGrade = dynamicModel?.vtr?.grade ?? null;
+  $: isQuarantined = vtrGrade === 'QUARANTINED' || vtrGrade === 'FAILED';
+  $: isPendingVTR = vtrGrade === 'PENDING';
 </script>
 
 <div class="detail">
+  <!-- VTR Quarantine / Pending Banners -->
+  {#if isQuarantined}
+    <div class="vtr-banner quarantined">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" fill="currentColor"/></svg>
+      <span>이 모델은 VTR 검증에 실패하여 격리 상태입니다. 추론 호출이 비활성화됩니다.</span>
+    </div>
+  {:else if isPendingVTR}
+    <div class="vtr-banner pending">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>
+      <span>VTR 검증이 진행 중입니다. 검증 완료 전까지 일부 기능이 제한됩니다.</span>
+    </div>
+  {/if}
+
   <!-- UX-MD2: Accessible breadcrumb -->
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <button class="bc-link" on:click={() => router.navigate('studio')}>Magnet Studio</button>
@@ -175,13 +193,13 @@
               </button>
               {#if dropdownOpen}
               <div class="dropdown-menu" transition:fly={{ y: -8, duration: 150 }}>
-                <button class="dropdown-item" on:click={handleDeploy}>
+                <button class="dropdown-item" on:click={handleDeploy} disabled={isQuarantined}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 14a1 1 0 0 1-.78-1.63l9-11a1 1 0 0 1 1.78.63v7h6a1 1 0 0 1 .78 1.63l-9 11a1 1 0 0 1-1.78-.63v-7H4z" stroke="currentColor" stroke-width="1.5"/></svg>
-                  Deploy
+                  Deploy {isQuarantined ? '(격리됨)' : ''}
                 </button>
-                <button class="dropdown-item" on:click={handleDownload}>
+                <button class="dropdown-item" on:click={handleDownload} disabled={isQuarantined}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Download
+                  Download {isQuarantined ? '(격리됨)' : ''}
                 </button>
                 <button class="dropdown-item" on:click={handleFork}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -353,6 +371,24 @@
     max-width: 1280px;
     margin: 0 auto;
     padding: var(--space-6, 24px);
+  }
+
+  /* VTR Banner */
+  .vtr-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; margin-bottom: 16px;
+    border-radius: 10px; font-size: 0.82rem; font-weight: 500;
+  }
+  .vtr-banner svg { flex-shrink: 0; }
+  .vtr-banner.quarantined {
+    background: rgba(243, 139, 168, 0.08);
+    border: 1px solid rgba(243, 139, 168, 0.2);
+    color: #e06c88;
+  }
+  .vtr-banner.pending {
+    background: rgba(249, 226, 175, 0.1);
+    border: 1px solid rgba(249, 226, 175, 0.25);
+    color: #b7860e;
   }
 
   /* Loading state */
