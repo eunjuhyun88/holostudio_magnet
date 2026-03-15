@@ -39,10 +39,21 @@
   import { animateCounter } from '../utils/animate.ts';
   import { rewardStore, rewardSummary } from '../stores/rewardStore.ts';
   import { isConnected } from '../stores/connectionStore.ts';
+  import { nodeStore, hasGpuNode } from '../stores/nodeStore.ts';
+  import GPUOnboardWizard from '../components/studio/GPUOnboardWizard.svelte';
 
   // ── Wallet ──
   $: walletConnected = $wallet.connected;
   $: walletAddress = $wallet.address;
+
+  // ── GPU Onboard Detection ──
+  let showOnboardWizard = false;
+  $: needsGpuOnboard = walletConnected && !$hasGpuNode;
+
+  function handleGpuOnboardComplete() {
+    showOnboardWizard = false;
+    nodeStore.init();
+  }
 
   // ── Contract Call Modal ──
   let modalOpen = false;
@@ -426,6 +437,41 @@
     </div>
 
     <div class="side-panel">
+      <!-- GPU Onboard Prompt -->
+      {#if needsGpuOnboard && !showOnboardWizard}
+        <button class="gpu-onboard-prompt" on:click={() => { showOnboardWizard = true; }}>
+          <span class="gop-icon">⚡</span>
+          <div class="gop-body">
+            <span class="gop-title">GPU를 등록하세요</span>
+            <span class="gop-desc">네트워크에 GPU를 연결하고 컴퓨팅 보상을 받으세요</span>
+          </div>
+          <span class="gop-arrow">→</span>
+        </button>
+      {/if}
+
+      <!-- 내 노드 Summary (when GPU registered) -->
+      {#if $hasGpuNode}
+        <div class="my-node-card">
+          <div class="mnc-top">
+            <span class="mnc-id">{$nodeStore.nodeId}</span>
+            <span class="mnc-sep">·</span>
+            <span class="mnc-gpu">{$nodeStore.gpuModel}</span>
+            <span class="mnc-sep">·</span>
+            <span class="mnc-status" class:mnc-on={$nodeStore.online}>● {$nodeStore.online ? 'ON' : 'OFF'}</span>
+          </div>
+          <div class="mnc-stats">
+            <span>{$nodeStore.jobsCompleted} jobs 완료</span>
+            <span class="mnc-sep">·</span>
+            <span class="mnc-earn">+{$nodeStore.totalEarnings.toFixed(1)} HOOT 수익</span>
+          </div>
+          <div class="mnc-bottom">
+            <span>Trust: {$nodeStore.trustScore}/1000</span>
+            <span class="mnc-sep">·</span>
+            <span>PoAW 블록: {$nodeStore.poawBlocks}건</span>
+          </div>
+        </div>
+      {/if}
+
       <div class="panel-tabs" role="tablist" aria-label="Network panels">
         <button class="ptab" class:active={activeTab === 'gpu'} on:click={() => activeTab = 'gpu'} role="tab" aria-selected={activeTab === 'gpu'}>
           My GPU
@@ -579,6 +625,14 @@
     on:confirm={confirmTx}
     on:connectWallet={() => { wallet.connect('Phantom'); }}
   />
+
+  <!-- GPU Onboard Wizard Overlay -->
+  {#if showOnboardWizard}
+    <GPUOnboardWizard
+      on:close={() => { showOnboardWizard = false; }}
+      on:complete={handleGpuOnboardComplete}
+    />
+  {/if}
 </div>
 
 <style>
@@ -943,5 +997,58 @@
       white-space: nowrap;
     }
     .content { display: block; }
+  }
+
+  /* ── GPU Onboard Prompt ── */
+  .gpu-onboard-prompt {
+    appearance: none; border: 1.5px dashed var(--accent, #D97757);
+    background: rgba(217, 119, 87, 0.04);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: all 200ms;
+    text-align: left; width: 100%;
+    margin-bottom: 8px;
+  }
+  .gpu-onboard-prompt:hover {
+    background: rgba(217, 119, 87, 0.08);
+    box-shadow: 0 2px 10px rgba(217, 119, 87, 0.12);
+    transform: translateY(-1px);
+  }
+  .gop-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .gop-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .gop-title { font-size: 0.78rem; font-weight: 700; color: var(--text-primary, #2D2D2D); }
+  .gop-desc { font-size: 0.6rem; color: var(--text-muted, #9a9590); }
+  .gop-arrow { font-size: 0.82rem; font-weight: 600; color: var(--accent, #D97757); }
+
+  /* ── 내 노드 Summary Card ── */
+  .my-node-card {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(39, 134, 74, 0.04);
+    border: 1px solid rgba(39, 134, 74, 0.15);
+    display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: 8px;
+    font-size: 0.68rem;
+  }
+  .mnc-top {
+    display: flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+    flex-wrap: wrap;
+  }
+  .mnc-gpu { color: var(--text-secondary, #6b6560); font-weight: 500; }
+  .mnc-status { color: var(--text-muted, #9a9590); }
+  .mnc-on { color: var(--green, #27864a); }
+  .mnc-sep { color: var(--border, #E5E0DA); }
+  .mnc-stats {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--text-secondary, #6b6560);
+  }
+  .mnc-earn { font-family: var(--font-mono); font-weight: 600; color: var(--green, #27864a); }
+  .mnc-bottom {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--text-muted, #9a9590);
+    font-size: 0.6rem;
   }
 </style>
