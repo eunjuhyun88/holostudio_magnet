@@ -1,15 +1,8 @@
 /** Dashboard command center simulation data */
 
-export interface DashboardJob {
-  id: string;
-  topic: string;
-  status: 'running' | 'complete' | 'queued';
-  progress: number;
-  metric: number;
-  metricLabel: string;
-  findings: number;
-  startedAt: number;
-}
+import type { DashboardJob } from '@mesh/contracts';
+
+export type { DashboardJob };
 
 export interface SystemMetrics {
   nodes: number;

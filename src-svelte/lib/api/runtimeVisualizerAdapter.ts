@@ -47,7 +47,7 @@ function mapWorkspaceWorker(workspace: RuntimeWorkspaceSummary): Worker {
     progress: workspace.status === 'running' ? 0.48 : workspace.resultsCount > 0 ? 1 : 0,
     metric: lastMetric,
     metricDelta,
-    vramGb: workspace.memGb,
+    vramGb: inferWorkerVramGb(workspace.gpuLabel, workspace.gpu),
   };
 }
 
@@ -125,4 +125,23 @@ function mergeJobState(current: Job['state'], workspace: RuntimeWorkspaceSummary
   if (workspace.lastResultStatus) return 'done';
   if (workspace.launchAttempted || workspace.resultsCount > 0) return 'evaluating';
   return current;
+}
+
+function inferWorkerVramGb(gpuLabel: string, gpuCount: number): number {
+  const label = gpuLabel.toLowerCase();
+
+  if (label.includes('h100')) {
+    return 80 * gpuCount;
+  }
+  if (label.includes('a100')) {
+    return 40 * gpuCount;
+  }
+  if (label.includes('4090') || label.includes('3090')) {
+    return 24 * gpuCount;
+  }
+  if (label.includes('4080')) {
+    return 16 * gpuCount;
+  }
+
+  return 16 * gpuCount;
 }

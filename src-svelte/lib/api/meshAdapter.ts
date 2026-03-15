@@ -1,5 +1,6 @@
 import type {
   RuntimeMeshSummary,
+  RuntimeJob,
   RuntimeWorkspaceResultEntry,
   RuntimeWorkspaceSummary,
 } from '@mesh/contracts';
@@ -12,19 +13,24 @@ export function mapRuntimeMeshToJob(
   mesh: RuntimeMeshSummary,
   apiBase: string,
   requestedRuntimeRoot: string | null,
+  runtimeJob: RuntimeJob | null = null,
 ): AutoresearchJob {
   const experiments = buildRuntimeExperiments(mesh);
-  const completed = experiments.filter((experiment) => experiment.status !== 'training').length;
+  const counts = countRuntimeExperiments(experiments);
   const firstCompleted = [...experiments]
     .reverse()
     .find((experiment) => experiment.status === 'keep' || experiment.status === 'discard');
-  const bestMetric = mesh.totals.bestMetric ?? Infinity;
-  const runningCount = experiments.filter((experiment) => experiment.status === 'training').length;
-  const totalExperiments = Math.max(completed + runningCount, mesh.totals.results + runningCount, 1);
-  const startedAt = experiments.length > 0 ? Math.min(...experiments.map((experiment) => experiment.timestamp)) : Date.now();
+  const bestMetric = mesh.totals.bestMetric ?? runtimeJob?.bestMetric ?? Infinity;
+  const totalExperiments = runtimeJob?.progress.total
+    ?? Math.max(counts.completed + counts.running, mesh.totals.results + counts.running, 1);
+  const startedAt = runtimeJob
+    ? Date.parse(runtimeJob.createdAt)
+    : experiments.length > 0
+      ? Math.min(...experiments.map((experiment) => experiment.timestamp))
+      : Date.now();
   const elapsedSeconds = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
-  const topic = createRuntimeTopic(mesh);
-  const setupMessage = createRuntimeSetupMessage(mesh);
+  const topic = createRuntimeTopic(mesh, runtimeJob);
+  const setupMessage = createRuntimeSetupMessage(mesh, runtimeJob);
 
   return {
     topic,
@@ -40,7 +46,7 @@ export function mapRuntimeMeshToJob(
     totalExperiments,
     startedAt,
     elapsedSeconds,
-    paused: mesh.controller?.paused ?? false,
+    paused: mesh.controller?.paused ?? runtimeJob?.status === 'paused',
     boostedCategories: (mesh.controller?.boostedCategories ?? []) as ModCategory[],
     pausedCategories: (mesh.controller?.pausedCategories ?? []) as ModCategory[],
     baselineMetric: firstCompleted?.metric ?? bestMetric,
@@ -50,8 +56,46 @@ export function mapRuntimeMeshToJob(
       && !mesh.controller.stopReason,
     runtimeApiBase: apiBase,
     runtimeRoot: requestedRuntimeRoot ?? mesh.runtimeRoot,
+    runtimeJobId: runtimeJob?.id ?? null,
     runtimeStatus: mesh.controller?.reachable || mesh.workspaces.length > 0 ? 'streaming' : 'connecting',
     runtimeError: mesh.missing.length > 0 ? mesh.missing.join(' | ') : mesh.controller?.error ?? null,
+  };
+}
+
+export function mapRuntimeJobToAutoresearchJob(
+  runtimeJob: RuntimeJob,
+  apiBase: string,
+  runtimeRoot: string | null,
+): AutoresearchJob {
+  const startedAt = Date.parse(runtimeJob.createdAt);
+  const bestMetric = runtimeJob.bestMetric ?? Infinity;
+  const totalExperiments = runtimeJob.progress.total ?? Math.max(runtimeJob.progress.completed, 1);
+
+  return {
+    topic: runtimeJob.topic,
+    phase: runtimeJob.status === 'complete' || runtimeJob.status === 'stopped' || runtimeJob.status === 'failed'
+      ? 'complete'
+      : runtimeJob.progress.completed > 0
+        ? 'running'
+        : 'setup',
+    setupMessage: describeRuntimeJobState(runtimeJob),
+    experiments: [],
+    branches: [],
+    bestMetric,
+    totalExperiments,
+    startedAt,
+    elapsedSeconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000)),
+    paused: runtimeJob.status === 'paused',
+    boostedCategories: runtimeJob.boostedCategories as ModCategory[],
+    pausedCategories: runtimeJob.pausedCategories as ModCategory[],
+    baselineMetric: bestMetric,
+    sourceMode: 'runtime',
+    controlsAvailable: true,
+    runtimeApiBase: apiBase,
+    runtimeRoot,
+    runtimeJobId: runtimeJob.id,
+    runtimeStatus: 'streaming',
+    runtimeError: null,
   };
 }
 
@@ -80,7 +124,14 @@ export function applyRuntimeControllerToJob(
 
 /* ─── Internal Helpers ─── */
 
-function createRuntimeTopic(mesh: RuntimeMeshSummary): string {
+export function hasRuntimeMeshData(mesh: RuntimeMeshSummary): boolean {
+  return mesh.workspaces.length > 0 || mesh.totals.results > 0 || mesh.controller?.reachable === true;
+}
+
+function createRuntimeTopic(mesh: RuntimeMeshSummary, runtimeJob: RuntimeJob | null): string {
+  if (runtimeJob?.topic) {
+    return runtimeJob.topic;
+  }
   const rootLabel = mesh.runtimeRoot.split('/').filter(Boolean).at(-1) ?? 'runtime';
   const repoLabel = mesh.supervisor?.repoPath?.includes('karpathy-autoresearch')
     ? 'Karpathy Autoresearch'
@@ -88,7 +139,7 @@ function createRuntimeTopic(mesh: RuntimeMeshSummary): string {
   return `${repoLabel} · ${rootLabel}`;
 }
 
-function createRuntimeSetupMessage(mesh: RuntimeMeshSummary): string {
+function createRuntimeSetupMessage(mesh: RuntimeMeshSummary, runtimeJob: RuntimeJob | null): string {
   if (mesh.missing.length > 0) {
     return mesh.missing.join(' | ');
   }
@@ -103,6 +154,9 @@ function createRuntimeSetupMessage(mesh: RuntimeMeshSummary): string {
   }
   if (mesh.controller?.reachable) {
     return `Runtime live: ${mesh.totals.results} results across ${mesh.totals.workspaces} workspace(s)`;
+  }
+  if (runtimeJob) {
+    return describeRuntimeJobState(runtimeJob);
   }
   return `Runtime snapshot: ${mesh.totals.results} results across ${mesh.totals.workspaces} workspace(s)`;
 }
@@ -207,4 +261,38 @@ function normalizeExperimentStatus(result: RuntimeWorkspaceResultEntry): Experim
     return result.status;
   }
   return result.valBpb && result.valBpb > 0 ? 'discard' : 'crash';
+}
+
+function describeRuntimeJobState(runtimeJob: RuntimeJob): string {
+  if (runtimeJob.status === 'queued') {
+    return `Queued in runtime API${runtimeJob.progress.total ? ` · ${runtimeJob.progress.total} planned experiments` : ''}`;
+  }
+  if (runtimeJob.status === 'paused') {
+    return 'Runtime job paused';
+  }
+  if (runtimeJob.status === 'stopped') {
+    return 'Runtime job stopped';
+  }
+  if (runtimeJob.status === 'failed') {
+    return 'Runtime job failed';
+  }
+  if (runtimeJob.status === 'complete') {
+    return 'Runtime job complete';
+  }
+  return runtimeJob.progress.completed > 0
+    ? `Runtime job active · ${runtimeJob.progress.completed} completed`
+    : 'Runtime job starting';
+}
+
+function countRuntimeExperiments(experiments: Experiment[]) {
+  let completed = 0;
+  let running = 0;
+  for (const experiment of experiments) {
+    if (experiment.status === 'training') {
+      running += 1;
+    } else {
+      completed += 1;
+    }
+  }
+  return { completed, running };
 }

@@ -143,6 +143,7 @@ export function getDashboardData(
   idleWorkerCount: number,
 ): DashboardData {
   return {
+    jobs,
     research: getResearchSummary(jobs),
     network: getNetworkSummary(system, activeWorkerCount, idleWorkerCount),
     protocol: getProtocolSummary(),
