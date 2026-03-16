@@ -727,14 +727,15 @@
   @media (max-width: 600px) {
     .research-page {
       grid-template-columns: 1fr;
-      grid-template-rows: repeat(14, auto);
+      grid-template-rows: repeat(15, auto);
       grid-template-areas:
         "prompt" "hero" "stats" "mtabs"
         "converge" "branches" "stream" "scatter" "effect"
-        "treemap" "lineage" "mesh" "context" "footer";
+        "treemap" "lineage" "mesh" "context" "terminal" "footer";
       gap: 6px;
       padding: 0 8px calc(80px + env(safe-area-inset-bottom, 0px));
       height: auto; overflow-y: auto;
+      width: 100%;
     }
     /* Mobile tabs — segmented control */
     .mobile-tabs {
