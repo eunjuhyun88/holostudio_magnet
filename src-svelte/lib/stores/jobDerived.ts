@@ -91,7 +91,11 @@ export const latestFinding = derived(jobState, $j => {
   };
 });
 
+let _prevEventLogLen = -1;
+let _prevEventLog: any[] = [];
 export const eventLog = derived(jobState, $j => {
+  if ($j.experiments.length === _prevEventLogLen) return _prevEventLog;
+  _prevEventLogLen = $j.experiments.length;
   const evts: { time: string; type: string; message: string }[] = [];
   if ($j.startedAt) {
     evts.push({ time: formatLogTime($j.startedAt), type: 'SYSTEM', message: 'autoresearch init' });
@@ -106,6 +110,7 @@ export const eventLog = derived(jobState, $j => {
       });
     }
   }
+  _prevEventLog = evts;
   return evts;
 });
 
@@ -126,9 +131,13 @@ export const trainingExperiment = derived(jobState, $j =>
 
 /* ─── Visualization derived stores ─── */
 
-/** Scatter plot data: category × metric */
+/** Scatter plot data: category × metric — memoized by experiment count */
+let _prevScatterLen = -1;
+let _prevScatter: any[] = [];
 export const scatterData = derived(jobState, $j => {
-  return $j.experiments
+  if ($j.experiments.length === _prevScatterLen) return _prevScatter;
+  _prevScatterLen = $j.experiments.length;
+  _prevScatter = $j.experiments
     .filter(e => e.status === 'keep' || e.status === 'discard')
     .map(e => ({
       id: e.id,
@@ -138,10 +147,15 @@ export const scatterData = derived(jobState, $j => {
       status: e.status,
       branchId: e.branchId,
     }));
+  return _prevScatter;
 });
 
-/** Heatmap data: per-category success rates */
+/** Heatmap data: per-category success rates — memoized by experiment count */
+let _prevHeatmapLen = -1;
+let _prevHeatmap: any = {};
 export const heatmapData = derived(jobState, $j => {
+  if ($j.experiments.length === _prevHeatmapLen) return _prevHeatmap;
+  _prevHeatmapLen = $j.experiments.length;
   const cats = Object.keys(CATEGORY_LABELS) as ModCategory[];
   const grid: Record<string, { total: number; keeps: number; avgMetric: number; metrics: number[] }> = {};
   for (const cat of cats) {
@@ -160,12 +174,17 @@ export const heatmapData = derived(jobState, $j => {
     const m = grid[cat].metrics;
     grid[cat].avgMetric = m.length > 0 ? m.reduce((a, b) => a + b, 0) / m.length : 0;
   }
+  _prevHeatmap = grid;
   return grid;
 });
 
-/** Experiment tree/DAG data */
+/** Experiment tree/DAG data — memoized by experiment count */
+let _prevTreeLen = -1;
+let _prevTree: any[] = [];
 export const experimentTree = derived(jobState, $j => {
-  return $j.experiments
+  if ($j.experiments.length === _prevTreeLen) return _prevTree;
+  _prevTreeLen = $j.experiments.length;
+  _prevTree = $j.experiments
     .filter(e => e.status !== 'training')
     .map(e => ({
       id: e.id,
@@ -178,6 +197,7 @@ export const experimentTree = derived(jobState, $j => {
       tier: e.tier,
     }))
     .reverse();
+  return _prevTree;
 });
 
 /** Branch summary — groups experiments by modification category */
