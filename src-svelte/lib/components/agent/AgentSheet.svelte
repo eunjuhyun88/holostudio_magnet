@@ -71,8 +71,8 @@
           <span class="sheet-empty-icon">
             <PixelIcon type="sparkle" size={24} />
           </span>
-          <p>HOOT Agent가 도와드릴게요.</p>
-          <p class="sheet-empty-hint">모델 검색, 연구 시작, 네트워크 상태 등을 물어보세요.</p>
+          <p>HOOT Agent is here to help.</p>
+          <p class="sheet-empty-hint">Ask about model search, research, network status, and more.</p>
         </div>
       {:else}
         {#each $agentMessages as msg (msg.id)}

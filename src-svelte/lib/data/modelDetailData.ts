@@ -72,10 +72,10 @@ export const BENCHMARK_DATA = {
     { context: 'news_documentary', n: 78, pipeAcc: 0.962, dhAcc: 0.974, pipeFp: 1, pipeFn: 2, dhFp: 1, dhFn: 1 },
   ],
   timeline: [
-    { date: '3/9 AM', label: 'SML-Former++ 학습', detail: 'bal_acc 0.9287', type: 'fail' },
-    { date: '3/9 PM', label: '피벗 → Decision Head', detail: 'bal_acc 0.9647', type: 'pivot' },
+    { date: '3/9 AM', label: 'SML-Former++ Training', detail: 'bal_acc 0.9287', type: 'fail' },
+    { date: '3/9 PM', label: 'Pivot → Decision Head', detail: 'bal_acc 0.9647', type: 'pivot' },
     { date: '3/9 Night', label: 'Feature Engineering', detail: '130 → 55 features', type: 'progress' },
-    { date: '3/10 AM', label: 'ExtraTrees 달성', detail: 'bal_acc 0.9719', type: 'success' },
+    { date: '3/10 AM', label: 'ExtraTrees Achieved', detail: 'bal_acc 0.9719', type: 'success' },
   ],
 };
 

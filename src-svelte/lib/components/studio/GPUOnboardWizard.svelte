@@ -39,18 +39,18 @@
   // PoAW verification state
   interface PoAWStep { label: string; done: boolean; active: boolean; }
   let poawSteps: PoAWStep[] = [
-    { label: 'GPU 벤치마크 실행 완료', done: false, active: false },
-    { label: '블록 서명 테스트 중...', done: false, active: false },
-    { label: 'PoAW 검증자 승인 대기', done: false, active: false },
+    { label: 'GPU benchmark completed', done: false, active: false },
+    { label: 'Block signing test...', done: false, active: false },
+    { label: 'Waiting for PoAW verifier approval', done: false, active: false },
   ];
 
   // Demo GPU detection
   const detectedGPU = { model: 'NVIDIA RTX 4090', vram: 24 };
 
   const TIERS = [
-    { id: 1, name: 'Lite', bond: 500, desc: 'GPU 1대 · 기본 잡', multiplier: '1.0×', color: '#9a9590' },
-    { id: 2, name: 'Standard', bond: 2000, desc: 'GPU 4대 · 잡 무제한', multiplier: '1.5×', color: 'var(--accent, #D97757)' },
-    { id: 3, name: 'Enterprise', bond: 10000, desc: 'GPU 무제한 · 우선 배정', multiplier: '3.0×', color: 'var(--green, #27864a)' },
+    { id: 1, name: 'Lite', bond: 500, desc: '1 GPU · basic jobs', multiplier: '1.0×', color: '#9a9590' },
+    { id: 2, name: 'Standard', bond: 2000, desc: '4 GPUs · unlimited jobs', multiplier: '1.5×', color: 'var(--accent, #D97757)' },
+    { id: 3, name: 'Enterprise', bond: 10000, desc: 'Unlimited GPUs · priority', multiplier: '3.0×', color: 'var(--green, #27864a)' },
   ];
 
   // Demo available jobs
@@ -77,7 +77,7 @@
     const tier = TIERS.find(t => t.id === selectedTier)!;
     // Open ContractCallModal for NodeRegistered
     modalCall = {
-      title: 'GPU 노드 등록',
+      title: 'Register GPU Node',
       contract: '0x3E8b...5A2f  HootNodes.sol',
       fn: 'registerNode',
       params: [
@@ -85,9 +85,9 @@
         { name: 'vram', type: 'uint16', value: `${detectedGPU.vram} GB` },
         { name: 'tier', type: 'uint8', value: `T${selectedTier} (${tier.name})` },
       ],
-      fee: `${tier.bond.toLocaleString()} HOOT (Bond 락업)`,
+      fee: `${tier.bond.toLocaleString()} HOOT (Bond locked)`,
       gas: '~150,000',
-      note: 'Bond는 노드 운영 중 락업됩니다. 해제 시 90일 잠금 기간이 적용됩니다.',
+      note: 'Bond is locked during node operation. 90-day lock period applies on release.',
       accentColor: tier.color,
       requiresApproval: true,
     };
@@ -147,10 +147,10 @@
     <!-- Header -->
     <div class="wiz-header">
       <h2 class="wiz-title">
-        {#if step === 1}GPU 연결
-        {:else if step === 2}노드 본딩
-        {:else if step === 3}PoAW 초기 검증
-        {:else}등록 완료!
+        {#if step === 1}Connect GPU
+        {:else if step === 2}Node Bonding
+        {:else if step === 3}PoAW Verification
+        {:else}Registration Complete!
         {/if}
       </h2>
       <span class="wiz-step">{step}/4</span>
@@ -164,7 +164,7 @@
     <!-- Step 1: Connect GPU -->
     {#if step === 1}
       <div class="wiz-body">
-        <span class="wiz-label">연결 방법을 선택하세요:</span>
+        <span class="wiz-label">Select connection method:</span>
         <div class="conn-options">
           <button
             class="conn-card"
@@ -172,8 +172,8 @@
             on:click={() => { connectionType = 'local'; }}
           >
             <span class="conn-icon">🖥</span>
-            <span class="conn-name">로컬</span>
-            <span class="conn-desc">이 컴퓨터 GPU 사용</span>
+            <span class="conn-name">Local</span>
+            <span class="conn-desc">Use this computer's GPU</span>
           </button>
           <button
             class="conn-card"
@@ -181,21 +181,21 @@
             on:click={() => { connectionType = 'remote'; }}
           >
             <span class="conn-icon">☁️</span>
-            <span class="conn-name">원격</span>
-            <span class="conn-desc">서버/클라우드 GPU</span>
+            <span class="conn-name">Remote</span>
+            <span class="conn-desc">Server/Cloud GPU</span>
           </button>
         </div>
 
         {#if !detected && !detecting}
           <button class="detect-btn" on:click={detectGPU}>
-            GPU 감지 시작
+            Start GPU Detection
           </button>
         {/if}
 
         {#if detecting}
           <div class="detecting">
             <span class="detect-spinner"></span>
-            <span>GPU 감지 중...</span>
+            <span>Detecting GPU...</span>
           </div>
         {/if}
 
@@ -204,16 +204,16 @@
             <span class="di-icon">✓</span>
             <div class="di-body">
               <span class="di-model">{detectedGPU.model} ({detectedGPU.vram}GB)</span>
-              <span class="di-status">● 연결됨</span>
+              <span class="di-status">● Connected</span>
             </div>
           </div>
         {/if}
       </div>
 
       <div class="wiz-footer">
-        <button class="wiz-btn secondary" on:click={() => dispatch('close')}>취소</button>
+        <button class="wiz-btn secondary" on:click={() => dispatch('close')}>Cancel</button>
         <button class="wiz-btn primary" disabled={!detected} on:click={goToStep2}>
-          다음: 본딩 →
+          Next: Bond →
         </button>
       </div>
 
@@ -235,32 +235,32 @@
 
         <div class="tier-detail">
           <span class="td-desc">{currentTier.desc}</span>
-          <span class="td-mult">보상 배수: <strong>{currentTier.multiplier}</strong></span>
+          <span class="td-mult">Reward multiplier: <strong>{currentTier.multiplier}</strong></span>
         </div>
 
         <div class="bond-summary">
           <div class="bs-row">
-            <span>본딩 금액</span>
+            <span>Bond Amount</span>
             <span class="bs-val">{currentTier.bond.toLocaleString()} HOOT</span>
           </div>
           <div class="bs-row">
-            <span>잔액</span>
+            <span>Balance</span>
             <span class="bs-val">12,450 HOOT</span>
           </div>
         </div>
 
         {#if !$wallet.connected}
-          <div class="wallet-warn">지갑을 먼저 연결해주세요</div>
+          <div class="wallet-warn">Please connect wallet first</div>
         {/if}
       </div>
 
       <div class="wiz-footer">
-        <button class="wiz-btn secondary" on:click={() => { step = 1; }}>← 돌아가기</button>
+        <button class="wiz-btn secondary" on:click={() => { step = 1; }}>← Back</button>
         <button class="wiz-btn primary" disabled={registering || !$wallet.connected} on:click={registerNode}>
           {#if registering}
-            <span class="btn-spinner"></span> 등록 중...
+            <span class="btn-spinner"></span> Registering...
           {:else}
-            등록 및 Bond →
+            Register & Bond →
           {/if}
         </button>
       </div>
@@ -268,7 +268,7 @@
     <!-- Step 3: PoAW Verification -->
     {:else if step === 3}
       <div class="wiz-body">
-        <p class="poaw-desc">GPU 성능을 검증하고 네트워크에 등록하고 있습니다.</p>
+        <p class="poaw-desc">Verifying GPU performance and registering on network.</p>
 
         <div class="poaw-progress">
           {#each poawSteps as ps, i}
@@ -292,7 +292,7 @@
 
         <div class="poaw-hint">
           <div class="poaw-dot"></div>
-          자동 진행 중
+          Auto-progressing
         </div>
       </div>
 
@@ -302,13 +302,13 @@
         <div class="success-icon">🎉</div>
 
         <div class="result-card">
-          <div class="rc-row"><span>노드 ID</span><strong>seoul-4090</strong></div>
+          <div class="rc-row"><span>Node ID</span><strong>seoul-4090</strong></div>
           <div class="rc-row"><span>Tier</span><strong>{TIERS.find(t => t.id === selectedTier)?.name} ({TIERS.find(t => t.id === selectedTier)?.bond.toLocaleString()} HOOT)</strong></div>
           <div class="rc-row"><span>Trust Score</span><strong>100/1000 (Silver)</strong></div>
         </div>
 
         <div class="avail-jobs">
-          <span class="aj-label">지금 가용한 Job:</span>
+          <span class="aj-label">Available Jobs:</span>
           {#each availableJobs as job}
             <div class="aj-row">
               <span class="aj-name">{job.name}</span>
@@ -321,10 +321,10 @@
 
       <div class="wiz-footer">
         <button class="wiz-btn secondary" on:click={handleComplete}>
-          네트워크 보기 →
+          View Network →
         </button>
         <button class="wiz-btn primary" on:click={handleComplete}>
-          Job 수락하기 →
+          Accept Job →
         </button>
       </div>
     {/if}

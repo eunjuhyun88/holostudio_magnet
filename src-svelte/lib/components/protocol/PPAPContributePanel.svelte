@@ -28,24 +28,24 @@
 <div class="ppap-contribute">
   <h3 class="panel-title">
     <span class="title-icon">📊</span>
-    내 데이터 기여
+    My Data Contributions
   </h3>
 
   <!-- Status overview -->
   <div class="status-overview">
     <div class="so-item">
       <span class="so-val">{submissions}</span>
-      <span class="so-label">제출</span>
+      <span class="so-label">Submitted</span>
     </div>
     <div class="so-sep"></div>
     <div class="so-item">
       <span class="so-val">{batches.length}</span>
-      <span class="so-label">배치</span>
+      <span class="so-label">Batches</span>
     </div>
     <div class="so-sep"></div>
     <div class="so-item">
       <span class="so-val" style:color="var(--green, #27864a)">{confirmed}</span>
-      <span class="so-label">확인됨</span>
+      <span class="so-label">Confirmed</span>
     </div>
   </div>
 
@@ -54,8 +54,8 @@
     <div class="challenge-alert">
       <span class="ca-icon">⚠</span>
       <div class="ca-body">
-        <span class="ca-text">진행 중: 1 배치 (Challenge 창 {pendingHoursLeft}h 남음)</span>
-        <span class="ca-sub">Batch #{pendingBatch.id} — 검증 대기 중</span>
+        <span class="ca-text">In progress: 1 batch (Challenge window {pendingHoursLeft}h remaining)</span>
+        <span class="ca-sub">Batch #{pendingBatch.id} — Awaiting verification</span>
       </div>
     </div>
   {/if}
@@ -63,12 +63,12 @@
   <!-- Hoot Browser deeplink -->
   <div class="browser-hint">
     <span class="bh-icon">🌐</span>
-    <span class="bh-text">기여 현황은 Hoot Browser에서 관리됩니다</span>
+    <span class="bh-text">Manage contributions via Hoot Browser</span>
   </div>
 
   <!-- Recent batches -->
   <div class="recent-batches">
-    <span class="rb-label">최근 PPAP</span>
+    <span class="rb-label">Recent PPAP</span>
     {#each recentBatches as batch}
       {@const st = STATUS_MAP[batch.status] ?? STATUS_MAP.pending}
       <div class="rb-row">

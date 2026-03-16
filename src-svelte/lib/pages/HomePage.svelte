@@ -71,10 +71,10 @@
 
   // ── §2-1: Magnet Studio card dynamic text ──
   $: studioCardText = (() => {
-    if (isRunning) return `${jobTopic || 'Research'} 실행 중 (${jobProgress}%)`;
-    if (isComplete) return `${jobTopic || 'Research'} 완료 — 배포 대기`;
-    if (publishedCount > 0) return `모델 ${publishedCount}개 · ${totalModelEarnings.toFixed(1)} HOOT 누적`;
-    return 'AI 자율 연구 시작하기';
+    if (isRunning) return `${jobTopic || 'Research'} running (${jobProgress}%)`;
+    if (isComplete) return `${jobTopic || 'Research'} complete — ready to deploy`;
+    if (publishedCount > 0) return `${publishedCount} models · ${totalModelEarnings.toFixed(1)} HOOT earned`;
+    return 'Start AI autonomous research';
   })();
 
   $: studioCardClick = () => {
@@ -84,9 +84,9 @@
 
   // ── §2-1: GPU Network card dynamic text ──
   $: networkCardText = (() => {
-    if (!hasNode) return 'GPU를 등록하고 보상 시작';
-    if (myNode.online) return `${myNode.nodeId} 온라인 · ${myNode.totalEarnings.toFixed(1)} HOOT`;
-    return `${myNode.nodeId} 오프라인 ⚠`;
+    if (!hasNode) return 'Register GPU and start earning';
+    if (myNode.online) return `${myNode.nodeId} online · ${myNode.totalEarnings.toFixed(1)} HOOT`;
+    return `${myNode.nodeId} offline ⚠`;
   })();
 
   $: networkCardClick = () => {
@@ -96,7 +96,7 @@
 
   // ── §2-1: Protocol card dynamic text ──
   $: protocolCardText = (() => {
-    if (!isLoggedIn) return 'HOOT 프로토콜 참여';
+    if (!isLoggedIn) return 'Join HOOT Protocol';
     // TODO: check pending rewards from protocolSummary
     return `${earningsValue} TVL`;
   })();
@@ -144,8 +144,8 @@
 
     <!-- ── Ecosystem Tagline ── -->
     <p class="tagline">
-      AI 연구 설계 · 분산 GPU 학습 · 모델 배포 · 데이터 출처 증명<br/>
-      <span class="tagline-chain">모든 과정이 HOOT L1 체인에 기록됩니다</span>
+      AI Research Design · Distributed GPU Training · Model Deployment · Data Provenance<br/>
+      <span class="tagline-chain">Every step recorded on HOOT L1 chain</span>
     </p>
 
     <!-- ── Live Network Pulse ── -->
@@ -181,7 +181,7 @@
           <div class="lb-pbar"><div class="lb-pfill" style="width:{jobProgress}%"></div></div>
           <span class="lb-meta">{jobProgress}% · {completedExp}/{totalExperiments} exp</span>
         </div>
-        <span class="lb-cta">이어보기 →</span>
+        <span class="lb-cta">Resume →</span>
       </button>
     {/if}
 
@@ -197,7 +197,7 @@
         <span class="pc-state" class:pc-state-running={isRunning} class:pc-state-done={isComplete}>
           {studioCardText}
         </span>
-        <span class="pc-detail">연구 설계 → 분산 GPU 학습 → ModelNFT 발행</span>
+        <span class="pc-detail">Research Design → Distributed GPU Training → ModelNFT Minting</span>
       </div>
       <span class="pc-arrow">→</span>
     </button>
@@ -212,7 +212,7 @@
         <span class="pc-state" class:pc-state-warn={hasNode && !myNode.online}>
           {networkCardText}
         </span>
-        <span class="pc-detail">학습 노드 · 추론 노드 · PoAW 블록 기여</span>
+        <span class="pc-detail">Training Nodes · Inference Nodes · PoAW Block Contribution</span>
       </div>
       <span class="pc-arrow">→</span>
     </button>
@@ -225,7 +225,7 @@
       <div class="pc-body">
         <span class="pc-name">Protocol</span>
         <span class="pc-state">{protocolCardText}</span>
-        <span class="pc-detail">HOOT 본딩 · 스테이킹 · 데이터 출처 증명 (PPAP) · x402 정산</span>
+        <span class="pc-detail">HOOT Bonding · Staking · Data Provenance (PPAP) · x402 Settlement</span>
       </div>
       <span class="pc-arrow">→</span>
     </button>
@@ -234,23 +234,23 @@
     <div class="flywheel">
       <span class="fw-label">ECOSYSTEM</span>
       <div class="fw-flow">
-        <span class="fw-step">데이터 기여</span>
+        <span class="fw-step">Data Contribution</span>
         <span class="fw-arr">→</span>
-        <span class="fw-step">GPU 학습</span>
+        <span class="fw-step">GPU Training</span>
         <span class="fw-arr">→</span>
-        <span class="fw-step">모델 배포</span>
+        <span class="fw-step">Model Deployment</span>
         <span class="fw-arr">→</span>
-        <span class="fw-step">사용 정산</span>
+        <span class="fw-step">Usage Settlement</span>
         <span class="fw-arr">→</span>
-        <span class="fw-step fw-reward">보상</span>
+        <span class="fw-step fw-reward">Rewards</span>
       </div>
-      <span class="fw-roles">Contributor · Compute Node · Builder · Buyer — Pool 자동 분배</span>
+      <span class="fw-roles">Contributor · Compute Node · Builder · Buyer — Pool auto-distribution</span>
     </div>
 
     <!-- ── §2-2: Recent Activity ── -->
     {#if recentEvents.length > 0}
       <div class="activity">
-        <span class="activity-label">최근 활동</span>
+        <span class="activity-label">Recent Activity</span>
         <div class="activity-list">
           {#each recentEvents as ev (ev.id)}
             <button class="ev-row" on:click={() => handleActivityClick(ev)}>
@@ -279,8 +279,8 @@
     </div>
 
     <p class="tagline">
-      AI 연구 설계 · 분산 GPU 학습 · 모델 배포 · 데이터 출처 증명<br/>
-      <span class="tagline-chain">모든 과정이 HOOT L1 체인에 기록됩니다</span>
+      AI Research Design · Distributed GPU Training · Model Deployment · Data Provenance<br/>
+      <span class="tagline-chain">Every step recorded on HOOT L1 chain</span>
     </p>
 
     <div class="guest-search">
@@ -294,10 +294,10 @@
     <!-- Guest: Actor Roles -->
     <div class="roles-grid">
       {#each [
-        { icon: '🔬', role: 'Builder', desc: '연구 설계 → 모델 학습 → ModelNFT 발행', color: 'var(--accent)' },
-        { icon: '⚡', role: 'Compute Node', desc: 'GPU 연결 → 학습/추론 실행 → PoAW 보상', color: 'var(--green)' },
-        { icon: '📊', role: 'Contributor', desc: '데이터 기여 → 출처 증명 (PPAP) → Pool 분배', color: '#2980b9' },
-        { icon: '🤖', role: 'Buyer', desc: '모델/에이전트 호출 → x402 자동 정산', color: '#d4a017' },
+        { icon: '🔬', role: 'Builder', desc: 'Research Design → Model Training → ModelNFT Minting', color: 'var(--accent)' },
+        { icon: '⚡', role: 'Compute Node', desc: 'Connect GPU → Training/Inference → PoAW Rewards', color: 'var(--green)' },
+        { icon: '📊', role: 'Contributor', desc: 'Data Contribution → Provenance (PPAP) → Pool Distribution', color: '#2980b9' },
+        { icon: '🤖', role: 'Buyer', desc: 'Model/Agent Calls → x402 Auto Settlement', color: '#d4a017' },
       ] as r}
         <div class="role-card">
           <span class="role-icon">{r.icon}</span>

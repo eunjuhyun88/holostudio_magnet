@@ -140,7 +140,7 @@
     if (!bundlePpapIds.trim() || !bundleDomain.trim() || !bundlePrice.trim()) return;
     showBundleModal = false;
     openContractModal({
-      title: 'Bundle 등록',
+      title: 'Bundle Registration',
       contract: '0x5E1f...8C2d  HootBundle.sol',
       fn: 'listBundleAsset',
       params: [
@@ -150,7 +150,7 @@
       ],
       fee: '0 HOOT',
       gas: '~200,000',
-      note: 'Bundle이 마켓플레이스에 등록됩니다. PPAP 데이터가 검증된 상태여야 합니다.',
+      note: 'Bundle will be listed on the marketplace. PPAP data must be verified.',
       accentColor: 'var(--accent)',
     });
   }
@@ -287,12 +287,12 @@
           <!-- Bundle Registration Panel -->
           <div class="panel bundle-panel" style="--panel-delay: 3">
             <div class="panel-header">
-              <h2>Bundle 등록</h2>
+              <h2>Bundle Registration</h2>
               <span class="bundle-badge">BundleAssetListed</span>
             </div>
             <p class="bundle-desc">
-              PPAP 검증 데이터를 Bundle로 묶어 마켓플레이스에 등록하세요.
-              다른 연구자가 구매하여 학습에 활용할 수 있습니다.
+              Package verified PPAP data into Bundles and list them on the marketplace.
+              Other researchers can purchase and use them for training.
             </p>
             <button class="bundle-cta" on:click={openBundleModal}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -300,7 +300,7 @@
                 <polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <line x1="12" y1="22.08" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Bundle 등록하기
+              Register Bundle
             </button>
           </div>
         {/if}
@@ -380,34 +380,34 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="bundle-overlay" on:click|self={closeBundleModal} transition:fade={{ duration: 150 }}>
       <div class="bundle-modal" transition:fly={{ y: 16, duration: 250 }}>
-        <h3 class="bm-title">Bundle 등록</h3>
-        <p class="bm-desc">PPAP 데이터를 Bundle로 묶어 마켓플레이스에 등록합니다.</p>
+        <h3 class="bm-title">Bundle Registration</h3>
+        <p class="bm-desc">Package PPAP data into a Bundle and list it on the marketplace.</p>
 
         <div class="bm-field">
           <label class="bm-label" for="bm-ppap">PPAP Batch IDs</label>
           <input id="bm-ppap" class="bm-input" type="text" bind:value={bundlePpapIds}
             placeholder="PPAP-0039, PPAP-0040, ..." />
-          <span class="bm-hint">쉼표로 구분하여 입력</span>
+          <span class="bm-hint">Comma-separated</span>
         </div>
 
         <div class="bm-field">
-          <label class="bm-label" for="bm-domain">도메인</label>
+          <label class="bm-label" for="bm-domain">Domain</label>
           <input id="bm-domain" class="bm-input" type="text" bind:value={bundleDomain}
             placeholder="eth-price-feed" />
         </div>
 
         <div class="bm-field">
-          <label class="bm-label" for="bm-price">가격 (HOOT)</label>
+          <label class="bm-label" for="bm-price">Price (HOOT)</label>
           <input id="bm-price" class="bm-input" type="number" min="0" step="1" bind:value={bundlePrice}
             placeholder="50" />
         </div>
 
         <div class="bm-actions">
-          <button class="bm-cancel" on:click={closeBundleModal}>취소</button>
+          <button class="bm-cancel" on:click={closeBundleModal}>Cancel</button>
           <button class="bm-submit"
             on:click={submitBundleRegistration}
             disabled={!bundlePpapIds.trim() || !bundleDomain.trim() || !bundlePrice.trim()}>
-            등록 진행
+            Proceed
           </button>
         </div>
       </div>

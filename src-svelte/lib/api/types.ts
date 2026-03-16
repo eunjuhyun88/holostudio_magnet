@@ -1,6 +1,6 @@
 import type { ModCategory } from '../data/modifications.ts';
 
-/* ─── User Experiment (유저 개입) ─── */
+/* ─── User Experiment (user intervention) ─── */
 
 export interface UserExperiment {
   id: string;

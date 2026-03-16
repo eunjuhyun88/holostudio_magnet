@@ -106,7 +106,7 @@
     const budget = resourceMode === 'demo' ? '0' : '150';
 
     modalCall = {
-      title: '연구 시작',
+      title: 'Start Research',
       contract: '0x4F0a...7E3d  HootJobs.sol',
       fn: 'createResearchJob',
       params: [
@@ -115,9 +115,9 @@
         { name: 'tier', type: 'uint8', value: resourceMode === 'network' ? 'T2' : 'T1' },
         { name: 'config', type: 'bytes', value: '0x...' },
       ],
-      fee: `${budget} HOOT (에스크로)`,
+      fee: `${budget} HOOT (escrow)`,
       gas: '~120,000',
-      note: 'Budget이 에스크로에 예치됩니다. 연구 완료 또는 취소 시 미사용분이 환불됩니다.',
+      note: 'Budget is deposited in escrow. Unused funds are refunded on completion or cancellation.',
       accentColor: 'var(--accent)',
       paymentEnabled: resourceMode !== 'demo',
       hootAmount: budget,
@@ -161,15 +161,15 @@
     // Open ContractCallModal for ResearchJobCancelled
     const remaining = Math.round((1 - ($jobStore.progress ?? 0) / 100) * 150);
     modalCall = {
-      title: '연구 중지',
+      title: 'Stop Research',
       contract: '0x4F0a...7E3d  HootJobs.sol',
       fn: 'cancelResearchJob',
       params: [
         { name: 'jobId', type: 'uint256', value: $jobStore.sessionId || 'JOB-001' },
       ],
-      fee: `0 HOOT (잔액 ${remaining} HOOT 환불)`,
+      fee: `0 HOOT (refund: ${remaining} HOOT remaining)`,
       gas: '~68,000',
-      note: '미사용 Budget이 지갑으로 환불됩니다.',
+      note: 'Unused budget will be refunded to your wallet.',
       accentColor: 'var(--warn)',
     };
     modalStep = 'review';
@@ -195,12 +195,12 @@
         const avgIters = 25;
         jobStore.startJob(topic, branchCount, avgIters);
         studioStore.startRunning();
-        toastStore.success('연구가 시작되었습니다');
+        toastStore.success('Research started');
         pendingStartEvent = null;
       } else if (pendingAction === 'stop') {
         jobStore.set({ ...jobStore, phase: 'idle' } as any);
         studioStore.reset();
-        toastStore.warning('연구가 중단되었습니다');
+        toastStore.warning('Research stopped');
       }
     }, 2200);
   }
@@ -252,7 +252,7 @@
 <div class="studio-page">
   {#key phaseKey}
     <div class="phase-container" in:fly={{ y: 12, duration: 250, delay: 60 }} out:fade={{ duration: 120 }}>
-      {#if $studioPhase === 'step1' || $studioPhase === 'idle'}
+      {#if $studioPhase === 'step1' || $studioPhase === 'step1-topic' || $studioPhase === 'idle'}
         <StudioStep1
           on:back={handleBack}
           on:continue={handleStep1Continue}
@@ -341,10 +341,10 @@
 
   <ConfirmModal
     open={showStopConfirm}
-    title="연구를 중단하시겠습니까?"
-    message="진행 중인 실험이 모두 취소됩니다. 지금까지의 데이터는 보존되지 않습니다."
-    confirmLabel="중단"
-    cancelLabel="계속 진행"
+    title="Stop this research?"
+    message="All running experiments will be cancelled. Data will not be preserved."
+    confirmLabel="Stop"
+    cancelLabel="Continue"
     variant="danger"
     on:confirm={confirmStop}
     on:cancel={cancelStop}
@@ -352,10 +352,10 @@
 
   <ConfirmModal
     open={showStartConfirm}
-    title="연구를 시작하시겠습니까?"
-    message={pendingStartEvent ? `${pendingStartEvent.topic} — ${pendingStartEvent.resourceMode} 모드` : ''}
-    confirmLabel="시작"
-    cancelLabel="취소"
+    title="Start this research?"
+    message={pendingStartEvent ? `${pendingStartEvent.topic} — ${pendingStartEvent.resourceMode} mode` : ''}
+    confirmLabel="Start"
+    cancelLabel="Cancel"
     on:confirm={confirmStartResearch}
     on:cancel={cancelStartResearch}
   />
@@ -363,10 +363,10 @@
   <!-- Credit Insufficient Modal -->
   <ConfirmModal
     open={showCreditInsufficient}
-    title="크레딧이 부족합니다"
-    message="연구를 시작하기 위한 HOOT 잔액이 부족합니다."
-    confirmLabel="HOOT 구매"
-    cancelLabel="나중에"
+    title="Insufficient credits"
+    message="Insufficient HOOT balance to start research."
+    confirmLabel="Buy HOOT"
+    cancelLabel="Later"
     on:confirm={handleCreditBuy}
     on:cancel={() => { showCreditInsufficient = false; }}
   />

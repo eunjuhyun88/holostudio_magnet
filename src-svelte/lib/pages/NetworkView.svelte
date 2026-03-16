@@ -79,7 +79,7 @@
   // ── Phase 5: Jobs commit/reveal + Claim ──
   function handleJobCommit(jobId: string) {
     openContractModal({
-      title: 'Config 해시 제출',
+      title: 'Submit Config Hash',
       contract: '0x4F0a...7E3d  HootJobs.sol',
       fn: 'commitResult',
       params: [
@@ -88,14 +88,14 @@
       ],
       fee: '0 HOOT',
       gas: '~85,000',
-      note: '결과 해시를 제출합니다. Reveal 단계에서 실제 결과를 공개해야 합니다.',
+      note: 'Submits a result hash. The actual result must be revealed in the Reveal phase.',
       accentColor: 'var(--accent)',
     });
   }
 
   function handleJobReveal(jobId: string) {
     openContractModal({
-      title: 'Config 공개',
+      title: 'Reveal Config',
       contract: '0x4F0a...7E3d  HootJobs.sol',
       fn: 'revealResult',
       params: [
@@ -104,7 +104,7 @@
       ],
       fee: '0 HOOT',
       gas: '~95,000',
-      note: 'Commit된 해시와 일치하는 실제 결과를 공개합니다.',
+      note: 'Reveals the actual result matching the committed hash.',
       accentColor: 'var(--green)',
     });
   }
@@ -113,22 +113,22 @@
     const eBase = +(poolBTotal * 0.4).toFixed(2);
     const eWork = +(poolBTotal * 0.6).toFixed(2);
     openContractModal({
-      title: '보상 수령',
+      title: 'Claim Rewards',
       contract: '0x3E8b...5A2f  HootNodes.sol',
       fn: 'claimRewards',
       params: [
         { name: 'nodeId', type: 'string', value: myNode?.id ?? 'node-???' },
       ],
-      fee: `0 HOOT (수령: ${poolBTotal.toFixed(2)} HOOT)`,
+      fee: `0 HOOT (claim: ${poolBTotal.toFixed(2)} HOOT)`,
       gas: '~110,000',
-      note: `Pool B (GPU 보상): ${poolBTotal.toFixed(2)} HOOT\n  E_base (기본): ${eBase} HOOT\n  E_work (작업): ${eWork} HOOT`,
+      note: `Pool B (GPU Rewards): ${poolBTotal.toFixed(2)} HOOT\n  E_base (base): ${eBase} HOOT\n  E_work (work): ${eWork} HOOT`,
       accentColor: 'var(--green)',
     });
   }
 
   function handleBondRelease() {
     openContractModal({
-      title: 'Bond 해제',
+      title: 'Release Bond',
       contract: '0x3E8b...5A2f  HootNodes.sol',
       fn: 'unbondNode',
       params: [
@@ -136,7 +136,7 @@
       ],
       fee: '0 HOOT',
       gas: '~75,000',
-      note: '⚠ Bond 해제 시 90일 잠금 기간이 시작됩니다. 잠금 기간 중 노드 운영이 불가합니다.',
+      note: '⚠ Releasing bond starts a 90-day lock period. Node operation is disabled during lockup.',
       accentColor: '#c0392b',
     });
   }
@@ -508,14 +508,14 @@
         <button class="gpu-onboard-prompt" on:click={() => { showOnboardWizard = true; }}>
           <span class="gop-icon">⚡</span>
           <div class="gop-body">
-            <span class="gop-title">GPU를 등록하세요</span>
-            <span class="gop-desc">네트워크에 GPU를 연결하고 컴퓨팅 보상을 받으세요</span>
+            <span class="gop-title">Register your GPU</span>
+            <span class="gop-desc">Connect your GPU to the network and earn compute rewards</span>
           </div>
           <span class="gop-arrow">→</span>
         </button>
       {/if}
 
-      <!-- 내 노드 Summary (when GPU registered) -->
+      <!-- My Node Summary (when GPU registered) -->
       {#if $hasGpuNode}
         <div class="my-node-card">
           <div class="mnc-top">
@@ -526,14 +526,14 @@
             <span class="mnc-status" class:mnc-on={$nodeStore.online}>● {$nodeStore.online ? 'ON' : 'OFF'}</span>
           </div>
           <div class="mnc-stats">
-            <span>{$nodeStore.jobsCompleted} jobs 완료</span>
+            <span>{$nodeStore.jobsCompleted} jobs completed</span>
             <span class="mnc-sep">·</span>
-            <span class="mnc-earn">+{$nodeStore.totalEarnings.toFixed(1)} HOOT 수익</span>
+            <span class="mnc-earn">+{$nodeStore.totalEarnings.toFixed(1)} HOOT earned</span>
           </div>
           <div class="mnc-bottom">
             <span>Trust: {$nodeStore.trustScore}/1000</span>
             <span class="mnc-sep">·</span>
-            <span>PoAW 블록: {$nodeStore.poawBlocks}건</span>
+            <span>PoAW blocks: {$nodeStore.poawBlocks}</span>
           </div>
         </div>
       {/if}
@@ -571,7 +571,7 @@
               <!-- Phase 5: Reward claim button -->
               {#if poolBTotal > 0}
                 <button class="reward-claim-btn" on:click={handleClaimRewards}>
-                  보상 수령 ({poolBTotal.toFixed(2)} HOOT) →
+                  Claim Rewards ({poolBTotal.toFixed(2)} HOOT) →
                 </button>
               {/if}
 
@@ -658,9 +658,9 @@
             {#if $hasGpuNode}
               <div class="bond-release-section">
                 <button class="bond-release-btn" on:click={handleBondRelease}>
-                  Bond 해제
+                  Release Bond
                 </button>
-                <span class="bond-release-warn">⚠ 90일 잠금 기간 시작</span>
+                <span class="bond-release-warn">⚠ 90-day lock period begins</span>
               </div>
             {/if}
           </div>
@@ -1132,7 +1132,7 @@
   .gop-desc { font-size: 0.6rem; color: var(--text-muted, #9a9590); }
   .gop-arrow { font-size: 0.82rem; font-weight: 600; color: var(--accent, #D97757); }
 
-  /* ── 내 노드 Summary Card ── */
+  /* ── My Node Summary Card ── */
   .my-node-card {
     padding: 10px 14px;
     border-radius: 10px;

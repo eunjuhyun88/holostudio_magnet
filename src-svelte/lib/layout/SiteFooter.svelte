@@ -234,10 +234,10 @@
     .footer-brand-mark { font-size: 0.94rem; }
     .footer-brand-name { font-size: 0.56rem; }
 
-    /* 설명문 숨김 — 모바일에서 불필요 */
+    /* Hide description — unnecessary on mobile */
     .footer-copy { display: none; }
 
-    /* 링크: 컬럼 → 가로 인라인 */
+    /* Links: column → horizontal inline */
     .footer-links-grid {
       display: flex;
       flex-wrap: wrap;

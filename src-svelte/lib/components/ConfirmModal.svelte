@@ -3,10 +3,10 @@
   import { fade, fly } from 'svelte/transition';
 
   export let open = false;
-  export let title = '확인';
+  export let title = 'Confirm';
   export let message = '';
-  export let confirmLabel = '확인';
-  export let cancelLabel = '취소';
+  export let confirmLabel = 'Confirm';
+  export let cancelLabel = 'Cancel';
   export let variant: 'default' | 'danger' = 'default';
 
   const dispatch = createEventDispatcher<{ confirm: void; cancel: void }>();

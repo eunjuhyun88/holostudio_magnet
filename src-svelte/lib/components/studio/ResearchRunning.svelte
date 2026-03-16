@@ -154,15 +154,15 @@
     <div class="cancel-banner" transition:fly={{ y: -12, duration: 250 }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="#f38ba8"/></svg>
       <div class="cancel-banner-body">
-        <span class="cancel-banner-title">⚠ 연구가 자동 취소되었습니다</span>
+        <span class="cancel-banner-title">⚠ Research was auto-cancelled</span>
         {#if forceCancelReason}
-          <span class="cancel-banner-reason">사유: {forceCancelReason}</span>
+          <span class="cancel-banner-reason">Reason: {forceCancelReason}</span>
         {/if}
         {#if forceCancelRefund && forceCancelRefund !== '0'}
-          <span class="cancel-banner-refund">미사용 Budget {forceCancelRefund} HOOT 환불 예정</span>
+          <span class="cancel-banner-refund">Unused budget {forceCancelRefund} HOOT to be refunded</span>
         {/if}
       </div>
-      <button class="cancel-banner-btn" on:click={() => { forceCancelled = false; dispatch('viewResults'); }}>확인</button>
+      <button class="cancel-banner-btn" on:click={() => { forceCancelled = false; dispatch('viewResults'); }}>OK</button>
     </div>
   {/if}
   <!-- ═══ PROMPT BAR ═══ -->

@@ -28,7 +28,7 @@
 
   function requestApiKey() {
     dispatch('openModal', {
-      title: 'API Key 발급',
+      title: 'Issue API Key',
       contract: '0x7B2e...A1f8  HootInference.sol',
       fn: 'issueApiKey',
       params: [
@@ -36,7 +36,7 @@
       ],
       fee: '0 HOOT',
       gas: '~55,000',
-      note: 'API Key는 모델별로 1개만 발급됩니다. 분실 시 재발급할 수 있습니다.',
+      note: 'Only one API key per model. Lost keys can be reissued.',
       accentColor: 'var(--green)',
     });
   }
@@ -70,16 +70,16 @@ print(result.prediction)  # 0.73`;
         <code class="aki-key">{apiKey}</code>
         <button class="copy-btn" on:click={() => { navigator.clipboard?.writeText(apiKey); }}>Copy</button>
       </div>
-      <span class="aki-note">이 키는 다시 표시되지 않습니다. 안전한 곳에 보관하세요.</span>
+      <span class="aki-note">This key won't be shown again. Store it securely.</span>
     </div>
   {:else}
     <div class="api-key-cta">
-      <span class="akc-text">API를 사용하려면 먼저 키를 발급받으세요.</span>
+      <span class="akc-text">Issue an API key to get started.</span>
       <button class="akc-btn" on:click={requestApiKey}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
           <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        API Key 발급
+        Issue API Key
       </button>
     </div>
   {/if}

@@ -37,7 +37,7 @@
 
   // Stage guard: redirect to home if page is locked
   $: if (!$unlockedPages.includes($router) && $router !== 'home' && $router !== 'studio') {
-    toastStore.info('이 페이지는 아직 잠겨 있습니다. 연구를 먼저 완료해주세요.');
+    toastStore.info('This page is locked. Please complete research first.');
     router.navigate('home');
   }
 

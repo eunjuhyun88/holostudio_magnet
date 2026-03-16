@@ -31,7 +31,7 @@
 </script>
 
 <div class="my-activity">
-  <h3 class="panel-title">내 활동</h3>
+  <h3 class="panel-title">My Activity</h3>
 
   <div class="role-cards">
     <div class="role-card">
@@ -56,7 +56,7 @@
 
   <!-- Total bar -->
   <div class="total-row">
-    <span class="total-label">총 수익 (이번 주)</span>
+    <span class="total-label">Total Earnings (this week)</span>
     <span class="total-value">+{totalEarnings.toFixed(1)} HOOT</span>
   </div>
 
@@ -77,7 +77,7 @@
 
   <!-- Recent settlements -->
   <div class="settlements">
-    <span class="settle-label">최근 정산</span>
+    <span class="settle-label">Recent Settlements</span>
     {#each recentSettlements as s}
       <div class="settle-row">
         <span class="settle-dot" style:background={TYPE_COLORS[s.type] ?? '#9a9590'}></span>

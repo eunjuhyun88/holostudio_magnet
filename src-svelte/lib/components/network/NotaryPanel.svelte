@@ -58,15 +58,15 @@
   // ── Actions ──
   function handleBatchSign(batch: PpapBatch) {
     dispatch('openModal', {
-      title: '배치 서명',
+      title: 'Batch Signing',
       contract: '0x9C4d...3B7e  HootPPAP.sol',
       fn: 'acknowledgeBatch',
       params: [
         { name: 'batchId', type: 'string', value: batch.id },
       ],
-      fee: `0 HOOT (완료 시 +${batch.reward} HOOT 수령)`,
+      fee: `0 HOOT (on completion: +${batch.reward} HOOT)`,
       gas: '~72,000',
-      note: `${batch.domain} 도메인의 ${batch.records}개 데이터 레코드를 서명합니다.`,
+      note: `Sign ${batch.records} data records for ${batch.domain} domain.`,
       accentColor: 'var(--green)',
     });
   }
@@ -81,16 +81,16 @@
     if (!challengeReason.trim()) return;
     showChallengeInput = false;
     dispatch('openModal', {
-      title: 'Challenge 제출',
+      title: 'Submit Challenge',
       contract: '0x9C4d...3B7e  HootPPAP.sol',
       fn: 'disputePPAP',
       params: [
         { name: 'batchId', type: 'string', value: challengeBatchId },
         { name: 'reason', type: 'string', value: challengeReason.trim() },
       ],
-      fee: '1,000 HOOT (deposit 락업)',
+      fee: '1,000 HOOT (deposit locked)',
       gas: '~120,000',
-      note: '판정 승소 시 deposit + 50 HOOT이 반환됩니다.',
+      note: 'Deposit + 50 HOOT returned if challenge succeeds.',
       accentColor: '#c0392b',
     });
     challengeReason = '';
@@ -99,16 +99,16 @@
 
   function handleArbitrationVote(arb: Arbitration, vote: 'valid' | 'invalid') {
     dispatch('openModal', {
-      title: '중재 응답',
+      title: 'Arbitration Response',
       contract: '0x9C4d...3B7e  HootPPAP.sol',
       fn: 'resolveArbitration',
       params: [
         { name: 'disputeId', type: 'string', value: arb.disputeId },
-        { name: 'vote', type: 'bool', value: vote === 'valid' ? 'true (유효)' : 'false (무효)' },
+        { name: 'vote', type: 'bool', value: vote === 'valid' ? 'true (valid)' : 'false (invalid)' },
       ],
       fee: '0 HOOT',
       gas: '~90,000',
-      note: `배치 ${arb.batchId} (${arb.domain})의 데이터 유효성을 판정합니다.`,
+      note: `Judge data validity for batch ${arb.batchId} (${arb.domain}).`,
       accentColor: vote === 'valid' ? 'var(--green)' : '#c0392b',
     });
   }
@@ -116,7 +116,7 @@
 
 <div class="notary-panel">
   <!-- ═══ PPAP Stream Table ═══ -->
-  <h4 class="np-label">PPAP 배치 스트림</h4>
+  <h4 class="np-label">PPAP Batch Stream</h4>
   <div class="batch-table">
     {#each batches as batch (batch.id)}
       <div class="batch-row" class:pending={batch.status === 'PENDING'}>
@@ -133,7 +133,7 @@
           <div class="br-actions">
             <span class="br-deadline">⏱ {batch.deadline}</span>
             <button class="br-sign-btn" on:click={() => handleBatchSign(batch)}>
-              배치 서명하기
+              Sign Batch
             </button>
           </div>
         {:else if batch.status === 'ACKNOWLEDGED'}
@@ -152,16 +152,16 @@
   <!-- ═══ Challenge Input Modal ═══ -->
   {#if showChallengeInput}
     <div class="challenge-input">
-      <h4 class="np-label">Challenge 사유 입력</h4>
-      <p class="ci-batch">대상: {challengeBatchId}</p>
+      <h4 class="np-label">Enter Challenge Reason</h4>
+      <p class="ci-batch">Target: {challengeBatchId}</p>
       <textarea class="ci-textarea" bind:value={challengeReason}
-        placeholder="데이터 무결성 위반 사유를 입력하세요..."
+        placeholder="Enter data integrity violation reason..."
         rows="3"
       ></textarea>
       <div class="ci-actions">
-        <button class="ci-cancel" on:click={() => { showChallengeInput = false; }}>취소</button>
+        <button class="ci-cancel" on:click={() => { showChallengeInput = false; }}>Cancel</button>
         <button class="ci-submit" on:click={submitChallenge} disabled={!challengeReason.trim()}>
-          Challenge 제출 (1,000 HOOT deposit)
+          Submit Challenge (1,000 HOOT deposit)
         </button>
       </div>
     </div>
@@ -169,7 +169,7 @@
 
   <!-- ═══ Arbitration Panel ═══ -->
   {#if arbitrations.length > 0}
-    <h4 class="np-label" style="margin-top: 16px;">중재 요청</h4>
+    <h4 class="np-label" style="margin-top: 16px;">Arbitration Requests</h4>
     <div class="arb-list">
       {#each arbitrations as arb (arb.disputeId)}
         <div class="arb-row">
@@ -180,14 +180,14 @@
           {#if arb.status === 'PENDING_VOTE'}
             <div class="arb-actions">
               <button class="arb-btn arb-valid" on:click={() => handleArbitrationVote(arb, 'valid')}>
-                유효
+                Valid
               </button>
               <button class="arb-btn arb-invalid" on:click={() => handleArbitrationVote(arb, 'invalid')}>
-                무효
+                Invalid
               </button>
             </div>
           {:else}
-            <span class="arb-resolved">판정 완료</span>
+            <span class="arb-resolved">Resolved</span>
           {/if}
         </div>
       {/each}

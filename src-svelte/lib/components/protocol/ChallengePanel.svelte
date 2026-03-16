@@ -69,14 +69,14 @@
 <div class="challenge-panel">
   <h3 class="panel-title">
     <span class="title-icon">🛡</span>
-    검증 활동
+    Verification Activity
   </h3>
 
   {#if !isNotary}
     <!-- Not a notary yet -->
     <div class="notary-gate">
-      <span class="ng-text">Notary 자격: Trust Score 300+ 필요</span>
-      <span class="ng-current">현재: {trustScore}/1000</span>
+      <span class="ng-text">Notary requirement: Trust Score 300+</span>
+      <span class="ng-current">Current: {trustScore}/1000</span>
     </div>
   {:else}
     <!-- Notary status -->
@@ -86,7 +86,7 @@
         <span class="ns-text">Notary (5-of-50 Pool)</span>
       </div>
       <div class="ns-stats">
-        <span class="ns-stat">예치금: <strong>1,000 HOOT</strong></span>
+        <span class="ns-stat">Deposit: <strong>1,000 HOOT</strong></span>
         <span class="ns-stat">Trust: <strong>{trustScore}</strong></span>
       </div>
     </div>
@@ -94,19 +94,19 @@
     <!-- Assigned arbitrations -->
     {#if assignedChallenges.length > 0}
       <div class="assigned-section">
-        <span class="as-label">배정된 중재</span>
+        <span class="as-label">Assigned Arbitrations</span>
         {#each assignedChallenges as ch}
           <div class="challenge-card">
             <div class="cc-header">
               <span class="cc-icon">⚠</span>
-              <span class="cc-title">Batch #{ch.batchId} — Challenge 접수</span>
+              <span class="cc-title">Batch #{ch.batchId} — Challenge Filed</span>
             </div>
             <div class="cc-meta">
-              <span>제출자: {ch.submitter}</span>
-              <span>시간: {ch.hoursLeft}h left</span>
+              <span>Submitter: {ch.submitter}</span>
+              <span>Time: {ch.hoursLeft}h left</span>
             </div>
             <button class="vote-btn" on:click={() => handleVote(ch.batchId)}>
-              검토 & 투표 →
+              Review & Vote →
             </button>
           </div>
         {/each}
@@ -115,7 +115,7 @@
 
     <!-- Challenge history -->
     <div class="history-section">
-      <span class="hs-label">이력</span>
+      <span class="hs-label">History</span>
       {#each challengeHistory as h}
         <div class="history-row">
           <span class="hr-icon" class:valid={h.outcome === 'valid'} class:invalid={h.outcome === 'invalid'}>
@@ -130,7 +130,7 @@
     </div>
 
     <div class="browser-hint">
-      <span class="bh-text">상세 작업은 Hoot Browser에서 진행</span>
+      <span class="bh-text">Detailed operations via Hoot Browser</span>
     </div>
   {/if}
 </div>

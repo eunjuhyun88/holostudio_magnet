@@ -134,10 +134,10 @@
     <div class="cb-actions">
       <button class="cb-btn test" on:click={() => openFocus('playground')}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
-        테스트
+        Test
       </button>
       <button class="cb-btn publish" on:click={() => dispatch('deploy', { target: 'publish' })}>
-        발행 →
+        Publish →
       </button>
     </div>
   </div>

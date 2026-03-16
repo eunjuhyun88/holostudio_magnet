@@ -68,10 +68,10 @@
   }
 
   let vtrSteps: VTRStep[] = [
-    { label: '학습 기록 해시 생성', detail: 'keccak256(result ‖ nonce)', done: false, active: false },
-    { label: '모델 인증 등록', detail: 'VTR_COMMIT (0x101)', done: false, active: false },
-    { label: '검증 확인 중', detail: 'Spot-Check (VRF)', done: false, active: false },
-    { label: '재현 가능 등급 확인', detail: 'DETERMINISTIC', done: false, active: false },
+    { label: 'Generate training record hash', detail: 'keccak256(result ‖ nonce)', done: false, active: false },
+    { label: 'Model verification registration', detail: 'VTR_COMMIT (0x101)', done: false, active: false },
+    { label: 'Confirming verification', detail: 'Spot-Check (VRF)', done: false, active: false },
+    { label: 'Confirming reproducibility grade', detail: 'DETERMINISTIC', done: false, active: false },
   ];
 
   async function runVTRSimulation() {
@@ -110,7 +110,7 @@
   function handleNextToVTR() {
     // Open ContractCallModal for VTR signature (VTRSubmitted)
     modalCall = {
-      title: '모델 인증 등록 (VTR)',
+      title: 'Model Verification (VTR)',
       contract: '0x7B2a...9F1c  HootVTR.sol',
       fn: 'submitVTR',
       params: [
@@ -121,7 +121,7 @@
       ],
       fee: '0 HOOT',
       gas: '~180,000',
-      note: 'VTR 검증 후 ModelNFT가 자동 발행됩니다.',
+      note: 'ModelNFT will be automatically minted after VTR verification.',
       accentColor: 'var(--green)',
     };
     modalStep = 'review';
@@ -168,7 +168,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     {/if}
-    <span class="header-label">모델 발행</span>
+    <span class="header-label">Publish Model</span>
     <span class="step-indicator">{step}/3</span>
   </div>
 
@@ -186,16 +186,16 @@
     <!-- STEP 1: Review Model Card -->
     {#if step === 1}
       <div class="step-content" style="animation: slideUp 300ms cubic-bezier(0.16, 1, 0.3, 1)">
-        <h3 class="step-title">모델 정보 확인</h3>
-        <p class="step-desc">연구 결과를 확인하고 모델을 발행합니다.</p>
+        <h3 class="step-title">Review Model Info</h3>
+        <p class="step-desc">Review research results and publish your model.</p>
 
         <div class="model-card">
           <div class="mc-row">
-            <span class="mc-label">모델명</span>
+            <span class="mc-label">Model Name</span>
             <span class="mc-value mc-name">{modelName}</span>
           </div>
           <div class="mc-row">
-            <span class="mc-label">메트릭</span>
+            <span class="mc-label">Metric</span>
             <span class="mc-value">
               <span class="mc-metric">{bestMetric.toFixed(4)}</span>
               {#if bestBranch}
@@ -204,12 +204,12 @@
             </span>
           </div>
           <div class="mc-row">
-            <span class="mc-label">실험</span>
-            <span class="mc-value">{totalExperiments}회 중 <strong>{keptExperiments}개</strong> 유효</span>
+            <span class="mc-label">Experiments</span>
+            <span class="mc-value">{totalExperiments} total, <strong>{keptExperiments}</strong> valid</span>
           </div>
           <div class="mc-row">
-            <span class="mc-label">학습 시드</span>
-            <span class="mc-value mc-mono">42 → 재현 가능 ✓</span>
+            <span class="mc-label">Training Seed</span>
+            <span class="mc-value mc-mono">42 → Reproducible ✓</span>
           </div>
         </div>
 
@@ -220,9 +220,9 @@
             <span class="toggle-track" class:on={isPublic}>
               <span class="toggle-thumb"></span>
             </span>
-            <span class="toggle-text">{isPublic ? '모델 공개' : '비공개'}</span>
+            <span class="toggle-text">{isPublic ? 'Public' : 'Private'}</span>
           </label>
-          <span class="toggle-hint">{isPublic ? '모든 사용자가 이 모델에 접근할 수 있습니다' : '본인만 사용 가능합니다'}</span>
+          <span class="toggle-hint">{isPublic ? 'All users can access this model' : 'Only you can use this model'}</span>
         </div>
 
         <!-- Seed warning (enhanced §3-B) -->
@@ -230,15 +230,15 @@
           <div class="seed-warning">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>
             <div class="seed-warning-body">
-              <span class="seed-warning-title">⚠ training_seed 없음 — SELF_ATTESTED로 등록됩니다</span>
-              <span class="seed-warning-desc">재현 가능성이 보장되지 않아 모델 신뢰도가 낮을 수 있습니다.</span>
+              <span class="seed-warning-title">⚠ No training_seed — Will be registered as SELF_ATTESTED</span>
+              <span class="seed-warning-desc">Reproducibility not guaranteed. Model trust score may be lower.</span>
             </div>
           </div>
         {/if}
 
         <!-- Pool A distribution preview -->
         <div class="pool-preview">
-          <span class="pool-label">수익 분배 (발행 후)</span>
+          <span class="pool-label">Revenue Distribution (after publish)</span>
           <div class="pool-bars">
             <div class="pool-segment creator" style="width: 60%">
               <span>Creator 60%</span>
@@ -264,14 +264,14 @@
         {#if !$wallet.connected}
           <div class="wallet-warning">
             <PixelIcon type="protocol" size={14} />
-            <span>모델을 발행하려면 지갑 연결이 필요합니다</span>
+            <span>Wallet connection required to publish model</span>
           </div>
         {/if}
 
         <div class="step-actions">
-          <button class="secondary-btn" on:click={handleBack}>돌아가기</button>
+          <button class="secondary-btn" on:click={handleBack}>Back</button>
           <button class="primary-btn" on:click={handleNextToVTR}>
-            서명하기 &rarr;
+            Sign &rarr;
           </button>
         </div>
       </div>
@@ -279,8 +279,8 @@
     <!-- STEP 2: VTR Registration (auto-progress) -->
     {:else if step === 2}
       <div class="step-content" style="animation: slideUp 300ms cubic-bezier(0.16, 1, 0.3, 1)">
-        <h3 class="step-title">모델 인증 중...</h3>
-        <p class="step-desc">학습 기록을 검증하고 모델을 등록하고 있습니다.</p>
+        <h3 class="step-title">Verifying Model...</h3>
+        <p class="step-desc">Verifying training records and registering model.</p>
 
         <div class="vtr-progress">
           {#each vtrSteps as vs, i}
@@ -307,7 +307,7 @@
 
         <div class="auto-hint">
           <div class="auto-dot"></div>
-          자동 진행 중
+          Auto-progressing
         </div>
       </div>
 
@@ -315,7 +315,7 @@
     {:else if step === 3}
       <div class="step-content" style="animation: slideUp 300ms cubic-bezier(0.16, 1, 0.3, 1)">
         <div class="success-icon">🎉</div>
-        <h3 class="step-title success">모델 발행 완료!</h3>
+        <h3 class="step-title success">Model Published!</h3>
 
         <div class="published-card">
           <div class="pub-name">{modelName}</div>
@@ -332,13 +332,13 @@
             </div>
             <div class="pub-stat">
               <span class="ps-value">DETERMINISTIC</span>
-              <span class="ps-label">인증 등급</span>
+              <span class="ps-label">Verification Grade</span>
             </div>
           </div>
 
           <div class="pub-revenue">
             <PixelIcon type="protocol" size={14} />
-            <span>이후 모든 사용에서 Creator Pool 60% 자동 수령</span>
+            <span>Automatically receive 60% Creator Pool from all usage</span>
           </div>
         </div>
 
@@ -348,7 +348,7 @@
             <span class="endpoint-label">API Endpoint</span>
             <div class="endpoint-row">
               <code class="endpoint-url">https://api.hoot.network/v1/models/{publishedModelId}/predict</code>
-              <button class="copy-btn" on:click={() => { navigator.clipboard.writeText(`https://api.hoot.network/v1/models/${publishedModelId}/predict`); }} title="복사">
+              <button class="copy-btn" on:click={() => { navigator.clipboard.writeText(`https://api.hoot.network/v1/models/${publishedModelId}/predict`); }} title="Copy">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/></svg>
               </button>
             </div>
@@ -356,9 +356,9 @@
         {/if}
 
         <div class="step-actions">
-          <button class="secondary-btn" on:click={handleNewResearch}>새 연구 시작</button>
+          <button class="secondary-btn" on:click={handleNewResearch}>New Research</button>
           <button class="primary-btn" on:click={handleViewModel}>
-            모델 상세 보기 &rarr;
+            View Model Details &rarr;
           </button>
         </div>
       </div>

@@ -38,7 +38,7 @@
   export function triggerError(msg: string) {
     errorMessage = msg;
     modalStep = 'error';
-    toastStore.error('트랜잭션이 실패했습니다');
+    toastStore.error('Transaction failed');
   }
 
   function retryTransaction() {
@@ -103,7 +103,7 @@
         <!-- ═══ Payment Method Selector (x402) ═══ -->
         {#if modalCall.paymentEnabled}
           <div class="payment-selector">
-            <span class="modal-label">결제 수단</span>
+            <span class="modal-label">Payment Method</span>
             <div class="payment-options">
               <button
                 class="payment-opt"
@@ -115,7 +115,7 @@
                   <span class="po-name">HOOT</span>
                   <span class="po-amount">{modalCall.hootAmount ?? modalCall.fee}</span>
                 </div>
-                <span class="po-badge po-default">기본</span>
+                <span class="po-badge po-default">Default</span>
               </button>
               <button
                 class="payment-opt"
@@ -131,7 +131,7 @@
               </button>
             </div>
             {#if surchargeNote}
-              <p class="payment-note">USDC 결제 시 25% 수수료가 Treasury로 이동합니다</p>
+              <p class="payment-note">25% surcharge on USDC payments goes to Treasury</p>
             {/if}
           </div>
         {/if}
@@ -217,15 +217,15 @@
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </div>
-          <h3>트랜잭션 실패</h3>
+          <h3>Transaction Failed</h3>
           {#if errorMessage}
             <p class="error-message">{errorMessage}</p>
           {:else}
-            <p class="error-message">트랜잭션이 거부되었거나 네트워크 오류가 발생했습니다.</p>
+            <p class="error-message">Transaction was rejected or a network error occurred.</p>
           {/if}
           <div class="error-actions">
-            <button class="action-btn primary" on:click={retryTransaction}>다시 시도</button>
-            <button class="action-btn secondary" on:click={() => dispatch('close')}>닫기</button>
+            <button class="action-btn primary" on:click={retryTransaction}>Retry</button>
+            <button class="action-btn secondary" on:click={() => dispatch('close')}>Close</button>
           </div>
         </div>
       {/if}

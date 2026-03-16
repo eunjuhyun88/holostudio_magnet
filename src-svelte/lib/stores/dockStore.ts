@@ -107,7 +107,7 @@ function createDockStore() {
       // Execute
       jobStore.startJob(topic, branches, itersPerBranch);
       studioStore.launchFromDock(topic, state.selectedPresetId ?? undefined);
-      toastStore.success('연구가 시작되었습니다');
+      toastStore.success('Research started');
 
       // Collapse dock
       update(s => ({ ...s, expansion: 'collapsed' }));
@@ -119,7 +119,6 @@ function createDockStore() {
       const job = get(jobStore);
 
       switch (cmd) {
-        case '개선':
         case 'improve': {
           const topic = job.topic || get(studioStore).createTopic;
           update(s => ({
@@ -130,7 +129,6 @@ function createDockStore() {
           }));
           break;
         }
-        case '재실행':
         case 'retry': {
           const topic = job.topic || get(studioStore).createTopic;
           update(s => ({
@@ -141,26 +139,23 @@ function createDockStore() {
           }));
           break;
         }
-        case '중단':
         case 'stop': {
           if (job.phase === 'running') {
             jobStore.stopJob();
             studioStore.reset();
-            toastStore.warning('연구가 중단되었습니다');
+            toastStore.warning('Research stopped');
           }
           break;
         }
-        case '상태':
         case 'status': {
           // Navigate to running research or show toast
           if (job.phase === 'running') {
             router.navigate('studio');
           } else {
-            toastStore.info('현재 진행 중인 연구가 없습니다');
+            toastStore.info('No research currently in progress');
           }
           break;
         }
-        case '배포':
         case 'deploy': {
           if (job.phase === 'complete' || get(studioStore).phase === 'complete') {
             studioStore.goToPublish();
@@ -169,7 +164,7 @@ function createDockStore() {
           break;
         }
         default:
-          toastStore.info(`알 수 없는 명령: /${cmd}. /help로 도움말을 확인하세요.`);
+          toastStore.info(`Unknown command: /${cmd}. Type /help for available commands.`);
       }
     },
 

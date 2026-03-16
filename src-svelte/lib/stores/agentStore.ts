@@ -125,19 +125,19 @@ function createAgentStore() {
 
 function getPlaceholderResponse(input: string): string {
   const lower = input.toLowerCase();
-  if (lower.includes('btc') || lower.includes('bitcoin') || lower.includes('비트코인')) {
-    return '비트코인 가격 예측 모델을 만들어 드릴까요? 연구를 시작하려면 아래 버튼을 눌러주세요.';
+  if (lower.includes('btc') || lower.includes('bitcoin')) {
+    return 'Would you like to create a Bitcoin price prediction model? Press the button below to start research.';
   }
-  if (lower.includes('모델') || lower.includes('model')) {
-    return '현재 활성 모델 목록을 불러오고 있어요. Models 탭에서 자세히 볼 수 있어요.';
+  if (lower.includes('model')) {
+    return 'Loading the list of active models. You can view details in the Models tab.';
   }
-  if (lower.includes('gpu') || lower.includes('노드') || lower.includes('node')) {
-    return '네트워크에 연결된 노드 현황을 확인하고 있어요. Network 탭에서 상세 정보를 볼 수 있어요.';
+  if (lower.includes('gpu') || lower.includes('node')) {
+    return 'Checking the status of connected nodes. You can view details in the Network tab.';
   }
-  if (lower.includes('수익') || lower.includes('earn') || lower.includes('reward')) {
-    return '수익 현황을 조회하고 있어요. Protocol 탭에서 자세한 내역을 확인할 수 있어요.';
+  if (lower.includes('earn') || lower.includes('reward')) {
+    return 'Checking your earnings. You can view detailed history in the Protocol tab.';
   }
-  return `"${input}"에 대해 알아보고 있어요. 잠시만 기다려 주세요.`;
+  return `Looking into "${input}". Please wait a moment.`;
 }
 
 export const agentStore = createAgentStore();

@@ -49,7 +49,7 @@
 
   function runPlayground() {
     dispatch('openModal', {
-      title: '모델 추론 실행',
+      title: 'Run Model Inference',
       contract: '0x7B2e...A1f8  HootInference.sol',
       fn: 'executeInference',
       params: [
@@ -58,7 +58,7 @@
       ],
       fee: `${COST_PER_CALL} HOOT`,
       gas: '~45,000',
-      note: 'x402 결제 — 호출당 0.001 HOOT이 차감됩니다.',
+      note: 'x402 payment — 0.001 HOOT deducted per call.',
       accentColor: 'var(--accent)',
       paymentEnabled: true,
       hootAmount: String(COST_PER_CALL),
@@ -79,10 +79,10 @@
     {#if !$wallet.connected}
       <div class="pg-wallet-warn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>
-        지갑을 연결해야 추론을 실행할 수 있습니다
+        Connect wallet to run inference
       </div>
     {/if}
-    <div class="pg-cost">예상 비용: {COST_PER_CALL} HOOT per call</div>
+    <div class="pg-cost">Est. cost: {COST_PER_CALL} HOOT per call</div>
     <button class="pg-run" on:click={runPlayground} disabled={pgLoading || !$wallet.connected}>
       {#if pgLoading}
         <span class="spin-sm"></span> Running...
@@ -98,7 +98,7 @@
     <h3 class="pg-label">Output</h3>
     <pre class="pg-result" class:empty={!pgResult}>{pgResult || 'Results will appear here...'}</pre>
     {#if pgCallCost > 0}
-      <div class="pg-billing">잔액: {$wallet.balance ?? '—'} HOOT · 이번 호출: -{pgCallCost} HOOT</div>
+      <div class="pg-billing">Balance: {$wallet.balance ?? '—'} HOOT · This call: -{pgCallCost} HOOT</div>
     {/if}
   </div>
 </div>

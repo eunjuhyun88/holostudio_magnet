@@ -203,7 +203,7 @@
     <div class="section-block">
       <h2 class="section-title">
         <span class="section-icon">🧪</span>
-        내가 만든 모델
+        My Models
         <span class="section-count">{myCreatedModels.length}</span>
       </h2>
       <div class="my-model-list">
@@ -225,7 +225,7 @@
     <div class="section-block">
       <h2 class="section-title">
         <span class="section-icon">📦</span>
-        내가 사용 중
+        In Use
         <span class="section-count">{myUsedModels.length}</span>
       </h2>
       <div class="my-model-list">
