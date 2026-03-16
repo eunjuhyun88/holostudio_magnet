@@ -62,33 +62,40 @@
     'spot-checked': 'SPT',
   };
 
-  $: activeCount = allNodes.filter(n => n.active).length;
+  // Single reactive block: compute positions + edges + counts in one pass
+  // (eliminates 4-stage cascade: allNodes → nodePositions → meshEdges → crossEdges)
+  $: meshLayout = (() => {
+    const positions = allNodes.map((n, i) => {
+      const angle = (i / Math.max(allNodes.length, 1)) * Math.PI * 2 - Math.PI / 2;
+      return { ...n, x: MESH_CX + Math.cos(angle) * MESH_R, y: MESH_CY + Math.sin(angle) * MESH_R };
+    });
 
-  // Position nodes in circle
-  $: nodePositions = allNodes.map((n, i) => {
-    const angle = (i / Math.max(allNodes.length, 1)) * Math.PI * 2 - Math.PI / 2;
-    return {
-      ...n,
-      x: MESH_CX + Math.cos(angle) * MESH_R,
-      y: MESH_CY + Math.sin(angle) * MESH_R,
-    };
-  });
+    let active = 0;
+    for (const n of positions) if (n.active) active++;
 
-  // Edges between adjacent nodes
-  $: meshEdges = nodePositions.map((n, i) => {
-    const next = nodePositions[(i + 1) % nodePositions.length];
-    if (!next) return null;
-    return { x1: n.x, y1: n.y, x2: next.x, y2: next.y, active: n.active || next.active };
-  }).filter(Boolean) as { x1: number; y1: number; x2: number; y2: number; active: boolean }[];
+    const edges: { x1: number; y1: number; x2: number; y2: number; active: boolean }[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const n = positions[i];
+      const next = positions[(i + 1) % positions.length];
+      if (next) edges.push({ x1: n.x, y1: n.y, x2: next.x, y2: next.y, active: n.active || next.active });
+    }
 
-  // Cross edges (every other node)
-  $: crossEdges = nodePositions.length >= 4 ? nodePositions
-    .filter((_, i) => i % 2 === 0)
-    .map((n, i, arr) => {
-      const next = arr[(i + 1) % arr.length];
-      if (!next) return null;
-      return { x1: n.x, y1: n.y, x2: next.x, y2: next.y, active: n.active && next.active };
-    }).filter(Boolean) as { x1: number; y1: number; x2: number; y2: number; active: boolean }[] : [];
+    const cross: typeof edges = [];
+    if (positions.length >= 4) {
+      const evens = positions.filter((_, i) => i % 2 === 0);
+      for (let i = 0; i < evens.length; i++) {
+        const n = evens[i];
+        const next = evens[(i + 1) % evens.length];
+        if (next) cross.push({ x1: n.x, y1: n.y, x2: next.x, y2: next.y, active: n.active && next.active });
+      }
+    }
+
+    return { positions, edges, cross, activeCount: active };
+  })();
+  $: activeCount = meshLayout.activeCount;
+  $: nodePositions = meshLayout.positions;
+  $: meshEdges = meshLayout.edges;
+  $: crossEdges = meshLayout.cross;
 
   // ─── Swarm Convergence (Bottom) ───
   const SWARM_TOP = MESH_H + 16;

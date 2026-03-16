@@ -72,9 +72,14 @@
     modalCall = null;
     modalStep = 'review';
   }
+  let confirmTxTimer: ReturnType<typeof setTimeout> | null = null;
   function confirmTx() {
     modalStep = 'pending';
-    setTimeout(() => { modalStep = 'confirmed'; }, 2200);
+    if (confirmTxTimer) clearTimeout(confirmTxTimer);
+    confirmTxTimer = setTimeout(() => {
+      if (!mounted) return; // guard against unmounted state
+      modalStep = 'confirmed';
+    }, 2200);
   }
 
   // ── Phase 5: Jobs commit/reveal + Claim ──
@@ -158,9 +163,21 @@
     const rewardEst = +(3.0 + nodeCount * 0.8).toFixed(1);
     return { ...j, nodeCount, workerCount, estBudget, progress, doneWorkers, rewardEst };
   });
-  $: queuedJobs = liveJobs.filter(j => j.state === 'queued');
-  $: runningJobs = liveJobs.filter(j => j.state === 'training' || j.state === 'evaluating');
-  $: doneJobs = liveJobs.filter(j => j.state === 'done');
+  // Single-pass job categorization instead of 3 separate .filter() calls
+  $: jobCategories = (() => {
+    const queued: typeof liveJobs = [];
+    const running: typeof liveJobs = [];
+    const done: typeof liveJobs = [];
+    for (const j of liveJobs) {
+      if (j.state === 'queued') queued.push(j);
+      else if (j.state === 'training' || j.state === 'evaluating') running.push(j);
+      else if (j.state === 'done') done.push(j);
+    }
+    return { queued, running, done };
+  })();
+  $: queuedJobs = jobCategories.queued;
+  $: runningJobs = jobCategories.running;
+  $: doneJobs = jobCategories.done;
   $: autoresearchActive = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
   $: autoresearchTopic = $jobStore.topic;
 
@@ -415,8 +432,10 @@
     }, 400);
 
     return () => {
+      mounted = false;
       bondTrustDestroyed = true;
       clearTimeout(delayBondTrust);
+      if (confirmTxTimer) clearTimeout(confirmTxTimer);
       window.removeEventListener("resize", handleResize);
       if (rafHandle !== null) cancelAnimationFrame(rafHandle);
       if (joinDeltaTimeout !== null) clearTimeout(joinDeltaTimeout);

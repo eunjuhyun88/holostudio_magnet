@@ -104,6 +104,9 @@ export function subscribeRuntimeMesh(options: {
   };
 
   return () => {
+    source.removeEventListener('snapshot', handleEvent as EventListener);
+    source.removeEventListener('mesh.updated', handleEvent as EventListener);
+    source.onerror = null;
     source.close();
   };
 }

@@ -80,18 +80,18 @@
     });
 
     // Periodically sync active session metadata (progress, metrics)
+    // Only sync when research is actually running to avoid wasted work
     syncInterval = setInterval(() => {
-      jobSessionStore.syncActiveSession();
+      const phase = $studioPhase;
+      if (phase === 'running' || phase === 'setup') {
+        jobSessionStore.syncActiveSession();
+      }
     }, 3000);
 
     return () => {
       unsub();
-      if (syncInterval) clearInterval(syncInterval);
+      if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
     };
-  });
-
-  onDestroy(() => {
-    if (syncInterval) clearInterval(syncInterval);
   });
 
   // Lazy load components when needed (fallback for phase transitions)
