@@ -157,4 +157,25 @@
     cursor: pointer; white-space: nowrap; transition: all 200ms;
   }
   .sb-new:hover { background: #D97757; color: #fff; }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 640px) {
+    .status-bar {
+      padding: 0 10px; gap: 6px;
+      height: 44px; /* Apple HIG minimum */
+      font-size: 11px;
+    }
+    .sb-hint { display: none; }
+    .sb-metrics { gap: 5px; font-size: 9px; }
+    .sb-m-delta { font-size: 8px; padding: 1px 3px; }
+    .sb-m-crash { display: none; }
+    .sb-btn { width: 32px; height: 32px; border-radius: 8px; }
+    .sb-new { padding: 8px 14px; font-size: 11px; }
+  }
+  @media (max-width: 400px) {
+    .sb-metrics { gap: 4px; font-size: 8px; }
+    .sb-m-keep { display: none; }
+    .sb-m-hit { display: none; }
+    .sb-topic { font-size: 11px; max-width: 100px; }
+  }
 </style>
