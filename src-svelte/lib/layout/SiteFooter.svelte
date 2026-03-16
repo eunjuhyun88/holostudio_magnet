@@ -34,7 +34,7 @@
         <span class="footer-brand-name">PROTOCOL</span>
       </a>
       <p class="footer-copy">
-        The network where AI work gets verified and rewarded. Automated research, distributed training, and on-chain model deployment.
+        Autonomous research mesh for live experiment orchestration, model benchmarking, and network-native compute workflows.
       </p>
     </div>
 

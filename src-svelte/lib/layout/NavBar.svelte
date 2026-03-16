@@ -107,7 +107,7 @@
         </button>
       {/if}
       <ConnectionBadge />
-      <span class="powered">by <strong>HoloStudio</strong></span>
+      <span class="powered">powered by <strong>holostudio</strong></span>
       <!-- Wallet Connect -->
       <div class="wallet-wrap">
         {#if $wallet.connected}

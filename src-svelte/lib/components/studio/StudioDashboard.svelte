@@ -51,7 +51,7 @@
   <!-- Page Header -->
   <div class="dash-header">
     <h1 class="dash-title">Magnet Studio</h1>
-    <p class="dash-sub">Build specialist AI through automated research</p>
+    <p class="dash-sub">Train and deploy AI models</p>
   </div>
 
   <!-- Hero CTA Card -->
@@ -61,7 +61,7 @@
     </div>
     <div class="hero-body">
       <span class="hero-title">Start a new research</span>
-      <span class="hero-desc">LLMs, classifiers, fine-tuning — from idea to deployment</span>
+      <span class="hero-desc">Build LLMs, classifiers, fine-tune models</span>
     </div>
     <div class="hero-action">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>

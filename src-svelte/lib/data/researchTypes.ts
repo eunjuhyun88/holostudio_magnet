@@ -41,7 +41,7 @@ export const RESEARCH_TYPES: ResearchType[] = [
   {
     id: 'llm',
     name: 'Build LLM',
-    desc: 'Train a specialist language model from scratch using BitNet architecture',
+    desc: 'Train a language model from scratch using BitNet architecture',
     level: 'advanced',
     time: '~6h+',
     tags: ['BitNet', 'From Scratch'],
@@ -64,7 +64,7 @@ export const RESEARCH_TYPES: ResearchType[] = [
   {
     id: 'expert',
     name: 'Add Expert',
-    desc: 'Attach a specialist decision head to an existing LLM',
+    desc: 'Attach a decision head to an existing LLM for specialized tasks',
     level: 'intermediate',
     time: '~2h',
     tags: ['Hybrid', 'Classification'],
@@ -73,8 +73,8 @@ export const RESEARCH_TYPES: ResearchType[] = [
     step1Question: 'What judgment would you like to automate?',
     step1Placeholder: 'e.g. Content moderation classifier',
     step1Examples: [
-      { label: 'Trading Signal', topic: 'Trading Signal Classifier' },
-      { label: 'Sentiment Analysis', topic: 'Market Sentiment Analysis Expert' },
+      { label: 'Content Moderation', topic: 'Content Moderation Classifier' },
+      { label: 'Sentiment Analysis', topic: 'Sentiment Analysis Expert' },
       { label: 'Intent Detection', topic: 'User Intent Detection' },
     ],
     step2Label: 'Base LLM',
@@ -119,9 +119,9 @@ export const RESEARCH_TYPES: ResearchType[] = [
     step1Question: 'What data would you like to classify?',
     step1Placeholder: 'e.g. Customer churn prediction',
     step1Examples: [
-      { label: 'Price Forecast', topic: 'Crypto Price Prediction' },
+      { label: 'Churn Prediction', topic: 'Customer Churn Prediction' },
       { label: 'Fraud Detection', topic: 'Transaction Fraud Detection' },
-      { label: 'Risk Scoring', topic: 'Portfolio Risk Scoring' },
+      { label: 'Price Forecast', topic: 'Crypto Price Prediction' },
     ],
     step2Label: 'Data Source',
     step2Options: [
@@ -142,9 +142,9 @@ export const RESEARCH_TYPES: ResearchType[] = [
     step1Question: 'What capability would you like to enhance?',
     step1Placeholder: 'e.g. Korean language fluency',
     step1Examples: [
-      { label: 'Trading Analysis', topic: 'Financial Analysis Fine-tuning' },
-      { label: 'Domain Expertise', topic: 'Finance Domain Fine-tune' },
       { label: 'Language Fluency', topic: 'Korean Language Fine-tuning' },
+      { label: 'Domain Expertise', topic: 'Finance Domain Fine-tune' },
+      { label: 'Style Transfer', topic: 'Writing Style Transfer' },
     ],
     step2Label: 'Base Model',
     step2Options: [

@@ -4,7 +4,7 @@
    *
    * Step 1: Review Model Card (user reviews research results)
    * Step 2: VTR Registration (auto-progress, simulated)
-   * Step 3: Model Deployment Complete (success + next actions)
+   * Step 3: ModelNFT Mint Complete (success + next actions)
    *
    * Uses plain language per D10 — no "VTR"/"PPAP" terms in UI.
    * Protocol terms only shown in step 2 progress as technical detail.
@@ -344,7 +344,7 @@
 
           <div class="pub-revenue">
             <PixelIcon type="protocol" size={14} />
-            <span>AI work verified — 60% Creator Pool from all model usage</span>
+            <span>Automatically receive 60% Creator Pool from all usage</span>
           </div>
         </div>
 

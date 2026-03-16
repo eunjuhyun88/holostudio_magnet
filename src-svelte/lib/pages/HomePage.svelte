@@ -74,7 +74,7 @@
     if (isRunning) return `${jobTopic || 'Research'} running (${jobProgress}%)`;
     if (isComplete) return `${jobTopic || 'Research'} complete — ready to deploy`;
     if (publishedCount > 0) return `${publishedCount} models · ${totalModelEarnings.toFixed(1)} HOOT earned`;
-    return 'Turn your idea into a specialist AI';
+    return 'Start AI autonomous research';
   })();
 
   $: studioCardClick = () => {
@@ -84,7 +84,7 @@
 
   // ── §2-1: GPU Network card dynamic text ──
   $: networkCardText = (() => {
-    if (!hasNode) return 'Contribute GPU and start earning';
+    if (!hasNode) return 'Register GPU and start earning';
     if (myNode.online) return `${myNode.nodeId} online · ${myNode.totalEarnings.toFixed(1)} HOOT`;
     return `${myNode.nodeId} offline ⚠`;
   })();
@@ -96,7 +96,7 @@
 
   // ── §2-1: Protocol card dynamic text ──
   $: protocolCardText = (() => {
-    if (!isLoggedIn) return 'Join the AI Work Network';
+    if (!isLoggedIn) return 'Join HOOT Protocol';
     // TODO: check pending rewards from protocolSummary
     return `${earningsValue} TVL`;
   })();
@@ -139,13 +139,13 @@
     <div class="brand">
       <PixelOwl size={1.2} mood={owlMood} />
       <h1 class="brand-title">HOOT Protocol</h1>
-      <p class="brand-sub">AI Work Network</p>
+      <p class="brand-sub">Decentralized AI Research Infrastructure</p>
     </div>
 
     <!-- ── Ecosystem Tagline ── -->
     <p class="tagline">
-      Automated Research · Distributed Training · Model Deployment · Data Provenance<br/>
-      <span class="tagline-chain">Every contribution verified and rewarded on-chain</span>
+      AI Research Design · Distributed GPU Training · Model Deployment · Data Provenance<br/>
+      <span class="tagline-chain">Every step recorded on HOOT L1 chain</span>
     </p>
 
     <!-- ── Live Network Pulse ── -->
@@ -197,7 +197,7 @@
         <span class="pc-state" class:pc-state-running={isRunning} class:pc-state-done={isComplete}>
           {studioCardText}
         </span>
-        <span class="pc-detail">Automated Research → Distributed Training → Model Deployment</span>
+        <span class="pc-detail">Research Design → Distributed GPU Training → ModelNFT Minting</span>
       </div>
       <span class="pc-arrow">→</span>
     </button>
@@ -212,7 +212,7 @@
         <span class="pc-state" class:pc-state-warn={hasNode && !myNode.online}>
           {networkCardText}
         </span>
-        <span class="pc-detail">Training Nodes · Inference Nodes · Proof of AI Work (PoAW)</span>
+        <span class="pc-detail">Training Nodes · Inference Nodes · PoAW Block Contribution</span>
       </div>
       <span class="pc-arrow">→</span>
     </button>
@@ -244,7 +244,7 @@
         <span class="fw-arr">→</span>
         <span class="fw-step fw-reward">Rewards</span>
       </div>
-      <span class="fw-roles">AI Work → Verification → Rewards — Pool auto-distribution</span>
+      <span class="fw-roles">Contributor · Compute Node · Builder · Buyer — Pool auto-distribution</span>
     </div>
 
     <!-- ── §2-2: Recent Activity ── -->
@@ -275,17 +275,17 @@
     <div class="brand">
       <PixelOwl size={1.4} mood="idle" />
       <h1 class="brand-title">HOOT Protocol</h1>
-      <p class="brand-sub">AI Work Network</p>
+      <p class="brand-sub">Decentralized AI Research Infrastructure</p>
     </div>
 
     <p class="tagline">
-      Automated Research · Distributed Training · Model Deployment · Data Provenance<br/>
-      <span class="tagline-chain">Every contribution verified and rewarded on-chain</span>
+      AI Research Design · Distributed GPU Training · Model Deployment · Data Provenance<br/>
+      <span class="tagline-chain">Every step recorded on HOOT L1 chain</span>
     </p>
 
     <div class="guest-search">
       <input class="gs-input" type="text"
-        placeholder="e.g. AI trading strategy..."
+        placeholder="e.g. Crypto market prediction..."
         bind:value={guestSearchTopic} on:keydown={handleGuestKeydown}
       />
       <button class="gs-btn" on:click={handleGuestSearch}>→</button>
@@ -294,9 +294,9 @@
     <!-- Guest: Actor Roles -->
     <div class="roles-grid">
       {#each [
-        { pixelIcon: 'research', role: 'Builder', desc: 'Automated Research → Model Training → Deployment', color: 'var(--accent)' },
-        { pixelIcon: 'globe', role: 'Compute Node', desc: 'Contribute GPU → Training/Inference → PoAW Rewards', color: 'var(--green)' },
-        { pixelIcon: 'chart', role: 'Data Contributor', desc: 'Data Contribution → PPAP Provenance → Pool Rewards', color: '#2980b9' },
+        { pixelIcon: 'research', role: 'Builder', desc: 'Research Design → Model Training → ModelNFT Minting', color: 'var(--accent)' },
+        { pixelIcon: 'globe', role: 'Compute Node', desc: 'Connect GPU → Training/Inference → PoAW Rewards', color: 'var(--green)' },
+        { pixelIcon: 'chart', role: 'Contributor', desc: 'Data Contribution → Provenance (PPAP) → Pool Distribution', color: '#2980b9' },
         { pixelIcon: 'protocol', role: 'Buyer', desc: 'Model/Agent Calls → x402 Auto Settlement', color: '#d4a017' },
       ] as r}
         <div class="role-card">
@@ -310,7 +310,7 @@
     </div>
 
     <div class="guest-wallet">
-      <span class="gw-label">Connect wallet to join</span>
+      <span class="gw-label">Connect wallet to start</span>
       <div class="gw-btns">
         {#each wallets as w}
           <button class="gw-btn" on:click={() => wallet.connect(w.name)}>

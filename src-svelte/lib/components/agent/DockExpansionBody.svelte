@@ -23,10 +23,10 @@
 
   // ── Preset data (same as StudioIdle) ──
   const PRESETS = [
-    { id: 'crypto_market', title: 'AI Trading Strategy', desc: 'Price prediction using on-chain + sentiment data' },
-    { id: 'defi_risk', title: 'DeFi Risk Classifier', desc: 'Specialist AI for TVL and audit risk scoring' },
+    { id: 'crypto_market', title: 'Crypto Market Prediction', desc: 'Price movements using on-chain + sentiment' },
+    { id: 'defi_risk', title: 'DeFi Protocol Risk', desc: 'Classify risk via TVL and audit history' },
     { id: 'fraud_detection', title: 'Fraud Detection', desc: 'Identify suspicious wallet patterns' },
-    { id: 'time_series', title: 'Quant Forecasting', desc: 'Multi-variate financial time series' },
+    { id: 'time_series', title: 'Time Series Forecasting', desc: 'Multi-variate financial forecasting' },
   ];
 
   // ── Reactive stats from selected preset ──
@@ -146,7 +146,7 @@
       <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
         <path d="M4 2l10 6-10 6z"/>
       </svg>
-      Start AI Research
+      Launch Autoresearch
       <span class="launch-shortcut">⌘↵</span>
     </button>
 

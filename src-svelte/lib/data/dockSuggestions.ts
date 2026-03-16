@@ -15,10 +15,10 @@ export interface SuggestionChip {
 }
 
 export const IDLE_CHIPS: SuggestionChip[] = [
-  { label: 'AI Trading', presetId: 'crypto_market' },
+  { label: 'Crypto Prediction', presetId: 'crypto_market' },
   { label: 'DeFi Risk', presetId: 'defi_risk' },
   { label: 'Fraud Detection', presetId: 'fraud_detection' },
-  { label: 'Quant Forecast', presetId: 'time_series' },
+  { label: 'Time Series', presetId: 'time_series' },
 ];
 
 export const RUNNING_CHIPS: SuggestionChip[] = [
