@@ -486,4 +486,13 @@
       padding: 5px 12px;
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .program-editor { animation: none; }
+    .pe-walking-owl { animation: none; }
+    .pe-submit { animation: none; }
+    .ws-proof-dot.live { animation: none; }
+    .pe-cursor { animation: none; }
+    .pe-typewriter-overlay { transition: none; }
+  }
 </style>
