@@ -8,7 +8,7 @@
    *   complete: topic + result summary + action chips
    */
   import { createEventDispatcher } from 'svelte';
-  import { jobStore } from '../../stores/jobStore.ts';
+  import { jobStore, jobProgress } from '../../stores/jobStore.ts';
   import { dockStore, dockContext, dockPresetId, dockTopic, dockIntent } from '../../stores/dockStore.ts';
   import { studioStore } from '../../stores/studioStore.ts';
   import { router } from '../../stores/router.ts';
@@ -39,7 +39,7 @@
   $: eta = totalExp < 100 ? '~5m' : totalExp < 200 ? '~15m' : '~30m';
 
   // ── Running stats ──
-  $: runProgress = $jobStore.progress;
+  $: runProgress = $jobProgress;
   $: runTopic = $jobStore.topic;
   $: runBranches = $jobStore.branches?.length ?? 0;
   $: runTotalExp = $jobStore.totalExperiments ?? 0;

@@ -18,7 +18,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { router } from '../stores/router.ts';
-  import { jobStore } from '../stores/jobStore.ts';
+  import { jobStore, jobProgress } from '../stores/jobStore.ts';
   import { studioStore, studioPhase } from '../stores/studioStore.ts';
   import type { ResourceMode } from '../stores/studioStore.ts';
   import { jobSessionStore } from '../stores/jobSessionStore.ts';
@@ -166,13 +166,13 @@
     showStopConfirm = false;
 
     // Open ContractCallModal for ResearchJobCancelled
-    const remaining = Math.round((1 - ($jobStore.progress ?? 0) / 100) * 150);
+    const remaining = Math.round((1 - $jobProgress / 100) * 150);
     modalCall = {
       title: 'Stop Research',
       contract: '0x4F0a...7E3d  HootJobs.sol',
       fn: 'cancelResearchJob',
       params: [
-        { name: 'jobId', type: 'uint256', value: $jobStore.sessionId || 'JOB-001' },
+        { name: 'jobId', type: 'uint256', value: $jobStore.runtimeJobId || 'JOB-001' },
       ],
       fee: `0 HOOT (refund: ${remaining} HOOT remaining)`,
       gas: '~68,000',
@@ -334,8 +334,8 @@
           <svelte:component
             this={ResearchRunning}
             topic={$jobStore.topic}
-            progress={$jobStore.progress}
-            sessionId={$jobStore.sessionId}
+            progress={$jobProgress}
+            sessionId={$jobStore.runtimeJobId || ''}
             branches={$jobStore.branches}
             totalExperiments={$jobStore.totalExperiments}
             bestMetric={$jobStore.bestMetric}

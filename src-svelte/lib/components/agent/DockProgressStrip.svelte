@@ -7,9 +7,9 @@
    * Color transitions from accent → green at 100%.
    */
   import { fade } from 'svelte/transition';
-  import { jobStore } from '../../stores/jobStore.ts';
+  import { jobStore, jobProgress } from '../../stores/jobStore.ts';
 
-  $: progress = $jobStore.progress;
+  $: progress = $jobProgress;
   $: isRunning = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
   $: isComplete = progress >= 100;
 </script>

@@ -464,4 +464,5 @@ export {
   scatterData, heatmapData, experimentTree, branchSummary,
   improvementDelta, bestBranch, isPaused,
   avgDuration, totalGpuTime, bestFrontier, sparkPoints,
+  jobProgress,
 } from './jobDerived.ts';

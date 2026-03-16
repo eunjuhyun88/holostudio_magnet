@@ -5,7 +5,7 @@
   import { dashboardStore } from "../../stores/dashboardStore.ts";
   import { wallet } from "../../stores/walletStore.ts";
   import { widgetStore, allWidgets } from "../../stores/widgetStore.ts";
-  import { jobStore } from "../../stores/jobStore.ts";
+  import { jobStore, jobProgress } from "../../stores/jobStore.ts";
   import { dockStore, dockContext, dockExpansion } from "../../stores/dockStore.ts";
   import { CATEGORY_COLORS, type WidgetId } from "../../data/widgetDefaults.ts";
   import PixelIcon from "../PixelIcon.svelte";
@@ -23,7 +23,7 @@
 
   // ── Context-aware placeholder ──
   $: contextPlaceholder = (() => {
-    if ($dockContext === 'running') return `${$jobStore.topic || 'Research'} — ${$jobStore.progress}% in progress`;
+    if ($dockContext === 'running') return `${$jobStore.topic || 'Research'} — ${$jobProgress}% in progress`;
     if ($dockContext === 'complete') return 'Enter instructions or type /help';
     return 'Enter a research topic...  ⌘K';
   })();
@@ -31,7 +31,7 @@
   // ── Running ETA for status ──
   $: runningEta = (() => {
     if ($dockContext !== 'running') return '';
-    const p = $jobStore.progress;
+    const p = $jobProgress;
     if (p >= 95) return '< 1m';
     const remaining = Math.round((100 - p) / 15);
     return `~${Math.max(remaining, 1)}m`;
@@ -42,7 +42,7 @@
     {
       icon: 'research' as const,
       value: $dockContext === 'running'
-        ? `${$jobStore.progress}% ETA ${runningEta}`
+        ? `${$jobProgress}% ETA ${runningEta}`
         : $dockContext === 'complete'
         ? 'complete ✓'
         : `${$dashboardStore.runningCount} running`,

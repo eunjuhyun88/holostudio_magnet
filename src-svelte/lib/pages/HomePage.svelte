@@ -15,7 +15,7 @@
   import { router } from '../stores/router.ts';
   import { studioStore } from '../stores/studioStore.ts';
   import { dashboardStore } from '../stores/dashboardStore.ts';
-  import { jobStore, completedCount } from '../stores/jobStore.ts';
+  import { jobStore, completedCount, jobProgress as jobProgressStore } from '../stores/jobStore.ts';
   import { modelPublishStore } from '../stores/modelPublishStore.ts';
   import { nodeStore, hasGpuNode } from '../stores/nodeStore.ts';
   import { wallet, WALLET_OPTIONS } from '../stores/walletStore.ts';
@@ -39,7 +39,7 @@
   $: isLoggedIn = $wallet.connected;
   $: jobPhase = $jobStore.phase;
   $: jobTopic = $jobStore.topic;
-  $: jobProgress = $jobStore.progress;
+  $: jobProgress = $jobProgressStore;
   $: isRunning = jobPhase === 'running' || jobPhase === 'setup';
   $: isComplete = jobPhase === 'complete';
   $: bestMetric = $jobStore.bestMetric;

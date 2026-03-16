@@ -42,6 +42,12 @@ export const crashCount = derived(jobCounts, $c => $c.crashes);
 export const trainingCount = derived(jobCounts, $c => $c.training);
 export const activeNodeCount = derived(jobCounts, $c => $c.activeNodeCount);
 
+/** Job progress as a percentage (0–100), derived from completed experiments / total */
+export const jobProgress = derived([jobCounts, jobState], ([$c, $j]) => {
+  if ($j.totalExperiments <= 0) return 0;
+  return Math.min(100, Math.round(($c.completed / $j.totalExperiments) * 100));
+});
+
 /** Commit-Reveal verification pipeline counts */
 export const verificationCounts = derived(jobCounts, $c => $c.verification);
 
