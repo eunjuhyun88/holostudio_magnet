@@ -24,6 +24,7 @@
     stop: void;
     pause: void;
     newresearch: void;
+    dashboard: void;
   }>();
 </script>
 
@@ -53,6 +54,9 @@
       <span class="sb-m-hit">{hitRate}%</span>
     </div>
     <div class="sb-controls">
+      <button class="sb-btn sb-dash" on:click={() => dispatch('dashboard')} title="Dashboard">
+        <svg width="11" height="11" viewBox="0 0 16 16"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" fill="currentColor" opacity="0.85"/></svg>
+      </button>
       <button class="sb-btn" on:click={() => dispatch('pause')} disabled={runtimeReadonly} title={paused ? 'Resume' : 'Pause'}>
         {#if paused}
           <svg width="11" height="11" viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14" fill="currentColor"/></svg>
@@ -141,6 +145,7 @@
   .sb-btn:hover:not(:disabled) { background: #eee; color: #444; }
   .sb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .sb-stop:hover:not(:disabled) { background: rgba(192,57,43,0.06); color: #c0392b; }
+  .sb-dash:hover { background: rgba(217,119,87,0.08); color: var(--accent, #D97757); }
 
   /* Complete */
   .sb-check { color: #27864a; flex-shrink: 0; }
