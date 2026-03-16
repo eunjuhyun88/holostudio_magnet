@@ -219,4 +219,12 @@
     h2 { font-size: 1.1rem; }
     .ppap-stats { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel { animation: none; }
+    .ppap-stage.current .ppap-dot { animation: none; }
+    .ppap-stage { transition: none; }
+    .ppap-connector { transition: none; }
+    .ppap-dot { transition: none; }
+  }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { fly, fade } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { router } from '../stores/router.ts';
   import PixelOwl from '../components/PixelOwl.svelte';
   import PixelIcon from '../components/PixelIcon.svelte';
@@ -81,8 +81,8 @@
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
   }
 
-  onMount(() => {
-    // Single 800ms interval drives all simulation
+  function startSim() {
+    if (simInterval) return;
     simInterval = setInterval(() => {
       tickCount++;
 
@@ -119,10 +119,24 @@
         logIdx++;
       }
     }, 800);
+  }
+
+  function stopSim() {
+    if (simInterval) { clearInterval(simInterval); simInterval = undefined as any; }
+  }
+
+  function handleVisibility() {
+    if (document.hidden) stopSim(); else startSim();
+  }
+
+  onMount(() => {
+    startSim();
+    document.addEventListener('visibilitychange', handleVisibility);
   });
 
   onDestroy(() => {
-    clearInterval(simInterval);
+    stopSim();
+    document.removeEventListener('visibilitychange', handleVisibility);
   });
 </script>
 

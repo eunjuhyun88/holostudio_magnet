@@ -600,8 +600,8 @@
     animation: arcPulse 2.5s ease-in-out infinite;
   }
   @keyframes arcPulse {
-    0%, 100% { filter: drop-shadow(0 0 0 transparent); opacity: 1; }
-    50% { filter: drop-shadow(0 0 3px var(--accent, #D97757)); opacity: 0.85; }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
   }
 
   /* ====== DASHBOARD GRID ====== */

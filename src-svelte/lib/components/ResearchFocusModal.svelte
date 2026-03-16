@@ -81,9 +81,7 @@
     padding: 28px;
     background:
       radial-gradient(circle at top, rgba(217, 119, 87, 0.12), transparent 34%),
-      rgba(248, 244, 239, 0.78);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+      rgba(248, 244, 239, 0.95);
   }
 
   .focus-card {
