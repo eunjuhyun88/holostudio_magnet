@@ -169,13 +169,24 @@
     .sb-metrics { gap: 5px; font-size: 9px; }
     .sb-m-delta { font-size: 8px; padding: 1px 3px; }
     .sb-m-crash { display: none; }
-    .sb-btn { width: 32px; height: 32px; border-radius: 8px; }
-    .sb-new { padding: 8px 14px; font-size: 11px; }
+    .sb-btn {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sb-btn svg { width: 14px; height: 14px; }
+    .sb-controls { gap: 6px; }
+    .sb-new {
+      padding: 10px 16px; font-size: 12px;
+      min-height: 40px;
+      display: flex; align-items: center; justify-content: center;
+    }
   }
   @media (max-width: 400px) {
     .sb-metrics { gap: 4px; font-size: 8px; }
     .sb-m-keep { display: none; }
     .sb-m-hit { display: none; }
-    .sb-topic { font-size: 11px; max-width: 100px; }
+    .sb-m-stat { display: none; }
+    .sb-topic { font-size: 11px; max-width: 80px; }
   }
 </style>

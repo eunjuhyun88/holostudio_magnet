@@ -75,8 +75,23 @@
           {:then mod}
             <svelte:component this={mod.default} />
           {:catch}
-            <div class="page-error">Failed to load page</div>
+            <div class="page-error">
+              <div class="page-error-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <p class="page-error-title">Failed to load page</p>
+              <p class="page-error-hint">Check your connection and try again.</p>
+              <div class="page-error-actions">
+                <button class="page-error-btn" on:click={() => { window.location.reload(); }}>Retry</button>
+                <button class="page-error-btn secondary" on:click={() => router.navigate('home')}>Go Home</button>
+              </div>
+            </div>
           {/await}
+        {:else}
+          <div class="page-error">
+            <p class="page-error-title">Page not found</p>
+            <button class="page-error-btn" on:click={() => router.navigate('home')}>Go Home</button>
+          </div>
         {/if}
       </div>
     {/key}
@@ -128,9 +143,48 @@
   }
 
   .page-error {
-    padding: 40px;
+    padding: 60px 24px;
     text-align: center;
     color: var(--text-muted, #9a9590);
-    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
+  .page-error-icon { color: var(--border, #E5E0DA); margin-bottom: 4px; }
+  .page-error-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b6560);
+    margin: 0;
+  }
+  .page-error-hint {
+    font-size: 0.74rem;
+    color: var(--text-muted, #9a9590);
+    margin: 0 0 8px;
+  }
+  .page-error-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .page-error-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent, #D97757);
+    color: #fff;
+    font: 600 0.78rem/1 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 150ms;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .page-error-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .page-error-btn.secondary {
+    background: var(--surface, #fff);
+    color: var(--text-secondary, #6b6560);
+    border: 1px solid var(--border, #E5E0DA);
+  }
+  .page-error-btn.secondary:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); }
 </style>
