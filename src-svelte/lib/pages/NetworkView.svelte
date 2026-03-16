@@ -494,7 +494,7 @@
       }
       telemetryMode = e.detail;
     }}
-    on:viewGlobe={() => router.navigate('globe')}
+    on:viewGlobe={() => router.navigate('network')}
   />
 
   <!-- Content: Canvas + Side Panel -->
