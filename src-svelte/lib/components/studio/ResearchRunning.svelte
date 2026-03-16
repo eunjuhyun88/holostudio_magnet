@@ -65,6 +65,7 @@
     submit: { text: string; parentId: number | null };
     zoomIn: void;
     viewResults: void;
+    goToDashboard: void;
   }>();
 
   // Forced cancellation state (ResearchJobCancelledByProtocol AUTO)
@@ -141,6 +142,7 @@
   function handleStop() { dispatch('stop'); }
   function handlePause() { jobStore.togglePause(); }
   function handleZoomIn() { dispatch('zoomIn'); }
+  function handleDashboard() { dispatch('goToDashboard'); }
 
   function handleSubmitFromPrompt(e: CustomEvent<string>) {
     dispatch('submit', { text: e.detail, parentId: null });
@@ -184,6 +186,7 @@
       hitRate={completed > 0 ? Math.round(($keepCount / completed) * 100) : 0}
       on:stop={handleStop}
       on:pause={handlePause}
+      on:dashboard={handleDashboard}
     />
   </div>
 
