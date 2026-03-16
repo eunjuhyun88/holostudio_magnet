@@ -80,7 +80,7 @@
 
   const AUTO_SPEED = 0.0012;
   const R_RATIO = 0.38;
-  const DOT_DENSITY = 18000;
+  const DOT_DENSITY = 6000;
 
   // Performance: cache measureText results
   const textWidthCache = new Map<string, number>();
@@ -300,7 +300,7 @@
       ctx.beginPath();
       let started = false;
       let anyVisible = false;
-      for (let f = 0; f <= 1; f += 0.03) {
+      for (let f = 0; f <= 1; f += 0.06) {
         const [ax, ay, az] = arcPt(arc.from, arc.to, f, lift);
         const ap = proj(ax, ay, az, cx, cy, R);
         if (ap.z > 0.25) { started = false; continue; }
@@ -320,12 +320,11 @@
       const [px, py, pz] = arcPt(arc.from, arc.to, f, lift);
       const pp = proj(px, py, pz, cx, cy, R);
       if (pp.z <= 0.25) {
-        const gr = 4 * pp.sc;
-        const g = ctx.createRadialGradient(pp.sx, pp.sy, 0, pp.sx, pp.sy, gr);
-        g.addColorStop(0, 'rgba(217, 119, 87, 0.5)');
-        g.addColorStop(1, 'rgba(217, 119, 87, 0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(pp.sx - gr, pp.sy - gr, gr * 2, gr * 2);
+        // Simple glow circle (no per-frame gradient)
+        ctx.beginPath();
+        ctx.arc(pp.sx, pp.sy, 3.5 * pp.sc, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(217, 119, 87, 0.18)';
+        ctx.fill();
 
         ctx.beginPath();
         ctx.arc(pp.sx, pp.sy, 1.5 * pp.sc, 0, Math.PI * 2);
