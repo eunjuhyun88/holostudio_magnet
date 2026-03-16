@@ -1,9 +1,10 @@
 import { writable, derived, get } from 'svelte/store';
 import { jobStore } from './jobStore.ts';
+import type { ResearchTypeId } from '../data/researchTypes.ts';
 
 // ── Types ──
 
-export type StudioPhase = 'idle' | 'step1' | 'step2' | 'setup' | 'running' | 'complete' | 'publish' | 'published';
+export type StudioPhase = 'idle' | 'step1' | 'step1-topic' | 'step2' | 'setup' | 'running' | 'complete' | 'publish' | 'published';
 
 export type ResourceMode = 'demo' | 'local' | 'network' | 'hybrid';
 
@@ -13,6 +14,10 @@ interface StudioState {
   createTopic: string;
   /** Preset ID if user selected one */
   createPreset: string | null;
+  /** Selected research type (llm, expert, classifier, etc.) */
+  researchType: ResearchTypeId | null;
+  /** Type-specific option selected in step2 */
+  step2Selection: string | null;
   /** Resource execution mode */
   resourceMode: ResourceMode;
   /** If forking from existing research */
@@ -29,6 +34,8 @@ const initialState: StudioState = {
   phase: 'idle',
   createTopic: '',
   createPreset: null,
+  researchType: null,
+  step2Selection: null,
   resourceMode: 'demo',
   forkSource: null,
   lastActivePhase: null,
@@ -58,6 +65,16 @@ function createStudioStore() {
       update(s => ({ ...s, createPreset: presetId }));
     },
 
+    /** Set research type */
+    setResearchType(type: ResearchTypeId) {
+      update(s => ({ ...s, researchType: type }));
+    },
+
+    /** Set step2 type-specific selection */
+    setStep2Selection(selection: string) {
+      update(s => ({ ...s, step2Selection: selection }));
+    },
+
     /** Set resource execution mode */
     setResourceMode(mode: ResourceMode) {
       update(s => ({ ...s, resourceMode: mode }));
@@ -68,19 +85,31 @@ function createStudioStore() {
       update(s => ({ ...s, forkSource: source }));
     },
 
-    /** Transition: IDLE → STEP1 (topic input) */
+    /** Transition: IDLE → STEP1 (preset type selection) */
     startCreate(topic?: string) {
       update(s => ({
         ...s,
         phase: 'step1',
         createTopic: topic ?? '',
         createPreset: null,
+        researchType: null,
+        step2Selection: null,
         forkSource: null,
         lastActivePhase: s.phase,
       }));
     },
 
-    /** Transition: STEP1 → STEP2 (AI recommendation) */
+    /** Transition: STEP1 → STEP1-TOPIC (type-specific topic input) */
+    goToTopicInput(type: ResearchTypeId) {
+      update(s => ({
+        ...s,
+        phase: 'step1-topic',
+        researchType: type,
+        lastActivePhase: s.phase,
+      }));
+    },
+
+    /** Transition: STEP1-TOPIC → STEP2 (type-specific options) */
     goToStep2(topic?: string) {
       update(s => ({
         ...s,
@@ -136,20 +165,22 @@ function createStudioStore() {
       update(s => {
         switch (s.phase) {
           case 'step1':
-            return { ...s, phase: 'idle', lastActivePhase: s.phase };
+            return { ...s, phase: 'idle' as StudioPhase, lastActivePhase: s.phase };
+          case 'step1-topic':
+            return { ...s, phase: 'step1' as StudioPhase, lastActivePhase: s.phase };
           case 'step2':
-            return { ...s, phase: 'step1', lastActivePhase: s.phase };
+            return { ...s, phase: 'step1-topic' as StudioPhase, lastActivePhase: s.phase };
           case 'setup':
-            return { ...s, phase: 'step2', lastActivePhase: s.phase };
+            return { ...s, phase: 'step2' as StudioPhase, lastActivePhase: s.phase };
           case 'running':
             // Can't go back from running — must stop first
             return s;
           case 'complete':
-            return { ...s, phase: 'idle', lastActivePhase: s.phase };
+            return { ...s, phase: 'idle' as StudioPhase, lastActivePhase: s.phase };
           case 'publish':
-            return { ...s, phase: 'complete', lastActivePhase: s.phase };
+            return { ...s, phase: 'complete' as StudioPhase, lastActivePhase: s.phase };
           case 'published':
-            return { ...s, phase: 'idle', lastActivePhase: s.phase };
+            return { ...s, phase: 'idle' as StudioPhase, lastActivePhase: s.phase };
           default:
             return s;
         }
@@ -182,3 +213,4 @@ export const studioStore = createStudioStore();
 export const studioPhase = derived(studioStore, $s => $s.phase);
 export const studioTopic = derived(studioStore, $s => $s.createTopic);
 export const studioResourceMode = derived(studioStore, $s => $s.resourceMode);
+export const studioResearchType = derived(studioStore, $s => $s.researchType);
