@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
+  import { router } from '../stores/router.ts';
   import PixelOwl from '../components/PixelOwl.svelte';
   import PixelIcon from '../components/PixelIcon.svelte';
 
@@ -126,6 +127,10 @@
 </script>
 
 <div class="pipeline-page">
+  <button class="pipe-back-btn" on:click={() => router.navigate('studio')} aria-label="Back to Studio">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Back</span>
+  </button>
   <div class="terminal">
     <!-- Terminal chrome -->
     <div class="term-chrome">
@@ -224,11 +229,35 @@
   .pipeline-page {
     min-height: calc(100vh - 52px);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     background: #0a0a12;
+    position: relative;
   }
+  .pipe-back-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.5);
+    font: 500 0.72rem/1 'Inter', sans-serif;
+    padding: 10px 16px;
+    min-height: 44px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 150ms;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pipe-back-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.2); }
 
   .terminal {
     width: 100%;
@@ -559,19 +588,24 @@
 
   /* ── Responsive ── */
   @media (max-width: 600px) {
-    .pipeline-page { padding: 10px; }
+    .pipeline-page {
+      padding: 60px 10px calc(80px + env(safe-area-inset-bottom, 0px));
+      justify-content: flex-start;
+    }
+    .pipe-back-btn { top: 10px; left: 10px; }
     .term-content { padding: 16px 12px 12px; }
     .header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
     .header-owl { transform: scale(0.88); }
-    .header-title { justify-content: center; }
+    .header-title { justify-content: center; flex-wrap: wrap; }
     .header-finding { justify-content: center; }
     .protocol-name { font-size: 0.94rem; }
     .header-meta { font-size: 0.68rem; }
     .header-finding { font-size: 0.68rem; }
-    .stage-row { gap: 10px; min-height: 42px; }
+    .stage-row { gap: 10px; min-height: 44px; }
     .stage-detail { display: none; }
     .stage-label { font-size: 0.75rem; }
     .log-section { margin-top: 12px; }
+    .log-line { font-size: 0.62rem; }
   }
 
   /* C-1: prefers-reduced-motion */

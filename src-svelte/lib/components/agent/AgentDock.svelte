@@ -577,21 +577,29 @@
   /* ═══ RESPONSIVE ═══ */
   @media (max-width: 600px) {
     .agent-dock {
-      bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      bottom: calc(8px + env(safe-area-inset-bottom, 0px));
       width: calc(100vw - 16px);
       padding: 8px 10px 6px;
       border-radius: 16px;
     }
-    .dock-input-row { gap: 8px; }
-    .dock-owl { width: 24px; height: 24px; border-radius: 6px; }
-    .dock-input { font-size: 0.82rem; }
-    .dock-send, .dock-collapse-btn { width: 28px; height: 28px; }
-    .status-item { padding: 3px 6px; }
+    .dock-input-row { gap: 8px; min-height: 40px; }
+    .dock-owl { width: 28px; height: 28px; border-radius: 8px; }
+    .dock-input { font-size: 0.82rem; min-height: 36px; }
+    .dock-send, .dock-collapse-btn {
+      width: 36px; height: 36px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .status-item {
+      padding: 6px 8px;
+      min-height: 32px;
+      -webkit-tap-highlight-color: transparent;
+    }
     .status-label { display: none; }
   }
   @media (max-width: 420px) {
-    .status-value { font-size: 0.5rem; }
-    .status-item { padding: 3px 4px; gap: 4px; }
-    .dock-sep { height: 18px; margin: 0 3px; }
+    .status-value { font-size: 0.52rem; }
+    .status-item { padding: 5px 6px; gap: 4px; }
+    .dock-sep { height: 18px; margin: 0 2px; }
+    .dock-send, .dock-collapse-btn { width: 32px; height: 32px; }
   }
 </style>
