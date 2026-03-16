@@ -154,16 +154,24 @@
   let containerEl: HTMLElement;
 
   function animate() {
-    if (isVisible) tick++;
+    if (!isVisible) return; // Stop RAF when not visible
+    tick++;
     animFrame = requestAnimationFrame(animate);
+  }
+
+  function startAnim() {
+    if (isVisible && !animFrame) animate();
   }
 
   let mounted = false;
   onMount(() => {
     mounted = true;
-    animate();
-    observer = new IntersectionObserver(([entry]) => { isVisible = entry.isIntersecting; }, { threshold: 0 });
+    observer = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+      if (isVisible) startAnim(); // Resume RAF when visible
+    }, { threshold: 0 });
     if (containerEl) observer.observe(containerEl);
+    startAnim();
   });
 
   onDestroy(() => {
