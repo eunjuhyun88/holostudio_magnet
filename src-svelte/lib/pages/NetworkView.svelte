@@ -1093,6 +1093,7 @@
       margin-top: 38vh;
       border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0;
       min-height: 50vh;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     }
     .panel-tabs {
       overflow-x: auto;
@@ -1106,7 +1107,9 @@
     .ptab {
       flex: 0 0 auto;
       min-width: 72px;
+      min-height: 44px;
       white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
     .content { display: block; }
   }

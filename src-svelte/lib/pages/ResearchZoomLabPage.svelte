@@ -1221,7 +1221,10 @@
   }
 
   @media (max-width: 720px) {
-    .zoom-lab { padding: 12px; }
+    .zoom-lab {
+      padding: 12px;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
 
     .lab-hero,
     .lab-shell {

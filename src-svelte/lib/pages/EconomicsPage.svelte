@@ -983,7 +983,10 @@
   }
 
   @media (max-width: 600px) {
-    .dash-content { padding: 6px; }
+    .dash-content {
+      padding: 6px;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
     .dash-grid { gap: 10px; }
     .left-col, .right-col { gap: 12px; }
     .panel { padding: 14px; border-radius: var(--radius-md, 10px); }
@@ -1014,7 +1017,10 @@
     }
     .header-tag {
       font-size: 0.52rem;
-      padding: 4px 8px;
+      padding: 6px 10px;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
     }
 
     /* Mobile tabs visible */
@@ -1037,20 +1043,20 @@
       gap: 12px;
     }
 
-    /* Tab content managed by {#if} blocks — no .mtab-hidden needed */
-
     /* Feed improvements */
     .feed-list { max-height: 60vh; }
-    .feed-item { padding: 10px 8px; }
+    .feed-item { padding: 10px 8px; min-height: 44px; }
     .feed-text { font-size: 0.7rem; }
     .mtab-btn {
-      padding: 7px 10px;
-      font-size: 0.72rem;
+      padding: 10px 12px;
+      font-size: 0.74rem;
+      min-height: 40px;
+      -webkit-tap-highlight-color: transparent;
     }
   }
 
   @media (max-width: 380px) {
-    .mtab-btn { padding: 6px 8px; font-size: 0.68rem; }
+    .mtab-btn { padding: 8px 8px; font-size: 0.68rem; }
     .mtab-btn svg { display: none; }
     .metric-label { font-size: 0.58rem; }
     .metric-value { font-size: 0.85rem; }

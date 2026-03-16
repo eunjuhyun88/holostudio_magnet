@@ -834,9 +834,13 @@
     .content-layout :global(.content-sidebar) { position: static; }
   }
   @media (max-width: 600px) {
-    .detail { padding: var(--space-3, 12px); }
+    .detail {
+      padding: var(--space-3, 12px);
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
     .header-top { flex-direction: column; }
     .header-actions { width: 100%; }
+    .header-actions :global(button) { min-height: 44px; }
     .model-name { font-size: 1.2rem; }
     .usage-grid { grid-template-columns: 1fr; }
     .pool-grid { grid-template-columns: repeat(2, 1fr); }
