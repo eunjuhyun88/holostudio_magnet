@@ -4,7 +4,7 @@ import type { ResearchTypeId } from '../data/researchTypes.ts';
 
 // ── Types ──
 
-export type StudioPhase = 'idle' | 'step1' | 'step1-topic' | 'step2' | 'setup' | 'running' | 'complete' | 'publish' | 'published';
+export type StudioPhase = 'idle' | 'create' | 'setup' | 'running' | 'complete' | 'publish' | 'published';
 
 export type ResourceMode = 'demo' | 'local' | 'network' | 'hybrid';
 
@@ -85,36 +85,16 @@ function createStudioStore() {
       update(s => ({ ...s, forkSource: source }));
     },
 
-    /** Transition: IDLE → STEP1 (preset type selection) */
-    startCreate(topic?: string) {
+    /** Transition: IDLE → CREATE (unified creation view) */
+    startCreate(topic?: string, typeId?: ResearchTypeId) {
       update(s => ({
         ...s,
-        phase: 'step1',
+        phase: 'create',
         createTopic: topic ?? '',
         createPreset: null,
-        researchType: null,
+        researchType: typeId ?? null,
         step2Selection: null,
         forkSource: null,
-        lastActivePhase: s.phase,
-      }));
-    },
-
-    /** Transition: STEP1 → STEP1-TOPIC (type-specific topic input) */
-    goToTopicInput(type: ResearchTypeId) {
-      update(s => ({
-        ...s,
-        phase: 'step1-topic',
-        researchType: type,
-        lastActivePhase: s.phase,
-      }));
-    },
-
-    /** Transition: STEP1-TOPIC → STEP2 (type-specific options) */
-    goToStep2(topic?: string) {
-      update(s => ({
-        ...s,
-        phase: 'step2',
-        createTopic: topic ?? s.createTopic,
         lastActivePhase: s.phase,
       }));
     },
@@ -164,14 +144,10 @@ function createStudioStore() {
     goBack() {
       update(s => {
         switch (s.phase) {
-          case 'step1':
+          case 'create':
             return { ...s, phase: 'idle' as StudioPhase, lastActivePhase: s.phase };
-          case 'step1-topic':
-            return { ...s, phase: 'step1' as StudioPhase, lastActivePhase: s.phase };
-          case 'step2':
-            return { ...s, phase: 'step1-topic' as StudioPhase, lastActivePhase: s.phase };
           case 'setup':
-            return { ...s, phase: 'step2' as StudioPhase, lastActivePhase: s.phase };
+            return { ...s, phase: 'create' as StudioPhase, lastActivePhase: s.phase };
           case 'running':
             // Can't go back from running — must stop first
             return s;

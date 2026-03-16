@@ -2,12 +2,14 @@
   /**
    * MagnetStudioPage — Main entry point for Magnet Studio.
    *
-   * State machine:
-   *   IDLE → STEP1 → STEP2 → [SETUP] → RUNNING → COMPLETE → IDLE
-   *                                                  ↓
-   *                                              PUBLISH → PUBLISHED
+   * Simplified state machine:
+   *   IDLE → CREATE → [SETUP] → RUNNING → COMPLETE → IDLE
+   *                                             ↓
+   *                                         PUBLISH → PUBLISHED
    *
-   * Absorbs: DashboardPage, AutoresearchPage (partially), OntologyPage
+   * Flow: Dashboard → StudioCreator (unified) → Running → Complete
+   * Demo mode: 0 modals.  Network mode: 1 modal (ContractCallModal only).
+   *
    * Route: /  (studio)
    */
   import { onMount } from 'svelte';
@@ -18,24 +20,22 @@
   import type { ResourceMode } from '../stores/studioStore.ts';
   import { toastStore } from '../stores/toastStore.ts';
   import StudioDashboard from '../components/studio/StudioDashboard.svelte';
-  import StudioStep1 from '../components/studio/StudioStep1.svelte';
-  import StudioStep2 from '../components/studio/StudioStep2.svelte';
+  import StudioCreator from '../components/studio/StudioCreator.svelte';
   import ConfirmModal from '../components/ConfirmModal.svelte';
   import ContractCallModal from '../components/ContractCallModal.svelte';
   import type { ContractCall } from '../data/protocolData.ts';
   import { wallet } from '../stores/walletStore.ts';
 
-  // ── Confirmation state ──
+  // ── Confirmation state (stop only — start confirm removed) ──
   let showStopConfirm = false;
-  let showStartConfirm = false;
   let showCreditInsufficient = false;
-  let pendingStartEvent: { topic: string; resourceMode: ResourceMode } | null = null;
 
   // ── ContractCallModal state ──
   let modalOpen = false;
   let modalCall: ContractCall | null = null;
   let modalStep: 'review' | 'pending' | 'confirmed' | 'error' = 'review';
   let pendingAction: 'start' | 'stop' | null = null;
+  let pendingStartEvent: { topic: string; resourceMode: ResourceMode } | null = null;
 
   $: walletConnected = $wallet.connected;
   $: walletAddress = $wallet.address;
@@ -49,8 +49,6 @@
   // Auto-detect phase from jobStore on mount
   onMount(() => {
     studioStore.syncFromJobStore();
-
-    // idle = dashboard (no auto-advance)
 
     // Watch for job completion
     const unsub = jobStore.subscribe(($job) => {
@@ -78,57 +76,49 @@
 
   // ── Event Handlers ──
 
-  /** From StudioStep1: user entered topic and hit Continue */
-  function handleStep1Continue(e: CustomEvent<{ topic: string }>) {
-    studioStore.goToStep2(e.detail.topic);
+  /** From StudioCreator: start research (unified handler) */
+  function handleStartResearch(e: CustomEvent<{ topic: string; resourceMode: ResourceMode }>) {
+    const { topic, resourceMode } = e.detail;
+
+    if (resourceMode === 'demo') {
+      // Demo mode: no modal, start immediately
+      studioStore.setTopic(topic);
+      studioStore.setResourceMode(resourceMode);
+      jobStore.startJob(topic, 3, 25);
+      studioStore.startRunning();
+      toastStore.success('Research started');
+    } else {
+      // Network/local/hybrid: show ContractCallModal only (no ConfirmModal)
+      pendingStartEvent = e.detail;
+      const budget = '150';
+      modalCall = {
+        title: 'Start Research',
+        contract: '0x4F0a...7E3d  HootJobs.sol',
+        fn: 'createResearchJob',
+        params: [
+          { name: 'topic', type: 'string', value: topic },
+          { name: 'budget', type: 'uint256', value: `${budget} HOOT` },
+          { name: 'tier', type: 'uint8', value: resourceMode === 'network' ? 'T2' : 'T1' },
+          { name: 'config', type: 'bytes', value: '0x...' },
+        ],
+        fee: `${budget} HOOT (escrow)`,
+        gas: '~120,000',
+        note: 'Budget is deposited in escrow. Unused funds are refunded on completion or cancellation.',
+        accentColor: 'var(--accent)',
+        paymentEnabled: true,
+        hootAmount: budget,
+        usdcAmount: String(Math.round(Number(budget) * 1.25)),
+      };
+      modalStep = 'review';
+      modalOpen = true;
+      pendingAction = 'start';
+    }
   }
 
-  /** From StudioStep2: go to advanced setup */
-  function handleGoToSetupFromStep2(e: CustomEvent<{ topic: string }>) {
+  /** From StudioCreator: go to advanced setup */
+  function handleGoToSetup(e: CustomEvent<{ topic: string }>) {
     studioStore.setTopic(e.detail.topic);
     studioStore.goToSetup();
-  }
-
-  /** From StudioStep2: start research */
-  function handleStartResearch(e: CustomEvent<{ topic: string; resourceMode: ResourceMode }>) {
-    pendingStartEvent = e.detail;
-    showStartConfirm = true;
-  }
-
-  function confirmStartResearch() {
-    showStartConfirm = false;
-    if (!pendingStartEvent) return;
-
-    // Open ContractCallModal for ResearchJobCreated
-    const { topic, resourceMode } = pendingStartEvent;
-    const budget = resourceMode === 'demo' ? '0' : '150';
-
-    modalCall = {
-      title: 'Start Research',
-      contract: '0x4F0a...7E3d  HootJobs.sol',
-      fn: 'createResearchJob',
-      params: [
-        { name: 'topic', type: 'string', value: topic },
-        { name: 'budget', type: 'uint256', value: `${budget} HOOT` },
-        { name: 'tier', type: 'uint8', value: resourceMode === 'network' ? 'T2' : 'T1' },
-        { name: 'config', type: 'bytes', value: '0x...' },
-      ],
-      fee: `${budget} HOOT (escrow)`,
-      gas: '~120,000',
-      note: 'Budget is deposited in escrow. Unused funds are refunded on completion or cancellation.',
-      accentColor: 'var(--accent)',
-      paymentEnabled: resourceMode !== 'demo',
-      hootAmount: budget,
-      usdcAmount: String(Math.round(Number(budget) * 1.25)),
-    };
-    modalStep = 'review';
-    modalOpen = true;
-    pendingAction = 'start';
-  }
-
-  function cancelStartResearch() {
-    showStartConfirm = false;
-    pendingStartEvent = null;
   }
 
   function handleLaunchFromSetup(e: CustomEvent<{ ontology: any }>) {
@@ -140,11 +130,6 @@
   }
 
   function handleBack() {
-    // If going back from step1, go to dashboard (idle)
-    if ($studioPhase === 'step1') {
-      studioStore.reset();
-      return;
-    }
     studioStore.goBack();
   }
 
@@ -183,14 +168,11 @@
     modalStep = 'pending';
     setTimeout(() => {
       modalStep = 'confirmed';
-      // Execute the actual action after confirmed
       if (pendingAction === 'start' && pendingStartEvent) {
         const { topic, resourceMode } = pendingStartEvent;
         studioStore.setTopic(topic);
         studioStore.setResourceMode(resourceMode);
-        const branchCount = 3;
-        const avgIters = 25;
-        jobStore.startJob(topic, branchCount, avgIters);
+        jobStore.startJob(topic, 3, 25);
         studioStore.startRunning();
         toastStore.success('Research started');
         pendingStartEvent = null;
@@ -211,13 +193,7 @@
 
   function handleCreditBuy() {
     showCreditInsufficient = false;
-    // Open external DEX link
     window.open('https://app.uniswap.org', '_blank');
-  }
-
-  function handleCreditBurn() {
-    showCreditInsufficient = false;
-    router.navigate('protocol');
   }
 
   function handleSubmit(e: CustomEvent<{ text: string; parentId: number | null }>) {
@@ -251,27 +227,17 @@
       {#if $studioPhase === 'idle'}
         <StudioDashboard
           on:newResearch={() => studioStore.startCreate()}
-          on:quickStart={(e) => {
-            // Pre-select type so Step1 skips type grid → straight to topic input
-            studioStore.startCreate();
-            studioStore.setResearchType(e.detail.typeId);
-          }}
+          on:quickStart={(e) => studioStore.startCreate(undefined, e.detail.typeId)}
           on:resumeJob={() => studioStore.syncFromJobStore()}
           on:openModel={(e) => router.navigate('model-detail', { modelId: e.detail.modelId })}
           on:viewModels={() => router.navigate('models')}
         />
 
-      {:else if $studioPhase === 'step1' || $studioPhase === 'step1-topic'}
-        <StudioStep1
-          on:back={handleBack}
-          on:continue={handleStep1Continue}
-        />
-
-      {:else if $studioPhase === 'step2'}
-        <StudioStep2
+      {:else if $studioPhase === 'create'}
+        <StudioCreator
           on:back={handleBack}
           on:startResearch={handleStartResearch}
-          on:goToSetup={handleGoToSetupFromStep2}
+          on:goToSetup={handleGoToSetup}
         />
 
       {:else if $studioPhase === 'setup'}
@@ -315,14 +281,8 @@
             totalExperiments={$jobStore.totalExperiments}
             on:newResearch={handleNewResearch}
             on:deploy={handlePublish}
-            on:retrain={() => {
-              studioStore.startCreate($studioStore.createTopic);
-              studioStore.goToStep2($studioStore.createTopic);
-            }}
-            on:improve={() => {
-              studioStore.startCreate($studioStore.createTopic);
-              studioStore.goToStep2($studioStore.createTopic);
-            }}
+            on:retrain={() => studioStore.startCreate($studioStore.createTopic)}
+            on:improve={() => studioStore.startCreate($studioStore.createTopic)}
           />
         {:else}
           <div class="loading-state">Loading results...</div>
@@ -348,6 +308,7 @@
     </div>
   {/key}
 
+  <!-- Stop confirm (kept — destructive action needs confirmation) -->
   <ConfirmModal
     open={showStopConfirm}
     title="Stop this research?"
@@ -357,16 +318,6 @@
     variant="danger"
     on:confirm={confirmStop}
     on:cancel={cancelStop}
-  />
-
-  <ConfirmModal
-    open={showStartConfirm}
-    title="Start this research?"
-    message={pendingStartEvent ? `${pendingStartEvent.topic} — ${pendingStartEvent.resourceMode} mode` : ''}
-    confirmLabel="Start"
-    cancelLabel="Cancel"
-    on:confirm={confirmStartResearch}
-    on:cancel={cancelStartResearch}
   />
 
   <!-- Credit Insufficient Modal -->
@@ -380,7 +331,7 @@
     on:cancel={() => { showCreditInsufficient = false; }}
   />
 
-  <!-- ContractCallModal for on-chain transactions -->
+  <!-- ContractCallModal for on-chain transactions (network mode only) -->
   <ContractCallModal
     {modalOpen}
     {modalCall}
