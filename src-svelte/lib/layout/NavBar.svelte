@@ -10,7 +10,7 @@
   type PixelIconType = "sparkle" | "grid" | "chart" | "globe" | "protocol" | "ontology" | "research";
 
   const navItems: { view: AppView; label: string; icon: PixelIconType }[] = [
-    { view: "studio", label: "Studio", icon: "research" },
+    { view: "studio", label: "Magnet Studio", icon: "research" },
     { view: "models", label: "Models", icon: "grid" },
     { view: "network", label: "Network", icon: "globe" },
     { view: "protocol", label: "Protocol", icon: "protocol" },

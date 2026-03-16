@@ -17,6 +17,7 @@
   import { studioStore, studioPhase } from '../stores/studioStore.ts';
   import type { ResourceMode } from '../stores/studioStore.ts';
   import { toastStore } from '../stores/toastStore.ts';
+  import StudioDashboard from '../components/studio/StudioDashboard.svelte';
   import StudioStep1 from '../components/studio/StudioStep1.svelte';
   import StudioStep2 from '../components/studio/StudioStep2.svelte';
   import ConfirmModal from '../components/ConfirmModal.svelte';
@@ -49,10 +50,7 @@
   onMount(() => {
     studioStore.syncFromJobStore();
 
-    // If idle (user navigated to /studio directly), auto-advance to step1
-    if ($studioPhase === 'idle') {
-      studioStore.startCreate();
-    }
+    // idle = dashboard (no auto-advance)
 
     // Watch for job completion
     const unsub = jobStore.subscribe(($job) => {
@@ -142,10 +140,9 @@
   }
 
   function handleBack() {
-    // If going back from step1, navigate to Home
+    // If going back from step1, go to dashboard (idle)
     if ($studioPhase === 'step1') {
       studioStore.reset();
-      router.navigate('home');
       return;
     }
     studioStore.goBack();
@@ -233,7 +230,6 @@
 
   function handleNewResearch() {
     studioStore.reset();
-    router.navigate('home');
   }
 
   function handlePublish() {
@@ -252,7 +248,14 @@
 <div class="studio-page">
   {#key phaseKey}
     <div class="phase-container" in:fly={{ y: 12, duration: 250, delay: 60 }} out:fade={{ duration: 120 }}>
-      {#if $studioPhase === 'step1' || $studioPhase === 'step1-topic' || $studioPhase === 'idle'}
+      {#if $studioPhase === 'idle'}
+        <StudioDashboard
+          on:newResearch={() => studioStore.startCreate()}
+          on:resumeJob={() => studioStore.syncFromJobStore()}
+          on:openModel={(e) => router.navigate('model-detail', { modelId: e.detail.modelId })}
+        />
+
+      {:else if $studioPhase === 'step1' || $studioPhase === 'step1-topic'}
         <StudioStep1
           on:back={handleBack}
           on:continue={handleStep1Continue}
