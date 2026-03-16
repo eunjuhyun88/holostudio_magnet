@@ -628,17 +628,19 @@
     }
     .cb-btn {
       flex: 1; text-align: center; justify-content: center;
-      padding: 10px 10px; min-height: 40px; font-size: 10px;
+      padding: 10px 10px; min-height: 44px; font-size: 11px;
       white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
-    .cb-agent { padding: 6px 12px; }
-    .cb-agent-input { font-size: 12px; }
-    .cb-agent-send { width: 32px; height: 32px; }
+    .cb-agent { padding: 8px 12px; }
+    .cb-agent-input { font-size: 12px; min-height: 36px; }
+    .cb-agent-send { width: 36px; height: 36px; }
 
     /* Tiles */
     .tile { border-radius: 14px; }
     .branch-list { max-height: 200px; }
-    .branch-row { padding: 8px 10px; min-height: 40px; }
+    .branch-row { padding: 10px 12px; min-height: 44px; }
+    .tile-focus-btn { width: 40px; height: 40px; }
     .tile-focus-btn::after { display: none; } /* Hide tooltips on mobile */
   }
 
