@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { router } from "../stores/router.ts";
   import { fly, fade } from 'svelte/transition';
   import { DEMO_MODEL, EXPERIMENT_LOG, SPARK_DATA } from "../data/modelDetailData.ts";
@@ -33,8 +34,7 @@
   let tryTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // ── Load model by ID from URL param ──
-  let modelId: string = '';
-  router.params.subscribe(p => { modelId = p.modelId ?? ''; })();
+  let modelId: string = get(router.params).modelId ?? '';
 
   onMount(async () => {
     if (modelId) {

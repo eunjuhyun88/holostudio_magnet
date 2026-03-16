@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { fly, fade } from 'svelte/transition';
   import { wallet } from '../stores/walletStore.ts';
   import { animateCounter } from '../utils/animate.ts';
@@ -28,9 +29,9 @@
   const validTabs = ['operations', 'analytics', 'events'] as const;
   type MobileTab = typeof validTabs[number];
   function resolveTab(): MobileTab {
-    let t: MobileTab = 'operations';
-    router.params.subscribe(p => { if (p.tab && validTabs.includes(p.tab as MobileTab)) t = p.tab as MobileTab; })();
-    return t;
+    const p = get(router.params);
+    if (p.tab && validTabs.includes(p.tab as MobileTab)) return p.tab as MobileTab;
+    return 'operations';
   }
   let mobileTab: MobileTab = resolveTab();
 
