@@ -10,7 +10,6 @@
   type PixelIconType = "sparkle" | "grid" | "chart" | "globe" | "protocol" | "ontology" | "research";
 
   const navItems: { view: AppView; label: string; icon: PixelIconType }[] = [
-    { view: "home", label: "Home", icon: "sparkle" },
     { view: "studio", label: "Studio", icon: "research" },
     { view: "models", label: "Models", icon: "grid" },
     { view: "network", label: "Network", icon: "globe" },
@@ -18,8 +17,8 @@
   ];
 
   $: currentView = $router;
-  // home and studio are always visible; other tabs follow stage gate
-  $: visibleNavItems = navItems.filter(item => item.view === 'home' || item.view === 'studio' || $unlockedPages.includes(item.view));
+  // studio is always visible; other tabs follow stage gate
+  $: visibleNavItems = navItems.filter(item => item.view === 'studio' || $unlockedPages.includes(item.view));
   $: isAIActive = $jobStore.phase === 'running' || $jobStore.phase === 'setup';
   $: owlMood = (() => {
     const p = $jobStore.phase;
