@@ -271,14 +271,14 @@
             <span class="br-rank" style="background: {CATEGORY_COLORS[branch.category]}15; color: {CATEGORY_COLORS[branch.category]}">{i + 1}</span>
             <div class="br-info">
               <span class="br-name">{branch.label}</span>
-              {#if branch.active}<span class="br-live">⚡</span>{/if}
+              {#if branch.active}<span class="br-live"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L4 9h4l-1 6 5-8H8l1-6z"/></svg></span>{/if}
               <span class="br-metric">{branch.bestMetric < Infinity ? branch.bestMetric.toFixed(3) : '—'}</span>
             </div>
             <span class="br-kdc">{branch.keeps}/{branch.total - branch.keeps - branch.crashes}/{branch.crashes}</span>
             <span class="br-hit">{branch.hitRate}%</span>
             <div class="br-actions">
-              <button type="button" class="br-btn" class:br-btn-active={branch.boosted} disabled={runtimeReadonly} title="Boost" on:click|stopPropagation={() => jobStore.toggleCategoryBoost(branch.category)}>★</button>
-              <button type="button" class="br-btn" class:br-btn-paused={branch.paused} disabled={runtimeReadonly} title={branch.paused ? 'Resume' : 'Pause'} on:click|stopPropagation={() => jobStore.toggleCategoryPause(branch.category)}>{branch.paused ? '▶' : '⏸'}</button>
+              <button type="button" class="br-btn" class:br-btn-active={branch.boosted} disabled={runtimeReadonly} title="Boost" on:click|stopPropagation={() => jobStore.toggleCategoryBoost(branch.category)}><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.4 3.6 14.7l.8-5L.8 6.2l5-.7z"/></svg></button>
+              <button type="button" class="br-btn" class:br-btn-paused={branch.paused} disabled={runtimeReadonly} title={branch.paused ? 'Resume' : 'Pause'} on:click|stopPropagation={() => jobStore.toggleCategoryPause(branch.category)}>{#if branch.paused}<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6z"/></svg>{:else}<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="1" width="4" height="14" rx="1"/><rect x="10" y="1" width="4" height="14" rx="1"/></svg>{/if}</button>
             </div>
           </div>
         {/each}

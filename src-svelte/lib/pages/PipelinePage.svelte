@@ -154,7 +154,7 @@
           <div class="header-meta">Topic: <strong>{topic}</strong></div>
           <div class="header-meta">Session: <strong>{sessionId}</strong></div>
           <div class="header-finding">
-            <span class="finding-icon">💡</span>
+            <span class="finding-icon"><PixelIcon type="sparkle" size={14} /></span>
             <span class="finding-text">{finding}</span>
           </div>
         </div>

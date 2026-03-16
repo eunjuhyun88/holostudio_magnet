@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { JobPhase } from '../stores/jobStore.ts';
+  import PixelIcon from './PixelIcon.svelte';
 
   export let phase: JobPhase = 'idle';
   export let topic: string = '';
@@ -29,7 +30,7 @@
 <!-- Status-only bar — all input lives in ContextPanel -->
 <div class="status-bar" class:idle={phase === 'idle'} class:running={phase === 'running'} class:setup={phase === 'setup'} class:complete={phase === 'complete'}>
   {#if phase === 'idle'}
-    <span class="sb-icon">🦉</span>
+    <span class="sb-icon"><PixelIcon type="research" size={16} /></span>
     <span class="sb-label">Ready to research</span>
     <span class="sb-hint">← Enter a topic in the panel to begin</span>
 

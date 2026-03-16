@@ -33,6 +33,7 @@
   import { wallet } from '../stores/walletStore.ts';
   import ContractCallModal from '../components/ContractCallModal.svelte';
   import BondPanel from '../components/BondPanel.svelte';
+  import PixelIcon from '../components/PixelIcon.svelte';
   import TrustGaugePanel from '../components/TrustGaugePanel.svelte';
   import type { ContractCall } from '../data/protocolData.ts';
   import { SIMULATED_BALANCE, MAU_TARGET, TRUST_SCORE_TARGET } from '../data/protocolData.ts';
@@ -506,7 +507,7 @@
       <!-- GPU Onboard Prompt -->
       {#if needsGpuOnboard && !showOnboardWizard}
         <button class="gpu-onboard-prompt" on:click={() => { showOnboardWizard = true; }}>
-          <span class="gop-icon">⚡</span>
+          <span class="gop-icon"><PixelIcon type="sparkle" size={16} /></span>
           <div class="gop-body">
             <span class="gop-title">Register your GPU</span>
             <span class="gop-desc">Connect your GPU to the network and earn compute rewards</span>
