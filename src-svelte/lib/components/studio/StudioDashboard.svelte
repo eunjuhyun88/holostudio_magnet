@@ -22,6 +22,7 @@
   import { createEventDispatcher } from 'svelte';
   import { jobStore, completedCount } from '../../stores/jobStore.ts';
   import { modelPublishStore } from '../../stores/modelPublishStore.ts';
+  import { allSessions, activeSessionId, type JobSession } from '../../stores/jobSessionStore.ts';
   import { RESEARCH_TYPES, type ResearchTypeId } from '../../data/researchTypes.ts';
   import PixelIcon from '../PixelIcon.svelte';
 
@@ -29,6 +30,7 @@
     newResearch: void;
     quickStart: { typeId: ResearchTypeId };
     resumeJob: void;
+    switchSession: { sessionId: string };
     openModel: { modelId: string };
     viewModels: void;
   }>();
@@ -40,6 +42,9 @@
   $: publishedModels = $modelPublishStore;
   $: hasActiveJob = isRunning || isComplete;
   $: jobProgress = job.progress ?? 0;
+  $: sessions = $allSessions;
+  $: currentSessionId = $activeSessionId;
+  $: hasMultipleSessions = sessions.length > 1 || (sessions.length === 1 && !hasActiveJob);
 </script>
 
 <div class="dashboard">
@@ -64,8 +69,55 @@
     </div>
   </button>
 
-  <!-- Active Research Card (conditional) -->
-  {#if hasActiveJob}
+  <!-- Active Research Cards (multi-session support) -->
+  {#if sessions.length > 0}
+    <div class="section-card">
+      <div class="sc-header">
+        <span class="sc-title">My Researches</span>
+        <span class="sc-count">{sessions.filter(s => s.phase === 'running' || s.phase === 'setup').length} active</span>
+      </div>
+      <div class="sessions-list">
+        {#each sessions as sess (sess.id)}
+          <button
+            class="session-row"
+            class:session-active={sess.id === currentSessionId}
+            on:click={() => {
+              if (sess.id === currentSessionId) {
+                dispatch('resumeJob');
+              } else {
+                dispatch('switchSession', { sessionId: sess.id });
+              }
+            }}
+          >
+            <span class="sr-status" class:running={sess.phase === 'running' || sess.phase === 'setup'} class:done={sess.phase === 'complete'}></span>
+            <div class="sr-body">
+              <span class="sr-topic">{sess.topic || 'Untitled'}</span>
+              <div class="sr-meta">
+                {#if sess.phase === 'complete'}
+                  <span class="sr-stat sr-done">Complete</span>
+                {:else}
+                  <span class="sr-stat">{sess.progress}%</span>
+                {/if}
+                {#if sess.bestMetric < Infinity}
+                  <span class="sr-sep"></span>
+                  <span class="sr-stat">{sess.bestMetric.toFixed(3)}</span>
+                {/if}
+                <span class="sr-sep"></span>
+                <span class="sr-stat">{sess.completedExperiments}/{sess.totalExperiments} exp</span>
+              </div>
+            </div>
+            {#if sess.phase === 'running' || sess.phase === 'setup'}
+              <div class="sr-progress"><div class="sr-bar" style:width="{sess.progress}%"></div></div>
+            {/if}
+            <span class="sr-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {:else if hasActiveJob}
+    <!-- Fallback: single active job (no session store) -->
     <div class="section-card active-card">
       <div class="sc-header">
         <span class="sc-status" class:running={isRunning} class:done={isComplete}></span>
@@ -76,8 +128,6 @@
         <div class="sc-stats">
           {#if isRunning}
             <span class="sc-stat">{jobProgress}% complete</span>
-            <span class="sc-stat-sep"></span>
-            <span class="sc-stat">{job.totalExperiments || 0}/{(job.branches ?? []).reduce((s, b) => s + (b.iterations ?? 0), 0) || 60} exp</span>
           {:else}
             <span class="sc-stat sc-done">Complete</span>
             {#if job.bestMetric < Infinity}
@@ -392,6 +442,87 @@
   }
   .sc-btn-primary:hover {
     background: rgba(217, 119, 87, 0.12);
+  }
+
+  /* ═══ SESSIONS LIST (multi-research) ═══ */
+  .sessions-list {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .session-row {
+    appearance: none;
+    border: 1px solid var(--border, #E5E0DA);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; text-align: left;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+    position: relative;
+  }
+  .session-row:hover {
+    border-color: color-mix(in srgb, var(--accent, #D97757) 40%, transparent);
+    background: rgba(255, 255, 255, 0.8);
+  }
+  .session-active {
+    border-color: var(--accent, #D97757);
+    background: rgba(217, 119, 87, 0.03);
+  }
+
+  .sr-status {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-muted, #9a9590);
+    flex-shrink: 0;
+  }
+  .sr-status.running {
+    background: var(--accent, #D97757);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .sr-status.done { background: var(--green, #27864a); }
+
+  .sr-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sr-topic {
+    font-size: 0.8rem; font-weight: 600;
+    color: var(--text-primary, #2D2D2D);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sr-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.62rem;
+    color: var(--text-secondary, #6b6560);
+  }
+  .sr-sep {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--border, #E5E0DA);
+  }
+  .sr-done { color: var(--green, #27864a); font-weight: 700; }
+
+  .sr-progress {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; border-radius: 0 0 10px 10px;
+    background: rgba(217, 119, 87, 0.1);
+    overflow: hidden;
+  }
+  .sr-bar {
+    height: 100%;
+    background: var(--accent, #D97757);
+    transition: width 300ms ease;
+  }
+
+  .sr-arrow {
+    flex-shrink: 0;
+    color: var(--text-muted, #9a9590);
+    opacity: 0.4;
+    transition: all 200ms;
+  }
+  .session-row:hover .sr-arrow {
+    opacity: 1;
+    color: var(--accent, #D97757);
+    transform: translateX(2px);
   }
 
   /* ═══ MODELS GRID ═══ */
