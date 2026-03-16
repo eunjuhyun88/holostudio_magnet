@@ -67,7 +67,7 @@ export function runSimulationLoop(deps: SimulationDeps): void {
   trainingId = firstExp.id;
   deps.update(s => ({ ...s, experiments: [firstExp] }));
 
-  // Combined progress + verification tick (400ms interval)
+  // Combined progress + verification tick (1000ms interval — was 400ms, reduced for perf)
   const combinedTick = setInterval(() => {
     deps.update(s => {
       let changed = false;
@@ -118,7 +118,7 @@ export function runSimulationLoop(deps: SimulationDeps): void {
         ? keeps[keeps.length - 1].metric : s.baselineMetric;
       return { ...s, experiments: capped, bestMetric: best === Infinity ? s.bestMetric : best, baselineMetric: newBaseline };
     });
-  }, 400);
+  }, 1000);
   deps.addTimer(combinedTick);
 
   // Experiment scheduling loop
