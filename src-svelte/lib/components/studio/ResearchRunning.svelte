@@ -539,7 +539,15 @@
     min-height: 0;
   }
 
-  .prompt-tile { border-radius: 0; border-left: none; border-right: none; border-top: none; box-shadow: none; }
+  .prompt-tile {
+    border-radius: 0; border-left: none; border-right: none; border-top: none; box-shadow: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--glass-bg, rgba(255, 255, 255, 0.92));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
   .context-tile { background: transparent; border: none; box-shadow: none; padding: 0; }
   .terminal-tile { background: transparent; border: none; box-shadow: none; padding: 0; }
   .converge-tile :global(svg.convergence-chart) { width: 100%; height: auto; display: block; }
