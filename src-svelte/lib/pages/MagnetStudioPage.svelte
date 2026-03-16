@@ -7,17 +7,21 @@
    *                                             ↓
    *                                         PUBLISH → PUBLISHED
    *
+   * Multi-research: Multiple sessions can run concurrently.
+   * jobSessionStore manages session snapshots; jobStore is the active view.
+   *
    * Flow: Dashboard → StudioCreator (unified) → Running → Complete
    * Demo mode: 0 modals.  Network mode: 1 modal (ContractCallModal only).
    *
    * Route: /  (studio)
    */
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { router } from '../stores/router.ts';
   import { jobStore } from '../stores/jobStore.ts';
   import { studioStore, studioPhase } from '../stores/studioStore.ts';
   import type { ResourceMode } from '../stores/studioStore.ts';
+  import { jobSessionStore } from '../stores/jobSessionStore.ts';
   import { toastStore } from '../stores/toastStore.ts';
   import StudioDashboard from '../components/studio/StudioDashboard.svelte';
   import StudioCreator from '../components/studio/StudioCreator.svelte';
@@ -46,6 +50,9 @@
   let ResearchComplete: any = null;
   let StudioPublish: any = null;
 
+  // ── Session sync interval ──
+  let syncInterval: ReturnType<typeof setInterval> | null = null;
+
   // Auto-detect phase from jobStore on mount
   onMount(() => {
     studioStore.syncFromJobStore();
@@ -54,10 +61,23 @@
     const unsub = jobStore.subscribe(($job) => {
       if ($job.phase === 'complete' && $studioPhase === 'running') {
         studioStore.completeResearch();
+        jobSessionStore.syncActiveSession();
       }
     });
 
-    return unsub;
+    // Periodically sync active session metadata (progress, metrics)
+    syncInterval = setInterval(() => {
+      jobSessionStore.syncActiveSession();
+    }, 3000);
+
+    return () => {
+      unsub();
+      if (syncInterval) clearInterval(syncInterval);
+    };
+  });
+
+  onDestroy(() => {
+    if (syncInterval) clearInterval(syncInterval);
   });
 
   // Lazy load components when needed
@@ -82,10 +102,13 @@
 
     if (resourceMode === 'demo') {
       // Demo mode: no modal, start immediately
+      // Create a session for multi-research tracking
+      jobSessionStore.createSession(topic);
       studioStore.setTopic(topic);
       studioStore.setResourceMode(resourceMode);
       jobStore.startJob(topic, 3, 25);
       studioStore.startRunning();
+      jobSessionStore.syncActiveSession();
       toastStore.success('Research started');
     } else {
       // Network/local/hybrid: show ContractCallModal only (no ConfirmModal)
@@ -124,9 +147,11 @@
   function handleLaunchFromSetup(e: CustomEvent<{ ontology: any }>) {
     const ontology = e.detail.ontology;
     const topic = ontology.name;
+    jobSessionStore.createSession(topic);
     studioStore.setTopic(topic);
     jobStore.startJob(topic, 3, 25);
     studioStore.startRunning();
+    jobSessionStore.syncActiveSession();
   }
 
   function handleBack() {
@@ -170,10 +195,13 @@
       modalStep = 'confirmed';
       if (pendingAction === 'start' && pendingStartEvent) {
         const { topic, resourceMode } = pendingStartEvent;
+        // Create a session for multi-research tracking
+        jobSessionStore.createSession(topic);
         studioStore.setTopic(topic);
         studioStore.setResourceMode(resourceMode);
         jobStore.startJob(topic, 3, 25);
         studioStore.startRunning();
+        jobSessionStore.syncActiveSession();
         toastStore.success('Research started');
         pendingStartEvent = null;
       } else if (pendingAction === 'stop') {
@@ -205,7 +233,53 @@
   }
 
   function handleNewResearch() {
-    studioStore.reset();
+    // Save current session snapshot, then go to create view
+    jobSessionStore.syncActiveSession();
+    studioStore.startCreate();
+  }
+
+  /** From StudioDashboard: switch to a different session */
+  function handleSwitchSession(e: CustomEvent<{ sessionId: string }>) {
+    jobSessionStore.switchSession(e.detail.sessionId);
+    studioStore.syncFromJobStore();
+    toastStore.info('Switched to session');
+  }
+
+  /** From ResearchComplete: view a model */
+  function handleViewModel(e: CustomEvent<{ modelId: string }>) {
+    router.navigate('model-detail', { modelId: e.detail.modelId });
+  }
+
+  /** From ResearchRunning/Complete: go back to dashboard (keeps session running) */
+  function handleGoToDashboard() {
+    jobSessionStore.syncActiveSession();
+    studioStore.setPhase('idle');
+  }
+
+  /** From ResearchComplete: agent instruction input */
+  function handleAgentInstruction(e: CustomEvent<{ instruction: string }>) {
+    const instruction = e.detail.instruction.trim().toLowerCase();
+    const topic = $studioStore.createTopic || $jobStore.topic;
+
+    // Route common instructions to actions
+    if (instruction.startsWith('/new') || instruction.includes('new research') || instruction.includes('새로운')) {
+      handleNewResearch();
+    } else if (instruction.startsWith('/deploy') || instruction.startsWith('/publish') || instruction.includes('deploy') || instruction.includes('publish')) {
+      handlePublish();
+    } else if (instruction.startsWith('/improve') || instruction.includes('improve') || instruction.includes('개선')) {
+      studioStore.startCreate(topic);
+    } else if (instruction.startsWith('/retry') || instruction.includes('retry') || instruction.includes('다시')) {
+      studioStore.startCreate(topic);
+    } else if (instruction.startsWith('/test') || instruction.includes('test') || instruction.includes('테스트')) {
+      // Playground — dispatch handled in ResearchComplete internally
+      toastStore.info('Open the Test panel to try your model');
+    } else if (instruction.startsWith('/dashboard') || instruction.startsWith('/home') || instruction.includes('dashboard')) {
+      handleGoToDashboard();
+    } else {
+      // Default: treat as improve instruction — start new research with the instruction as context
+      studioStore.startCreate(`${topic} — ${e.detail.instruction}`);
+      toastStore.info('Starting new research with your instruction');
+    }
   }
 
   function handlePublish() {
@@ -229,6 +303,7 @@
           on:newResearch={() => studioStore.startCreate()}
           on:quickStart={(e) => studioStore.startCreate(undefined, e.detail.typeId)}
           on:resumeJob={() => studioStore.syncFromJobStore()}
+          on:switchSession={handleSwitchSession}
           on:openModel={(e) => router.navigate('model-detail', { modelId: e.detail.modelId })}
           on:viewModels={() => router.navigate('models')}
         />
@@ -266,6 +341,7 @@
             on:stop={handleStop}
             on:submit={handleSubmit}
             on:zoomIn={handleZoomIn}
+            on:goToDashboard={handleGoToDashboard}
           />
         {:else}
           <div class="loading-state">Loading research view...</div>
@@ -281,6 +357,9 @@
             totalExperiments={$jobStore.totalExperiments}
             on:newResearch={handleNewResearch}
             on:deploy={handlePublish}
+            on:viewModel={handleViewModel}
+            on:goToDashboard={handleGoToDashboard}
+            on:agentInstruction={handleAgentInstruction}
             on:retrain={() => studioStore.startCreate($studioStore.createTopic)}
             on:improve={() => studioStore.startCreate($studioStore.createTopic)}
           />
