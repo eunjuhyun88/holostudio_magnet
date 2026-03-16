@@ -139,7 +139,7 @@
     </defs>
 
     <!-- Branch lane labels -->
-    {#each branches as branchId, i}
+    {#each branches as branchId, i (branchId)}
       <text
         x={PAD.left - 6}
         y={PAD.top + i * ROW_GAP + ROW_GAP / 2 + 3}
@@ -164,7 +164,7 @@
     {/each}
 
     <!-- Edges -->
-    {#each edges as edge}
+    {#each edges as edge (edge.x1 + ',' + edge.y1 + ',' + edge.x2 + ',' + edge.y2)}
       <path
         class="tree-edge"
         d="M{edge.x1},{edge.y1} C{(edge.x1 + edge.x2) / 2},{edge.y1} {(edge.x1 + edge.x2) / 2},{edge.y2} {edge.x2},{edge.y2}"
@@ -176,7 +176,7 @@
     {/each}
 
     <!-- Nodes -->
-    {#each data as n, idx}
+    {#each data as n, idx (n.id)}
       {@const pos = nodePositions.get(n.id)}
       {#if pos}
         {@const isBest = n.metric > 0 && n.metric <= bestMetric}

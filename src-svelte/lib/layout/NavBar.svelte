@@ -78,7 +78,7 @@
 
     <!-- Desktop Nav -->
     <nav class="nav desktop-nav">
-      {#each visibleNavItems as item}
+      {#each visibleNavItems as item (item.view)}
         <button
           class="nav-item"
           class:active={currentView === item.view}
@@ -142,7 +142,7 @@
                 Disconnect
               </button>
             {:else}
-              {#each wallets as w}
+              {#each wallets as w (w.name)}
                 <button class="wallet-dd-item" on:click={() => selectWallet(w.name)}>
                   <span class="wallet-dd-icon">{w.icon}</span>
                   <span>{w.name}</span>
@@ -166,7 +166,7 @@
 {#if mobileMenuOpen}
   <button type="button" class="mobile-overlay" aria-label="Close navigation menu" on:click={() => mobileMenuOpen = false}></button>
   <nav class="mobile-menu">
-    {#each visibleNavItems as item, i}
+    {#each visibleNavItems as item, i (item.view)}
       <button
         class="mobile-nav-item"
         class:active={currentView === item.view}
@@ -198,7 +198,7 @@
           Disconnect
         </button>
       {:else}
-        {#each wallets as w}
+        {#each wallets as w (w.name)}
           <button class="mobile-sign-in" on:click={() => { selectWallet(w.name); mobileMenuOpen = false; }}>
             <span>{w.icon}</span>
             {w.name}

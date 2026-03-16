@@ -224,7 +224,7 @@
     </text>
 
     <!-- ═══ MESH EDGES ═══ -->
-    {#each [...meshEdges, ...crossEdges] as edge, i}
+    {#each [...meshEdges, ...crossEdges] as edge, i (i)}
       <line
         x1={edge.x1} y1={edge.y1}
         x2={edge.x2} y2={edge.y2}
@@ -254,7 +254,7 @@
     {/each}
 
     <!-- ═══ MESH NODES ═══ -->
-    {#each nodePositions as node, i}
+    {#each nodePositions as node, i (node.id)}
       {@const nr = nodeRadius(node.tier)}
       {@const catColor = node.active ? (CATEGORY_COLORS[resolveExperimentCategory(node.modification)] ?? '#27864a') : '#9a9590'}
       <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -359,7 +359,7 @@
       letter-spacing="0.1em">CONVERGENCE</text>
 
     <!-- ═══ SWARM Y-axis ═══ -->
-    {#each swarmYTicks as t}
+    {#each swarmYTicks as t (t.val)}
       <line x1={SWARM_PAD.left} y1={t.y}
         x2={width - SWARM_PAD.right} y2={t.y}
         stroke="var(--border-subtle, #EDEAE5)" stroke-width="0.3" stroke-dasharray="2,3" />
@@ -383,7 +383,7 @@
     {/if}
 
     <!-- ═══ SWARM POINTS ═══ -->
-    {#each swarmPoints as pt, idx}
+    {#each swarmPoints as pt, idx (pt.id)}
       {@const metric = estimatedMetric(pt)}
       {@const sx = swarmSx(idx)}
       {@const sy = swarmSy(metric)}

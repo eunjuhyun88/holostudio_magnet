@@ -298,7 +298,7 @@
         { pixelIcon: 'globe', role: 'Compute Node', desc: 'Connect GPU → Training/Inference → PoAW Rewards', color: 'var(--green)' },
         { pixelIcon: 'chart', role: 'Contributor', desc: 'Data Contribution → Provenance (PPAP) → Pool Distribution', color: '#2980b9' },
         { pixelIcon: 'protocol', role: 'Buyer', desc: 'Model/Agent Calls → x402 Auto Settlement', color: '#d4a017' },
-      ] as r}
+      ] as r (r.role)}
         <div class="role-card">
           <span class="role-icon" style:color={r.color}><PixelIcon type={r.pixelIcon} size={18} /></span>
           <div class="role-text">
@@ -312,7 +312,7 @@
     <div class="guest-wallet">
       <span class="gw-label">Connect wallet to start</span>
       <div class="gw-btns">
-        {#each wallets as w}
+        {#each wallets as w (w.name)}
           <button class="gw-btn" on:click={() => wallet.connect(w.name)}>
             <span class="gw-icon">{w.icon}</span>
             <span>{w.name}</span>

@@ -366,7 +366,7 @@
       </select>
     </div>
     <div class="filter-chips" role="tablist" aria-label="Model filters">
-      {#each filters as f}
+      {#each filters as f (f.id)}
         <button
           class="filter-chip"
           class:active={activeFilter === f.id}
@@ -387,7 +387,7 @@
         <span class="section-count">{myCreatedModels.length}</span>
       </h2>
       <div class="my-model-list">
-        {#each myCreatedModels as m}
+        {#each myCreatedModels as m (m.id)}
           {@const st = formatState(m.state)}
           <button class="my-model-row" on:click={() => router.navigate('model-detail', { modelId: m.id })}>
             <span class="mmr-name">{m.name}</span>

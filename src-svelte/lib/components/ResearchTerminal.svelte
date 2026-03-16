@@ -81,7 +81,7 @@
         <span class="term-title">{title}</span>
       </div>
       <div class="filter-bar">
-        {#each LOG_TYPES as logType}
+        {#each LOG_TYPES as logType (logType)}
           <button
             class="filter-btn"
             class:active={!hiddenTypes.has(logType)}
@@ -106,7 +106,7 @@
       </div>
     </div>
     <div class="term-body term-scroll" bind:this={terminalEl}>
-      {#each filteredLog as evt}
+      {#each filteredLog as evt (evt.time + evt.type + evt.message)}
         {@const expId = extractExpId(evt.message)}
         {@const isExpandable = expId !== null && evt.type !== 'SYSTEM' && evt.type !== 'SUBMIT'}
         <!-- svelte-ignore a11y_no_static_element_interactions -->

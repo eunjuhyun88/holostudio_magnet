@@ -634,14 +634,14 @@
             <div class="psection job-actions-section">
               <h4 class="slabel">On-Chain Actions</h4>
               <div class="job-action-list">
-                {#each runningJobs as job}
+                {#each runningJobs as job (job.id)}
                   <div class="job-action-row">
                     <span class="ja-id">{job.id.slice(0, 8)}</span>
                     <span class="ja-state ja-executing">EXECUTING</span>
                     <button class="ja-btn" on:click={() => handleJobCommit(job.id)}>commit →</button>
                   </div>
                 {/each}
-                {#each doneJobs as job}
+                {#each doneJobs as job (job.id)}
                   <div class="job-action-row">
                     <span class="ja-id">{job.id.slice(0, 8)}</span>
                     <span class="ja-state ja-committed">COMMITTED</span>
@@ -692,7 +692,7 @@
           <div class="psection">
             <h4 class="slabel">Active Swarms</h4>
             {#if activeSwarmPreview.length > 0}
-              {#each activeSwarmPreview as swarm}
+              {#each activeSwarmPreview as swarm (swarm.job.id)}
                 <div class="job-card" class:training={swarm.job.state === 'training'}>
                   <div class="jhead">
                     <span class="jdot" class:training={swarm.job.state === 'training'} class:evaluating={swarm.job.state === 'evaluating'}></span>

@@ -335,7 +335,7 @@
 <div class="treemap-wrap" use:zoomable>
   <!-- Breadcrumb -->
   <div class="tm-breadcrumb">
-    {#each breadcrumb as crumb, i}
+    {#each breadcrumb as crumb, i (crumb.label)}
       {#if i > 0}<span class="tm-sep">›</span>{/if}
       <button
         class="tm-crumb"

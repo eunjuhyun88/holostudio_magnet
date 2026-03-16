@@ -259,7 +259,7 @@
 
   <!-- Row 2: Labeled status icons (spec wireframe: RESEARCH 2 running · MODELS 3 models · ...) -->
   <div class="dock-status-row">
-    {#each statusItems as item}
+    {#each statusItems as item (item.label)}
       <button
         class="status-item"
         on:click={() => handleStatusClick(item.view)}

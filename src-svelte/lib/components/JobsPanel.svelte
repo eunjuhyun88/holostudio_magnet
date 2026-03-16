@@ -105,7 +105,7 @@
 {#if filteredQueued.length > 0}
   <div class="psection">
     <h4 class="slabel">Open Jobs <span class="slabel-count">{filteredQueued.length}</span></h4>
-    {#each filteredQueued as job, i}
+    {#each filteredQueued as job, i (job.id)}
       <JobCard {job} meta={deriveJobMeta(job)} index={i} on:claim={handleClaim} />
     {/each}
   </div>
@@ -115,7 +115,7 @@
 <div class="psection">
   <h4 class="slabel">Executing <span class="slabel-count">{filteredRunning.length}</span></h4>
   {#if filteredRunning.length > 0}
-    {#each filteredRunning as job}
+    {#each filteredRunning as job (job.id)}
       {@const meta = deriveJobMeta(job)}
       <div class="rj-compact-card">
         <div class="rj-compact-header">
@@ -148,7 +148,7 @@
 {#if doneJobs.length > 0}
   <div class="psection">
     <h4 class="slabel">Completed <span class="slabel-count">{doneJobs.length}</span></h4>
-    {#each doneJobs as job}
+    {#each doneJobs as job (job.id)}
       <div class="rj-compact-card rj-verified-card">
         <div class="rj-compact-header">
           <span class="rj-verified-check">
