@@ -52,7 +52,26 @@
     retrain: { code: string; parentId: number | null };
     improve: { instruction: string };
     viewModel: { modelId: string };
+    goToDashboard: void;
+    agentInstruction: { instruction: string };
   }>();
+
+  // Agent instruction input
+  let agentInput = '';
+
+  function handleAgentSubmit() {
+    const instruction = agentInput.trim();
+    if (!instruction) return;
+    dispatch('agentInstruction', { instruction });
+    agentInput = '';
+  }
+
+  function handleAgentKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAgentSubmit();
+    }
+  }
 
   $: job = $jobStore;
   $: delta = $improvementDelta;
@@ -106,38 +125,45 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <div class="research-page complete">
-  <!-- ═══ COMPLETION BANNER ═══ -->
+  <!-- ═══ COMPLETION BANNER + AGENT INPUT ═══ -->
   <div class="tile complete-banner" style="grid-area: prompt">
-    <div class="cb-left">
-      <span class="cb-check">✓</span>
-      <div class="cb-info">
-        <span class="cb-title">Research Complete</span>
-        <span class="cb-topic">{job.topic}</span>
-      </div>
-    </div>
-    <div class="cb-stats">
-      {#if bestMetric < Infinity}
-        <div class="cb-metric">
-          <span class="cb-metric-label">Best</span>
-          <span class="cb-metric-val">{bestMetric.toFixed(4)}</span>
-          {#if delta}<span class="cb-delta">▼{delta.percent}%</span>{/if}
+    <div class="cb-row">
+      <div class="cb-left">
+        <button class="cb-dash" on:click={() => dispatch('goToDashboard')} title="Dashboard">
+          <svg width="14" height="14" viewBox="0 0 16 16"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" fill="currentColor" opacity="0.85"/></svg>
+        </button>
+        <span class="cb-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <div class="cb-info">
+          <span class="cb-title">{job.topic}</span>
+          <span class="cb-sub">
+            {#if bestMetric < Infinity}
+              Best: {bestMetric.toFixed(3)}
+              {#if delta} · ▼{delta.percent}%{/if}
+            {/if}
+            · {$completedCount} experiments
+          </span>
         </div>
-      {/if}
-      <div class="cb-counts">
-        <span>{$completedCount} experiments</span>
-        <span>·</span>
-        <span>{$keepCount} keeps</span>
-        <span>·</span>
-        <span>{$crashCount} crashes</span>
+      </div>
+      <div class="cb-actions">
+        <button class="cb-btn" on:click={() => dispatch('newResearch')}>New</button>
+        <button class="cb-btn" on:click={() => dispatch('improve', { instruction: 'improve' })}>Improve</button>
+        <button class="cb-btn" on:click={() => dispatch('retrain', { code: '', parentId: null })}>Retry</button>
+        <button class="cb-btn test" on:click={() => openFocus('playground')}>Test</button>
+        <button class="cb-btn publish" on:click={() => dispatch('deploy', { target: 'publish' })}>Deploy</button>
       </div>
     </div>
-    <div class="cb-actions">
-      <button class="cb-btn test" on:click={() => openFocus('playground')}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
-        Test
-      </button>
-      <button class="cb-btn publish" on:click={() => dispatch('deploy', { target: 'publish' })}>
-        Publish →
+    <div class="cb-agent">
+      <input
+        class="cb-agent-input"
+        type="text"
+        placeholder="Enter instructions or type /help"
+        bind:value={agentInput}
+        on:keydown={handleAgentKeydown}
+      />
+      <button class="cb-agent-send" on:click={handleAgentSubmit} disabled={!agentInput.trim()}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </div>
@@ -390,45 +416,82 @@
     border-left: none; border-right: none; border-top: none;
     box-shadow: none;
     display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, rgba(39, 134, 74, 0.04), rgba(166, 227, 161, 0.06));
-    border-bottom: 2px solid rgba(39, 134, 74, 0.15);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: #fff;
+    border-bottom: 1px solid var(--border-subtle, #EDEAE5);
   }
-  .cb-left { display: flex; align-items: center; gap: 10px; }
+  .cb-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .cb-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .cb-dash {
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: #f5f5f5; color: #888;
+    cursor: pointer; transition: all 150ms; flex-shrink: 0;
+  }
+  .cb-dash:hover { background: rgba(217,119,87,0.08); color: var(--accent, #D97757); }
   .cb-check {
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 24px; height: 24px; border-radius: 50%;
     background: var(--green, #27864a); color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; flex-shrink: 0;
+    flex-shrink: 0;
   }
-  .cb-info { display: flex; flex-direction: column; gap: 2px; }
-  .cb-title { font: 700 12px/1 'Inter', sans-serif; color: var(--green, #27864a); text-transform: uppercase; letter-spacing: 0.06em; }
-  .cb-topic { font: 600 14px/1 'Inter', sans-serif; color: var(--text-primary, #2D2D2D); }
-  .cb-stats { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 160px; }
-  .cb-metric { display: flex; align-items: baseline; gap: 6px; }
-  .cb-metric-label { font: 600 9px/1 'Inter', sans-serif; color: #999; text-transform: uppercase; letter-spacing: 0.06em; }
-  .cb-metric-val { font: 800 18px/1 'Inter', sans-serif; color: var(--text-primary, #2D2D2D); font-variant-numeric: tabular-nums; }
-  .cb-delta { font: 700 10px/1 'Inter', sans-serif; color: var(--green, #27864a); background: rgba(39,134,74,0.08); padding: 2px 6px; border-radius: 4px; }
-  .cb-counts { font: 500 10px/1 'Inter', sans-serif; color: #999; display: flex; gap: 4px; }
-  .cb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .cb-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cb-title {
+    font: 600 13px/1.2 'Inter', sans-serif; color: var(--text-primary, #2D2D2D);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cb-sub {
+    font: 500 10px/1 'SF Mono', 'Fira Code', monospace; color: #999;
+    font-variant-numeric: tabular-nums;
+  }
+  .cb-actions { display: flex; gap: 4px; flex-shrink: 0; }
   .cb-btn {
     font: 600 11px/1 'Inter', sans-serif;
-    padding: 8px 16px; border-radius: 8px;
-    cursor: pointer; transition: all 150ms; border: none;
-  }
-  .cb-btn.test {
-    background: var(--surface, #fff); color: var(--text-primary, #2D2D2D);
+    padding: 6px 14px; border-radius: 7px;
+    cursor: pointer; transition: all 150ms;
     border: 1px solid var(--border, #E5E0DA);
+    background: var(--surface, #fff);
+    color: var(--text-secondary, #6b6560);
+  }
+  .cb-btn:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); }
+  .cb-btn.test {
     display: flex; align-items: center; gap: 5px;
   }
-  .cb-btn.test:hover { border-color: var(--accent, #D97757); color: var(--accent, #D97757); box-shadow: 0 1px 6px rgba(217,119,87,0.12); }
-  .cb-btn.test svg { transition: transform 200ms; }
-  .cb-btn.test:hover svg { transform: scale(1.15); }
-  .cb-btn.publish { background: var(--accent, #D97757); color: #fff; }
+  .cb-btn.test:hover { box-shadow: 0 1px 6px rgba(217,119,87,0.12); }
+  .cb-btn.publish {
+    background: var(--accent, #D97757); color: #fff;
+    border-color: var(--accent, #D97757);
+  }
   .cb-btn.publish:hover { background: #C4644A; box-shadow: 0 2px 8px rgba(217,119,87,0.2); }
+
+  /* Agent instruction input */
+  .cb-agent {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+  }
+  .cb-agent-input {
+    flex: 1;
+    border: none; outline: none;
+    font: 400 13px/1.4 'Inter', sans-serif;
+    color: var(--text-primary, #2D2D2D);
+    background: transparent;
+    padding: 4px 0;
+  }
+  .cb-agent-input::placeholder { color: #ccc; }
+  .cb-agent-send {
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; color: #ccc;
+    cursor: pointer; transition: all 150ms; flex-shrink: 0;
+  }
+  .cb-agent-send:hover:not(:disabled) { color: var(--accent, #D97757); background: rgba(217,119,87,0.06); }
+  .cb-agent-send:disabled { opacity: 0.3; cursor: default; }
 
   /* ═══ HERO ═══ */
   .hero-tile { display: flex; flex-direction: column; padding: 6px 8px; overflow-y: auto; }
