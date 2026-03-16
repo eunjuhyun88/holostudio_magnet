@@ -729,18 +729,23 @@
         "prompt" "context" "hero" "stats" "mtabs"
         "converge" "branches" "stream" "scatter" "effect"
         "treemap" "lineage" "mesh" "footer";
-      gap: 8px; padding: 0 6px 14px;
+      gap: 8px;
+      padding: 0 6px calc(14px + env(safe-area-inset-bottom, 0px));
+      height: auto; overflow-y: auto;
     }
     .branch-list { max-height: 200px; }
+    .branch-row { padding: 8px 10px; min-height: 40px; }
     .br-actions { display: none; }
     .mobile-tabs {
-      display: flex; gap: 4px; padding: 0 2px; justify-content: center;
+      display: flex; gap: 4px; padding: 4px 2px; justify-content: center;
       position: sticky; top: 0; z-index: 3;
       background: linear-gradient(180deg, rgba(250,249,247,0.96), rgba(250,249,247,0.88));
       backdrop-filter: blur(10px); border-radius: 12px;
     }
+    .mtab-btn { padding: 10px 12px; min-height: 40px; }
     .context-tile { min-height: 0; overflow: hidden; }
     .tile { border-radius: 14px; }
+    .tile-focus-btn::after { display: none; } /* Hide tooltips on mobile */
     .footer-tile { padding: 8px 12px; }
     .mtab-hidden { display: none !important; }
   }
