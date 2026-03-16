@@ -829,13 +829,17 @@
       width: auto;
       border-radius: var(--radius-md, 10px);
     }
-    .filter-chip { flex-shrink: 0; padding: 5px 12px; font-size: 0.72rem; }
+    .filter-chip {
+      flex-shrink: 0; padding: 8px 14px; font-size: 0.72rem;
+      min-height: 36px; display: inline-flex; align-items: center;
+    }
   }
 
   @media (max-width: 400px) {
     .models { padding: var(--space-2, 8px); }
     .page-title { font-size: 1.15rem; }
     .card-tags { display: none; }
+    .filter-chip { padding: 8px 12px; font-size: 0.68rem; }
   }
 
   /* ── Sort select ── */
